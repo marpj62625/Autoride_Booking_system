@@ -6338,7 +6338,7 @@
             <span>All rights reserved</span>
           </div>
           <div class="more-version-tag">
-            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.18
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.4
           </div>
         </div>
       </div>
@@ -6701,55 +6701,97 @@
 
 <div id="page-change-password" class="overlay-page">
   <div class="overlay-header">
-    <button onclick="closeOverlay('page-change-password')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
-    <h2>Update Password</h2>
+    <button onclick="closeOverlay('page-change-password')" class="back-btn" aria-label="Go Back"><i class="fas fa-arrow-left"></i></button>
+    <h2 id="changePasswordTitle">Update Password</h2>
   </div>
-  <div class="scroll-content" style="padding:20px;">
-    <div class="card" style="box-shadow:none;border:none;padding:0;background:transparent;">
-      <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;">Update your password to keep your account secure.</p>
+  <div class="scroll-content" style="padding: 24px 16px 80px;">
+    <div style="max-width: 480px; margin: 0 auto;">
       
-      <div class="form-group" id="changePasswordCurrentGroup">
-        <label>Current Password</label>
-        <div class="password-input-wrapper">
-          <input type="password" id="changePasswordCurrent" placeholder="Enter current password" maxlength="64">
-          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordCurrent', this)">
-            <i class="fas fa-eye"></i>
-          </button>
+      <!-- Top Security Card Header -->
+      <div class="card" style="background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 24px; margin-bottom: 16px; text-align: center;">
+        <div style="width: 54px; height: 54px; border-radius: 16px; background: rgba(0, 177, 79, 0.12); color: var(--primary, #00B14F); display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 12px;">
+          <i class="fas fa-shield-alt"></i>
         </div>
-        <span class="field-error" id="changePasswordCurrentErr"></span>
+        <h3 style="font-size: 1.25rem; font-weight: 800; margin: 0 0 6px; color: var(--text-primary);" id="changePasswordCardHeading">
+          Account Security
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; line-height: 1.5;" id="changePasswordSub">
+          Update your password to keep your account safe and secure.
+        </p>
+
+        <!-- Google OAuth User Banner (hidden by default, shown if has_password === false) -->
+        <div id="changePasswordGoogleNotice" style="display: none; align-items: flex-start; gap: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 12px; padding: 12px 14px; margin-top: 16px; text-align: left;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 22px; height: 22px; flex-shrink: 0; margin-top: 2px;">
+          <div style="font-size: 0.8rem; color: var(--text-primary); line-height: 1.45;">
+            <strong>Signed in via Google:</strong> You currently log in using Google. Set a password below so you can also log in directly using your email and password.
+          </div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>New Password</label>
-        <div class="password-input-wrapper">
-          <input type="password" id="changePasswordNew" placeholder="At least 8 characters" maxlength="64" oninput="validatePassword(this.value, 'changePasswordNewErr', 'req-update-')">
-          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordNew', this)">
-            <i class="fas fa-eye"></i>
-          </button>
+      <!-- Main Form Card -->
+      <div class="card" style="background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 24px;">
+        
+        <!-- Current Password Group -->
+        <div class="form-group" id="changePasswordCurrentGroup">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="margin: 0; font-weight: 700; font-size: 0.86rem;">Current Password</label>
+            <a href="#" onclick="openForgotPasswordFromChangeOverlay(event)" style="font-size: 0.78rem; color: var(--primary, #00B14F); font-weight: 600; text-decoration: none;">Forgot current password?</a>
+          </div>
+          <div class="password-input-wrapper">
+            <input type="password" id="changePasswordCurrent" placeholder="Enter current password" maxlength="64" autocomplete="current-password">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordCurrent', this)" aria-label="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <span class="field-error" id="changePasswordCurrentErr"></span>
         </div>
-        <div class="password-requirements" style="margin-top:10px;">
-          <div class="requirement" id="req-update-uppercase"><i class="fas fa-times"></i> At least one uppercase letter</div>
-          <div class="requirement" id="req-update-lowercase"><i class="fas fa-times"></i> At least one lowercase letter</div>
-          <div class="requirement" id="req-update-number"><i class="fas fa-times"></i> At least one number</div>
-          <div class="requirement" id="req-update-special"><i class="fas fa-times"></i> At least one special character</div>
-          <div class="requirement" id="req-update-length"><i class="fas fa-times"></i> At least 8 characters</div>
+
+        <!-- New Password Group -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 0.86rem; margin-bottom: 6px;">New Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="changePasswordNew" placeholder="Enter new password (min. 8 chars)" maxlength="64" autocomplete="new-password" oninput="validatePassword(this.value, 'changePasswordNewErr', 'req-update-'); checkConfirmPasswordMatch('changePasswordNew', 'changePasswordConfirm', 'changePasswordConfirmErr');">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordNew', this)" aria-label="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          
+          <!-- Real-Time Password Requirements Checklist -->
+          <div class="password-requirements" style="margin-top: 10px; background: var(--bg-input); border-radius: 12px; padding: 12px 14px; border: 1px solid var(--border);">
+            <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Password Requirements:</div>
+            <div class="requirement" id="req-update-uppercase"><i class="fas fa-times"></i> At least one uppercase letter (A-Z)</div>
+            <div class="requirement" id="req-update-lowercase"><i class="fas fa-times"></i> At least one lowercase letter (a-z)</div>
+            <div class="requirement" id="req-update-number"><i class="fas fa-times"></i> At least one number (0-9)</div>
+            <div class="requirement" id="req-update-special"><i class="fas fa-times"></i> At least one special character (!@#$%^&amp;*)</div>
+            <div class="requirement" id="req-update-length"><i class="fas fa-times"></i> At least 8 characters (max 64)</div>
+          </div>
+          <span class="field-error" id="changePasswordNewErr"></span>
         </div>
-        <span class="field-error" id="changePasswordNewErr"></span>
+
+        <!-- Confirm New Password Group -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="font-weight: 700; font-size: 0.86rem; margin-bottom: 6px;">Confirm New Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="changePasswordConfirm" placeholder="Re-enter new password" maxlength="64" autocomplete="new-password" oninput="checkConfirmPasswordMatch('changePasswordNew', 'changePasswordConfirm', 'changePasswordConfirmErr');">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordConfirm', this)" aria-label="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <span class="field-error" id="changePasswordConfirmErr"></span>
+        </div>
+
+        <span class="field-error" id="changePasswordErr" style="display:block;margin-bottom:14px;text-align:center;font-weight:600;"></span>
+        
+        <!-- Action Buttons -->
+        <button class="btn-primary" id="btnDoUpdatePassword" onclick="doUpdatePassword()" style="width: 100%; border-radius: 14px; padding: 14px; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(0, 177, 79, 0.28);">
+          <i class="fas fa-key"></i> <span>Save &amp; Update Password</span>
+        </button>
+        
+        <button type="button" class="btn-secondary" onclick="closeOverlay('page-change-password')" style="width: 100%; border-radius: 14px; padding: 12px; margin-top: 10px; font-weight: 600; font-size: 0.88rem; background: transparent; border: 1px solid var(--border); color: var(--text-secondary);">
+          Cancel
+        </button>
       </div>
 
-      <div class="form-group">
-        <label>Confirm New Password</label>
-        <div class="password-input-wrapper">
-          <input type="password" id="changePasswordConfirm" placeholder="Re-enter new password" maxlength="64">
-          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordConfirm', this)">
-            <i class="fas fa-eye"></i>
-          </button>
-        </div>
-        <span class="field-error" id="changePasswordConfirmErr"></span>
-      </div>
-
-      <span class="field-error" id="changePasswordErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
-      <button class="btn-primary" onclick="doUpdatePassword()"><i class="fas fa-key"></i> Update Password</button>
     </div>
   </div>
 </div>

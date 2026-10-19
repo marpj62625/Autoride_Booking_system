@@ -11560,34 +11560,71 @@ function initializePushForUser() {
 
 // UPDATE/CHANGE PASSWORD
 function openChangePasswordOverlay() {
-  document.getElementById('changePasswordCurrent').value = '';
-  document.getElementById('changePasswordNew').value = '';
-  document.getElementById('changePasswordConfirm').value = '';
+  var currentPwEl = document.getElementById('changePasswordCurrent');
+  var newPwEl = document.getElementById('changePasswordNew');
+  var confirmPwEl = document.getElementById('changePasswordConfirm');
   
-  document.getElementById('changePasswordCurrentErr').textContent = '';
-  document.getElementById('changePasswordNewErr').textContent = '';
-  document.getElementById('changePasswordConfirmErr').textContent = '';
-  document.getElementById('changePasswordErr').textContent = '';
+  if (currentPwEl) currentPwEl.value = '';
+  if (newPwEl) newPwEl.value = '';
+  if (confirmPwEl) confirmPwEl.value = '';
   
-  validatePassword('', 'changePasswordNewErr', 'req-update-');
+  var currentErr = document.getElementById('changePasswordCurrentErr');
+  var newErr = document.getElementById('changePasswordNewErr');
+  var confirmErr = document.getElementById('changePasswordConfirmErr');
+  var mainErr = document.getElementById('changePasswordErr');
+
+  if (currentErr) currentErr.textContent = '';
+  if (newErr) newErr.textContent = '';
+  if (confirmErr) confirmErr.textContent = '';
+  if (mainErr) mainErr.textContent = '';
+  
+  if (typeof validatePassword === 'function') {
+    validatePassword('', 'changePasswordNewErr', 'req-update-');
+  }
 
   showLoading(true);
   apiCall('/user/profile-full?user_id=' + currentUser.id, { method: 'GET' })
     .then(function(profile) {
+      var googleNotice = document.getElementById('changePasswordGoogleNotice');
+      var currentGroup = document.getElementById('changePasswordCurrentGroup');
+      var headerSub = document.getElementById('changePasswordSub');
+      var cardHeading = document.getElementById('changePasswordCardHeading');
+      
       if (profile && profile.has_password === false) {
-        document.getElementById('changePasswordCurrentGroup').style.display = 'none';
+        if (currentGroup) currentGroup.style.display = 'none';
+        if (googleNotice) googleNotice.style.display = 'flex';
+        if (cardHeading) cardHeading.textContent = 'Set Account Password';
+        if (headerSub) headerSub.textContent = 'Create a password to also log in with your email directly.';
       } else {
-        document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+        if (currentGroup) currentGroup.style.display = 'block';
+        if (googleNotice) googleNotice.style.display = 'none';
+        if (cardHeading) cardHeading.textContent = 'Account Security';
+        if (headerSub) headerSub.textContent = 'Update your password to keep your account safe and secure.';
       }
       showOverlay('page-change-password');
     })
     .catch(function() {
-      document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+      var currentGroup = document.getElementById('changePasswordCurrentGroup');
+      if (currentGroup) currentGroup.style.display = 'block';
       showOverlay('page-change-password');
     })
     .finally(function() {
       showLoading(false);
     });
+}
+
+function openForgotPasswordFromChangeOverlay(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  closeOverlay('page-change-password');
+  if (typeof openForgotPasswordPage === 'function') {
+    openForgotPasswordPage(e);
+  } else {
+    showPage('page-forgot-password');
+  }
+  var emailEl = document.getElementById('forgotPwEmail');
+  if (emailEl && currentUser && currentUser.email) {
+    emailEl.value = currentUser.email;
+  }
 }
 
 function doUpdatePassword() {
@@ -11608,28 +11645,51 @@ function doUpdatePassword() {
   var newPassword = newPasswordEl ? newPasswordEl.value : '';
   var confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
 
-  var isCurrentRequired = document.getElementById('changePasswordCurrentGroup').style.display !== 'none';
+  var isCurrentRequired = document.getElementById('changePasswordCurrentGroup') &&
+                          document.getElementById('changePasswordCurrentGroup').style.display !== 'none';
   if (isCurrentRequired && !currentPassword) {
     if (currentErrEl) currentErrEl.textContent = 'Current password is required.';
+    if (currentPasswordEl) currentPasswordEl.focus();
     return;
   }
 
   if (!newPassword) {
     if (newErrEl) newErrEl.textContent = 'New password is required.';
+    if (newPasswordEl) newPasswordEl.focus();
     return;
   }
 
-  if (!validatePassword(newPassword, 'changePasswordNewErr', 'req-update-')) {
+  if (typeof validatePassword === 'function' && !validatePassword(newPassword, 'changePasswordNewErr', 'req-update-')) {
     if (newErrEl) newErrEl.textContent = 'Password does not meet the security requirements.';
+    if (newPasswordEl) newPasswordEl.focus();
+    return;
+  }
+
+  if (!confirmPassword) {
+    if (confirmErrEl) confirmErrEl.textContent = 'Please confirm your new password.';
+    if (confirmPasswordEl) confirmPasswordEl.focus();
     return;
   }
 
   if (newPassword !== confirmPassword) {
-    if (confirmErrEl) confirmErrEl.textContent = 'Passwords do not match.';
+    if (confirmErrEl) {
+      confirmErrEl.textContent = 'Passwords do not match.';
+      confirmErrEl.style.color = 'var(--danger, #f87171)';
+    }
+    if (confirmPasswordEl) confirmPasswordEl.focus();
     return;
   }
 
+  if (isCurrentRequired && currentPassword && newPassword === currentPassword) {
+    if (newErrEl) newErrEl.textContent = 'New password cannot be the same as your current password.';
+    if (newPasswordEl) newPasswordEl.focus();
+    return;
+  }
+
+  var btn = document.getElementById('btnDoUpdatePassword');
+  var restoreBtn = (typeof setButtonLoading === 'function' && btn) ? setButtonLoading(btn, 'Updating Password...') : null;
   showLoading(true);
+
   apiCall('/user/change-password', {
     method: 'POST',
     body: JSON.stringify({
@@ -11638,15 +11698,26 @@ function doUpdatePassword() {
       new_password: newPassword
     })
   })
-    .then(function() {
-      showToast('Password updated successfully!', 'success');
+    .then(function(res) {
+      showToast(res.message || 'Password updated successfully!', 'success');
       closeOverlay('page-change-password');
+      if (currentPasswordEl) currentPasswordEl.value = '';
+      if (newPasswordEl) newPasswordEl.value = '';
+      if (confirmPasswordEl) confirmPasswordEl.value = '';
     })
     .catch(function(err) {
-      if (mainErrEl) mainErrEl.textContent = err.message || 'Failed to update password.';
+      var msg = err.message || (err.data && err.data.error) || 'Failed to update password.';
+      if (msg.toLowerCase().indexOf('current password') !== -1) {
+        if (currentErrEl) currentErrEl.textContent = msg;
+        if (currentPasswordEl) currentPasswordEl.focus();
+      } else {
+        if (mainErrEl) mainErrEl.textContent = msg;
+      }
+      showToast(msg, 'error');
     })
     .finally(function() {
       showLoading(false);
+      if (restoreBtn) restoreBtn();
     });
 }
 

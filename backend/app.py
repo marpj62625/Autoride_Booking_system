@@ -6603,7 +6603,6 @@ def user_change_password():
         cur.execute("SELECT id, password FROM users WHERE id = %s", (user_id,))
         user = cur.fetchone()
         if not user:
-            cur.close()
             return jsonify({'error': 'User not found.'}), 404
 
         stored_password = user['password'] or ''
@@ -6611,27 +6610,28 @@ def user_change_password():
         # If they already have a password set, require them to provide the correct current password
         if stored_password:
             if not current_password:
-                cur.close()
                 return jsonify({'error': 'Current password is required to change password.'}), 400
             
             pw_ok = False
             try:
                 pw_ok = bcrypt.checkpw(current_password.encode('utf-8'), stored_password.encode('utf-8'))
-            except:
+            except Exception:
                 pw_ok = (stored_password == current_password)
             
             if not pw_ok:
-                cur.close()
                 return jsonify({'error': 'Incorrect current password.'}), 400
 
         hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user_id))
-        cur.close()
+        commit_db()
 
         return jsonify({'message': 'Password updated successfully!'}), 200
     except Exception as e:
         print(f"Error updating password: {e}")
         return jsonify({'error': 'Internal server error occurred.'}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 @app.route('/update-profile', methods=['POST'])
 @app.route('/api/update-profile', methods=['POST'])

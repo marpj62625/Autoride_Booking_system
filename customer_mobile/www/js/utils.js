@@ -865,5 +865,133 @@ function compressImage(file, maxW, maxH, quality) {
   });
 }
 
+/**
+ * Validates password complexity client-side:
+ * - 8 to 64 characters
+ * - At least one uppercase letter (A-Z)
+ * - At least one lowercase letter (a-z)
+ * - At least one number (0-9)
+ * - At least one special character (!@#$%^&*...)
+ * 
+ * Updates the requirement list items (with checkmark/times icon and valid/invalid class)
+ * and optional error message container.
+ * 
+ * @param {string} password 
+ * @param {string} [errElementId] - ID of error span to clear/set
+ * @param {string} [prefix] - Prefix for requirement element IDs (e.g., 'req-' or 'req-update-')
+ * @returns {boolean} true if all complexity requirements pass
+ */
+function validatePassword(password, errElementId, prefix) {
+  var pw = password || '';
+  prefix = prefix || 'req-';
+  
+  var rules = {
+    uppercase: /[A-Z]/.test(pw),
+    lowercase: /[a-z]/.test(pw),
+    number: /[0-9]/.test(pw),
+    special: /[^A-Za-z0-9]/.test(pw),
+    length: pw.length >= 8 && pw.length <= 64
+  };
+
+  var allValid = true;
+  for (var key in rules) {
+    var passed = rules[key];
+    if (!passed) allValid = false;
+    var el = document.getElementById(prefix + key);
+    if (el) {
+      if (passed) {
+        el.classList.add('valid');
+        el.classList.remove('invalid');
+        var icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-check';
+      } else {
+        el.classList.remove('valid');
+        el.classList.add('invalid');
+        var icon = el.querySelector('i');
+        if (icon) icon.className = 'fas fa-times';
+      }
+    }
+  }
+
+  var errEl = errElementId ? document.getElementById(errElementId) : null;
+  if (errEl) {
+    if (pw.length > 0 && !allValid) {
+      errEl.textContent = 'Password does not meet all security requirements.';
+    } else {
+      errEl.textContent = '';
+    }
+  }
+
+  return allValid;
+}
+
+/**
+ * Toggles password field visibility between 'password' and 'text'.
+ * Toggles the eye icon between fa-eye and fa-eye-slash.
+ * 
+ * @param {string} inputId - ID of password input element
+ * @param {HTMLElement} btn - The toggle button containing the icon
+ */
+function togglePasswordVisibility(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  var isPw = input.type === 'password';
+  input.type = isPw ? 'text' : 'password';
+  if (btn) {
+    var icon = btn.querySelector('i');
+    if (icon) {
+      icon.className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+    }
+  }
+}
+
+/**
+ * Live validation helper to check if password and confirm password match.
+ * @param {string} [pwId] - defaults to 'regPassword'
+ * @param {string} [confirmId] - defaults to 'regConfirmPassword'
+ * @param {string} [errId] - defaults to 'regConfirmPasswordErr'
+ * @returns {boolean}
+ */
+function checkConfirmPasswordMatch(pwId, confirmId, errId) {
+  pwId = pwId || 'regPassword';
+  confirmId = confirmId || 'regConfirmPassword';
+  errId = errId || 'regConfirmPasswordErr';
+  
+  var pwEl = document.getElementById(pwId);
+  var confirmEl = document.getElementById(confirmId);
+  var errEl = document.getElementById(errId);
+  
+  if (!pwEl || !confirmEl) return false;
+  var pw = pwEl.value;
+  var confirm = confirmEl.value;
+  
+  if (!confirm) {
+    if (errEl) errEl.textContent = '';
+    return false;
+  }
+  
+  if (pw !== confirm) {
+    if (errEl) {
+      errEl.textContent = 'Passwords do not match.';
+      errEl.style.color = 'var(--danger, #f87171)';
+    }
+    return false;
+  } else {
+    if (errEl) {
+      errEl.textContent = 'Passwords match ✓';
+      errEl.style.color = 'var(--success, #10b981)';
+    }
+    return true;
+  }
+}
+
+// Global browser window exports
+if (typeof window !== 'undefined') {
+  window.validatePassword = validatePassword;
+  window.togglePasswordVisibility = togglePasswordVisibility;
+  window.checkConfirmPasswordMatch = checkConfirmPasswordMatch;
+}
+
 // Remove ES module export for browser/WebView compatibility
 // All functions are available globally in this file
+
