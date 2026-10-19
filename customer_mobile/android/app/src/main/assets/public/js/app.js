@@ -4190,9 +4190,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
                   colorHtml +
                 '</div>' +
-                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;min-width:0;">' +
                   '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                  '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
+                  '<span id="vd-location" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (defaultUnit.location || '-') + '">' + (defaultUnit.location || '-') + '</span>' +
                 '</div>' +
                 // KM Limit
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
@@ -4219,18 +4219,18 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || '-') + '</span>' +
                 '</div>' +
               '</div>' +
-              '<div style="padding:16px;background:var(--bg-card2);border-radius:14px;border:1px solid var(--border);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">' +
-                '<div>' +
-                  '<div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Rental Rate</div>' +
-                  '<div class="vehicle-rate" id="vd-rate" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);line-height:1.1;">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
-                  '<div style="font-size:0.7rem;color:var(--text-muted);">per 24-hour day</div>' +
+              '<div class="vd-rate-action-box">' +
+                '<div class="vd-rate-info">' +
+                  '<div class="vd-rate-label">Rental Rate</div>' +
+                  '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
+                  '<div class="vd-rate-sub">per 24-hour day</div>' +
                 '</div>' +
-                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 28px;border-radius:14px;font-size:0.95rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.3);"' +
-                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : (isBookable ? ' onclick="goToProfileForVerification()"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:14px;font-size:0.85rem;cursor:not-allowed;"')) + '>' +
+                '<button id="vd-book-btn" class="vd-book-btn ' + (canBook || isBookable ? 'btn-primary' : 'btn-disabled') + '"' +
+                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : (isBookable ? ' onclick="goToProfileForVerification()"' : ' disabled')) + '>' +
                   (canBook ? '<i class="fas fa-calendar-plus"></i> Book Now' : (isBookable ? (parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License') : '<i class="fas fa-ban"></i> Unavailable')) +
                 '</button>' +
               '</div>' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);font-size:0.74rem;color:var(--text-muted);">' +
+              '<div class="vd-trust-badges">' +
                 '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-shield-alt" style="color:var(--primary);"></i> Verified Fleet</span>' +
                 '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Fast Booking</span>' +
                 '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-lock" style="color:#3b82f6;"></i> Secure System</span>' +
@@ -4344,17 +4344,20 @@ function onVdColorChange() {
     var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
     if (canBook) {
       bookBtn.disabled = false;
-      bookBtn.style.cssText = 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;cursor:pointer;';
-      bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book';
+      bookBtn.className = 'vd-book-btn btn-primary';
+      bookBtn.removeAttribute('style');
+      bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book Now';
       (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
     } else if (isBookable) {
       bookBtn.disabled = false;
-      bookBtn.style.cssText = 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;cursor:pointer;';
+      bookBtn.className = 'vd-book-btn btn-primary';
+      bookBtn.removeAttribute('style');
       bookBtn.innerHTML = parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License';
       bookBtn.onclick = function() { goToProfileForVerification(); };
     } else {
       bookBtn.disabled = true;
-      bookBtn.style.cssText = 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
+      bookBtn.className = 'vd-book-btn btn-disabled';
+      bookBtn.removeAttribute('style');
       bookBtn.innerHTML = '<i class="fas fa-ban"></i> Unavailable';
       bookBtn.onclick = null;
     }

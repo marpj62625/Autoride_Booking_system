@@ -1467,6 +1467,121 @@
           .veh-detail-highlights  { order: 3 !important; margin-bottom: 0 !important; }
           .veh-detail-policies    { order: 4 !important; margin-bottom: 0 !important; }
 
+          /* Vehicle Detail Rate & Action Card Responsive Flow */
+          .vd-rate-action-box {
+            padding: 16px 18px;
+            background: var(--bg-card2);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 18px;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 14px !important;
+            align-items: stretch !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+          }
+          .vd-rate-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+          }
+          .vd-rate-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .vd-rate-action-box #vd-rate {
+            font-size: 1.65rem !important;
+            font-weight: 900 !important;
+            color: var(--text-primary) !important;
+            line-height: 1.15 !important;
+            margin: 2px 0 !important;
+          }
+          .vd-rate-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+          }
+          .vd-book-btn {
+            width: 100% !important;
+            min-height: 48px !important;
+            padding: 13px 20px !important;
+            border-radius: 14px !important;
+            font-size: 0.95rem !important;
+            font-weight: 800 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+          }
+          .vd-book-btn.btn-primary {
+            background: var(--primary) !important;
+            color: #ffffff !important;
+            border: none !important;
+            box-shadow: 0 4px 14px rgba(0, 177, 79, 0.3) !important;
+          }
+          .vd-book-btn.btn-primary:active {
+            transform: scale(0.98);
+            background: var(--primary-dark, #00873a) !important;
+          }
+          .vd-book-btn.btn-disabled,
+          .vd-book-btn:disabled {
+            background: var(--bg-input, #e2e8f0) !important;
+            color: var(--text-muted, #94a3b8) !important;
+            border: 1px solid var(--border) !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            opacity: 0.85 !important;
+          }
+          .vd-trust-badges {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            padding-top: 14px !important;
+            border-top: 1px solid var(--border) !important;
+            font-size: 0.74rem !important;
+            color: var(--text-muted) !important;
+          }
+          @media (max-width: 639px) {
+            #page-vehicle-detail .scroll-content,
+            #vehicleDetailContent .scroll-content {
+              padding: 14px 14px 90px !important;
+            }
+            #vd-booking-card {
+              padding: 18px 16px !important;
+              border-radius: 18px !important;
+            }
+            .veh-detail-highlights,
+            .veh-detail-policies {
+              padding: 18px 16px !important;
+              border-radius: 18px !important;
+            }
+          }
+          @media (min-width: 640px) {
+            .vd-rate-action-box {
+              flex-direction: row !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              gap: 18px !important;
+              padding: 18px 22px !important;
+            }
+            .vd-book-btn {
+              width: auto !important;
+              min-width: 180px !important;
+              padding: 13px 28px !important;
+              flex-shrink: 0 !important;
+            }
+          }
+
           /* Small screens bookings optimization */
           @media (max-width: 480px) {
             .bookings-stats-grid {
@@ -6515,7 +6630,7 @@
             <span>All rights reserved</span>
           </div>
           <div class="more-version-tag">
-            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.7
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.8
           </div>
         </div>
       </div>
