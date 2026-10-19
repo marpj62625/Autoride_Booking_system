@@ -1582,6 +1582,123 @@
             }
           }
 
+          /* DESKTOP LIVE CAMERA / WEBCAM MODAL */
+          #desktopCameraModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          }
+          .desktop-cam-card {
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 520px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+            display: flex;
+            flex-direction: column;
+            animation: dCamFadeIn 0.25s ease-out;
+          }
+          @keyframes dCamFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          .desktop-cam-header {
+            padding: 16px 20px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          }
+          .desktop-cam-viewport {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .desktop-cam-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .desktop-cam-video.mirrored {
+            transform: scaleX(-1);
+          }
+          .desktop-cam-guide-selfie {
+            position: absolute;
+            width: 210px;
+            height: 270px;
+            border-radius: 50%;
+            border: 2.5px dashed #00B14F;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 16px;
+            transition: border-color 0.3s;
+          }
+          .desktop-cam-guide-doc {
+            position: absolute;
+            width: 320px;
+            max-width: 88%;
+            height: 200px;
+            border-radius: 12px;
+            border: 2.5px dashed #3b82f6;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 14px;
+          }
+          .desktop-cam-flash {
+            position: absolute;
+            inset: 0;
+            background: #ffffff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.12s ease-out;
+          }
+          .desktop-cam-footer {
+            padding: 14px 20px;
+            background: #090d16;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+          @media (max-width: 540px) {
+            .desktop-cam-viewport {
+              height: 300px;
+            }
+            .desktop-cam-guide-selfie {
+              width: 180px;
+              height: 230px;
+              padding-top: 12px;
+            }
+            .desktop-cam-guide-doc {
+              width: 260px;
+              height: 165px;
+            }
+          }
+
           /* Small screens bookings optimization */
           @media (max-width: 480px) {
             .bookings-stats-grid {
@@ -6630,7 +6747,7 @@
             <span>All rights reserved</span>
           </div>
           <div class="more-version-tag">
-            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.8
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.9
           </div>
         </div>
       </div>
@@ -7101,6 +7218,83 @@
     <div style="padding:16px 20px; border-top:1px solid var(--border, #e2e8f0); display:flex; gap:12px; justify-content:flex-end; background:var(--bg-main, #f8fafc);">
       <button type="button" class="btn-secondary" onclick="closeCropLicenseModal()" style="width:auto; padding:10px 20px; border-radius:24px; font-weight:600;">Cancel</button>
       <button type="button" class="btn-primary" onclick="confirmCropLicense()" style="width:auto; padding:10px 24px; border-radius:24px; font-weight:700;"><i class="fas fa-check"></i> Crop & Scan</button>
+    </div>
+  </div>
+</div>
+
+<!-- DESKTOP LIVE CAMERA / WEBCAM MODAL -->
+<div id="desktopCameraModal" onclick="if(event.target===this)closeDesktopCameraModal()">
+  <div class="desktop-cam-card" onclick="event.stopPropagation()">
+    <div class="desktop-cam-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,177,79,0.15);color:#00B14F;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+          <i class="fas fa-camera"></i>
+        </div>
+        <div>
+          <h4 id="desktopCameraTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:#fff;">Live Camera Selfie</h4>
+          <span style="font-size:0.72rem;color:#94a3b8;" id="desktopCameraSubTitle">Desktop Webcam Capture</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeDesktopCameraModal()" style="background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px;" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Instructions & Device switcher -->
+    <div style="padding:10px 20px 8px;font-size:0.78rem;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1322;">
+      <span id="desktopCameraHintText"><i class="fas fa-info-circle" style="color:#00B14F;margin-right:4px;"></i> Iposisyon ang mukha sa loob ng oval guide. Siguraduhing maliwanag.</span>
+      <select id="desktopCameraDeviceSelect" style="display:none;max-width:160px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:0.7rem;outline:none;" onchange="onDesktopCameraDeviceChange(this.value)"></select>
+    </div>
+
+    <!-- Viewport -->
+    <div class="desktop-cam-viewport">
+      <video id="desktopCameraVideo" class="desktop-cam-video mirrored" autoplay playsinline muted></video>
+      <canvas id="desktopCameraCanvas" style="display:none;"></canvas>
+      <img id="desktopCameraPreviewImg" style="display:none;width:100%;height:100%;object-fit:cover;">
+      
+      <!-- Selfie Oval Guide -->
+      <div id="desktopCameraSelfieGuide" class="desktop-cam-guide-selfie">
+        <span style="background:rgba(0,177,79,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+          <i class="fas fa-user"></i> Mukha Dito
+        </span>
+      </div>
+
+      <!-- Document/License Guide -->
+      <div id="desktopCameraDocGuide" class="desktop-cam-guide-doc">
+        <span style="background:rgba(59,130,246,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+          <i class="fas fa-id-card"></i> Iposisyon ang Lisensya
+        </span>
+      </div>
+
+      <!-- Flash element -->
+      <div id="desktopCameraFlash" class="desktop-cam-flash"></div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="desktop-cam-footer">
+      <!-- Live Controls (Before Capture) -->
+      <div id="desktopCameraLiveControls" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
+        <button type="button" class="btn-secondary" onclick="desktopCameraFallbackToFile()" style="padding:9px 14px;border-radius:20px;font-size:0.78rem;background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+          <i class="fas fa-folder-open"></i> <span>Pumili ng File</span>
+        </button>
+
+        <button type="button" id="desktopCameraSnapBtn" onclick="snapDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);transition:transform 0.15s,box-shadow 0.15s;">
+          <i class="fas fa-camera"></i> <span id="desktopCameraSnapBtnText">Kumuha ng Selfie</span>
+        </button>
+
+        <button type="button" onclick="closeDesktopCameraModal()" style="background:transparent;border:none;color:#94a3b8;font-size:0.82rem;font-weight:600;cursor:pointer;padding:8px 12px;">
+          Kanselahin
+        </button>
+      </div>
+
+      <!-- Review Controls (After Capture) -->
+      <div id="desktopCameraReviewControls" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:10px;">
+        <button type="button" onclick="retakeDesktopCamera()" style="padding:10px 18px;border-radius:24px;font-size:0.84rem;background:rgba(255,255,255,0.08);color:#f1f5f9;border:1px solid rgba(255,255,255,0.15);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+          <i class="fas fa-redo"></i> <span>Kumuha Muli</span>
+        </button>
+
+        <button type="button" onclick="confirmDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 26px;border-radius:30px;font-size:0.9rem;font-weight:800;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);">
+          <i class="fas fa-check"></i> <span>Gamitin ang Larawan</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

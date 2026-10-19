@@ -9218,12 +9218,28 @@ var Profile = {
     }
     var btn = document.getElementById('profileEditBtn');
     if (btn) btn.style.display = 'none';
+    var prev = document.getElementById('profilePicPreview');
+    if (prev && currentUser && currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined') {
+      prev.src = currentUser._profileData.profile_picture;
+      prev.style.display = 'block';
+    }
   },
   cancelEdit: function() {
     var card = document.getElementById('profileEditCard');
     if (card) card.style.display = 'none';
     var btn = document.getElementById('profileEditBtn');
     if (btn) btn.style.display = '';
+    profilePicBlob = null;
+    var prev = document.getElementById('profilePicPreview');
+    if (prev) {
+      if (currentUser && currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined') {
+        prev.src = currentUser._profileData.profile_picture;
+        prev.style.display = 'block';
+      } else {
+        prev.style.display = 'none';
+        prev.src = '';
+      }
+    }
   },
   enterLicenseEdit: function() {
     var missing = getMissingProfileFields(currentUser._profileData);
@@ -9477,6 +9493,295 @@ var Profile = {
   }
 };
 
+// ============================================================
+// DESKTOP WEBCAM / LIVE CAMERA CONTROLLER
+// ============================================================
+window._desktopCameraStream = null;
+window._desktopCameraMode = 'selfie'; // 'selfie' | 'license'
+window._desktopCameraSide = 'front';
+window._desktopCameraCallback = null;
+window._desktopCameraCurrentBlob = null;
+window._desktopCameraDeviceId = null;
+
+function openDesktopCameraModal(options) {
+  options = options || {};
+  window._desktopCameraMode = options.mode || 'selfie';
+  window._desktopCameraSide = options.side || 'front';
+  window._desktopCameraCallback = options.onCapture || null;
+  window._desktopCameraCurrentBlob = null;
+
+  var modal = document.getElementById('desktopCameraModal');
+  if (!modal) {
+    console.error('desktopCameraModal element not found');
+    if (typeof options.onFallback === 'function') {
+      options.onFallback();
+    } else {
+      desktopCameraFallbackToFile();
+    }
+    return;
+  }
+
+  var isSelfie = (window._desktopCameraMode === 'selfie');
+  var titleEl = document.getElementById('desktopCameraTitle');
+  var subTitleEl = document.getElementById('desktopCameraSubTitle');
+  var hintTextEl = document.getElementById('desktopCameraHintText');
+  var snapBtnText = document.getElementById('desktopCameraSnapBtnText');
+  var selfieGuide = document.getElementById('desktopCameraSelfieGuide');
+  var docGuide = document.getElementById('desktopCameraDocGuide');
+  var videoEl = document.getElementById('desktopCameraVideo');
+
+  if (titleEl) {
+    titleEl.innerHTML = isSelfie
+      ? '<i class="fas fa-camera" style="color:#00B14F;"></i> Live Camera Selfie'
+      : '<i class="fas fa-id-card" style="color:#3b82f6;"></i> Scan Driver\'s License';
+  }
+  if (subTitleEl) {
+    subTitleEl.textContent = isSelfie
+      ? 'Desktop Webcam Capture'
+      : (window._desktopCameraSide === 'back' ? 'Back of Driver\'s License' : 'Front of Driver\'s License');
+  }
+  if (hintTextEl) {
+    hintTextEl.innerHTML = isSelfie
+      ? '<i class="fas fa-info-circle" style="color:#00B14F;margin-right:4px;"></i> Iposisyon ang mukha sa loob ng oval guide. Siguraduhing maliwanag.'
+      : '<i class="fas fa-info-circle" style="color:#3b82f6;margin-right:4px;"></i> Iposisyon ang lisensya nang tuwid sa loob ng kahon.';
+  }
+  if (snapBtnText) {
+    snapBtnText.textContent = isSelfie ? 'Kumuha ng Selfie' : 'Kunan ng Litrato';
+  }
+
+  if (selfieGuide) selfieGuide.style.display = isSelfie ? 'flex' : 'none';
+  if (docGuide) docGuide.style.display = isSelfie ? 'none' : 'flex';
+
+  if (videoEl) {
+    if (isSelfie) {
+      videoEl.classList.add('mirrored');
+    } else {
+      videoEl.classList.remove('mirrored');
+    }
+  }
+
+  retakeDesktopCamera();
+  modal.style.display = 'flex';
+  startDesktopCameraStream();
+}
+
+function startDesktopCameraStream() {
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+    showToast('Hindi suportado ang desktop camera sa browser na ito. Pakipili ang file upload.', 'warning');
+    desktopCameraFallbackToFile();
+    return;
+  }
+
+  if (window._desktopCameraStream) {
+    try {
+      window._desktopCameraStream.getTracks().forEach(function(t) { t.stop(); });
+    } catch(e) {}
+    window._desktopCameraStream = null;
+  }
+
+  var isSelfie = (window._desktopCameraMode === 'selfie');
+  var preferredFacing = isSelfie ? 'user' : 'environment';
+
+  var constraints = {
+    audio: false,
+    video: window._desktopCameraDeviceId
+      ? { deviceId: { exact: window._desktopCameraDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      : { facingMode: preferredFacing, width: { ideal: 1280 }, height: { ideal: 720 } }
+  };
+
+  function applyStream(stream) {
+    window._desktopCameraStream = stream;
+    var videoEl = document.getElementById('desktopCameraVideo');
+    if (videoEl) {
+      videoEl.srcObject = stream;
+      videoEl.play().catch(function(e) { console.log('Video play error:', e); });
+    }
+    populateDesktopCameraDevices();
+  }
+
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(applyStream)
+    .catch(function(err) {
+      console.warn('Initial camera constraints failed, trying basic video...', err);
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(applyStream)
+        .catch(function(err2) {
+          console.error('Webcam getUserMedia failed:', err2);
+          var msg = 'Hindi mabuksan ang camera: ';
+          if (err2.name === 'NotAllowedError' || err2.name === 'PermissionDeniedError') {
+            msg = 'Na-block ang camera access. Paki-allow ang camera permissions sa browser.';
+          } else if (err2.name === 'NotFoundError' || err2.name === 'DevicesNotFoundError') {
+            msg = 'Walang nakitang camera sa device na ito.';
+          } else {
+            msg += (err2.message || 'Error accessing webcam');
+          }
+          showToast(msg, 'warning');
+          closeDesktopCameraModal();
+          desktopCameraFallbackToFile();
+        });
+    });
+}
+
+function populateDesktopCameraDevices() {
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') return;
+  navigator.mediaDevices.enumerateDevices().then(function(devices) {
+    var videoDevices = devices.filter(function(d) { return d.kind === 'videoinput'; });
+    var selectEl = document.getElementById('desktopCameraDeviceSelect');
+    if (!selectEl) return;
+    if (videoDevices.length > 1) {
+      selectEl.innerHTML = '';
+      videoDevices.forEach(function(d, idx) {
+        var opt = document.createElement('option');
+        opt.value = d.deviceId;
+        opt.textContent = d.label || ('Camera ' + (idx + 1));
+        if (d.deviceId === window._desktopCameraDeviceId) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+      selectEl.style.display = 'block';
+    } else {
+      selectEl.style.display = 'none';
+    }
+  }).catch(function() {});
+}
+
+function onDesktopCameraDeviceChange(deviceId) {
+  window._desktopCameraDeviceId = deviceId;
+  startDesktopCameraStream();
+}
+
+function snapDesktopCamera() {
+  var videoEl = document.getElementById('desktopCameraVideo');
+  var canvasEl = document.getElementById('desktopCameraCanvas');
+  var previewImg = document.getElementById('desktopCameraPreviewImg');
+  var flashEl = document.getElementById('desktopCameraFlash');
+  var selfieGuide = document.getElementById('desktopCameraSelfieGuide');
+  var docGuide = document.getElementById('desktopCameraDocGuide');
+  var liveControls = document.getElementById('desktopCameraLiveControls');
+  var reviewControls = document.getElementById('desktopCameraReviewControls');
+
+  if (!videoEl || !canvasEl) return;
+
+  if (flashEl) {
+    flashEl.style.opacity = '0.9';
+    setTimeout(function() { flashEl.style.opacity = '0'; }, 150);
+  }
+
+  var w = videoEl.videoWidth || 1280;
+  var h = videoEl.videoHeight || 720;
+  canvasEl.width = w;
+  canvasEl.height = h;
+
+  var ctx = canvasEl.getContext('2d');
+  var isSelfie = (window._desktopCameraMode === 'selfie');
+
+  if (isSelfie) {
+    ctx.save();
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoEl, 0, 0, w, h);
+    ctx.restore();
+  } else {
+    ctx.drawImage(videoEl, 0, 0, w, h);
+  }
+
+  canvasEl.toBlob(function(blob) {
+    if (!blob) {
+      showToast('Hindi na-capture ang larawan. Subukan muli.', 'error');
+      return;
+    }
+    window._desktopCameraCurrentBlob = blob;
+
+    if (previewImg) {
+      previewImg.src = URL.createObjectURL(blob);
+      previewImg.style.display = 'block';
+    }
+    if (videoEl) videoEl.style.display = 'none';
+    if (selfieGuide) selfieGuide.style.display = 'none';
+    if (docGuide) docGuide.style.display = 'none';
+
+    if (liveControls) liveControls.style.display = 'none';
+    if (reviewControls) reviewControls.style.display = 'flex';
+  }, 'image/jpeg', 0.92);
+}
+
+function retakeDesktopCamera() {
+  window._desktopCameraCurrentBlob = null;
+  var videoEl = document.getElementById('desktopCameraVideo');
+  var previewImg = document.getElementById('desktopCameraPreviewImg');
+  var selfieGuide = document.getElementById('desktopCameraSelfieGuide');
+  var docGuide = document.getElementById('desktopCameraDocGuide');
+  var liveControls = document.getElementById('desktopCameraLiveControls');
+  var reviewControls = document.getElementById('desktopCameraReviewControls');
+  var isSelfie = (window._desktopCameraMode === 'selfie');
+
+  if (previewImg) {
+    previewImg.style.display = 'none';
+    previewImg.src = '';
+  }
+  if (videoEl) videoEl.style.display = 'block';
+  if (selfieGuide) selfieGuide.style.display = isSelfie ? 'flex' : 'none';
+  if (docGuide) docGuide.style.display = isSelfie ? 'none' : 'flex';
+
+  if (liveControls) liveControls.style.display = 'flex';
+  if (reviewControls) reviewControls.style.display = 'none';
+}
+
+function confirmDesktopCamera() {
+  if (!window._desktopCameraCurrentBlob) {
+    showToast('Walang nakitang larawan.', 'warning');
+    return;
+  }
+  var blob = window._desktopCameraCurrentBlob;
+  var isSelfie = (window._desktopCameraMode === 'selfie');
+  var filename = isSelfie
+    ? 'selfie_avatar_' + Date.now() + '.jpg'
+    : (window._desktopCameraSide + '_license_' + Date.now() + '.jpg');
+
+  var file = new File([blob], filename, { type: 'image/jpeg' });
+  var cb = window._desktopCameraCallback;
+
+  closeDesktopCameraModal();
+
+  if (typeof cb === 'function') {
+    cb(file, blob);
+  }
+}
+
+function closeDesktopCameraModal() {
+  if (window._desktopCameraStream) {
+    try {
+      window._desktopCameraStream.getTracks().forEach(function(t) { t.stop(); });
+    } catch(e) {}
+    window._desktopCameraStream = null;
+  }
+  var videoEl = document.getElementById('desktopCameraVideo');
+  if (videoEl) videoEl.srcObject = null;
+
+  var modal = document.getElementById('desktopCameraModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function desktopCameraFallbackToFile() {
+  closeDesktopCameraModal();
+  if (window._desktopCameraMode === 'selfie') {
+    var fi = document.getElementById('profilePicFileInput');
+    if (fi) fi.click();
+  } else {
+    var side = window._desktopCameraSide || 'front';
+    var camInputId = side === 'back' ? 'licenseCameraInputBack' : 'licenseCameraInputFront';
+    var el = document.getElementById(camInputId);
+    if (el) el.click();
+  }
+}
+
+window.addEventListener('beforeunload', function() {
+  if (window._desktopCameraStream) {
+    try {
+      window._desktopCameraStream.getTracks().forEach(function(t) { t.stop(); });
+    } catch(e) {}
+  }
+});
+
 function captureLicenseWithCamera(side) {
   var Camera = getCamera();
   if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
@@ -9496,6 +9801,17 @@ function captureLicenseWithCamera(side) {
       var camInputId = side === 'back' ? 'licenseCameraInputBack' : 'licenseCameraInputFront';
       var el = document.getElementById(camInputId);
       if (el) el.click();
+    });
+  } else if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+    // DESKTOP CAMERA DRIVER LICENSE SCAN
+    openDesktopCameraModal({
+      mode: 'license',
+      side: side,
+      title: "Scan Driver's License (" + (side === 'back' ? 'Back' : 'Front') + ")",
+      onCapture: function(file) {
+        var fakeEvent = { target: { files: [file] } };
+        handleLicenseFileSelect(fakeEvent, side);
+      }
     });
   } else {
     var camInputId = side === 'back' ? 'licenseCameraInputBack' : 'licenseCameraInputFront';
@@ -10304,6 +10620,34 @@ function pickProfilePicture() {
       var fi = document.getElementById('profilePicFileInput');
       if (fi) {
         fi.click();
+      }
+    });
+  } else if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+    // DESKTOP CAMERA / WEBCAM LIVE SELFIE!
+    openDesktopCameraModal({
+      mode: 'selfie',
+      title: 'Live Camera Selfie',
+      onCapture: function(file) {
+        var compressPromise = typeof compressImage === 'function'
+          ? compressImage(file, 800, 800, 0.7)
+          : Promise.resolve(file);
+        compressPromise.then(function(compressed) {
+          profilePicBlob = compressed;
+          var preview = document.getElementById('profilePicPreview');
+          if (preview) {
+            preview.src = URL.createObjectURL(compressed);
+            preview.style.display = 'block';
+          }
+          showToast('Live selfie captured! Click Save Changes to update.', 'success');
+        }).catch(function() {
+          profilePicBlob = file;
+          var preview = document.getElementById('profilePicPreview');
+          if (preview) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+          }
+          showToast('Live selfie captured! Click Save Changes to update.', 'success');
+        });
       }
     });
   } else {
