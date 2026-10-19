@@ -681,6 +681,13 @@ def cron_tick():
     except Exception as e:
         results['extension_deadlines'] = f'error: {e}'
 
+    # 5. Background GPS fleet breadcrumbs sync
+    try:
+        gps_res = sync_all_fleet_gps()
+        results['gps_sync'] = 'ok'
+    except Exception as e:
+        results['gps_sync'] = f'error: {e}'
+
     from datetime import datetime, timezone
     return jsonify({
         'status': 'success',
@@ -5334,32 +5341,51 @@ def update_vehicle_location(vehicle_id):
 
     try:
         cur = get_cursor()
-        # 1. Update current vehicle record
-        cur.execute("""
+        # 1. Update current vehicle record and any sibling records with matching plate_number
+        cur.execute("SELECT plate_number FROM vehicles WHERE id = %s", (vehicle_id,))
+        p_row = cur.fetchone()
+        plate_num = p_row['plate_number'] if p_row else None
+        target_ids = [vehicle_id]
+        if plate_num:
+            cur.execute("SELECT id FROM vehicles WHERE plate_number = %s", (plate_num,))
+            s_rows = cur.fetchall()
+            if s_rows:
+                target_ids = [r['id'] for r in s_rows]
+
+        placeholders = ','.join(['%s'] * len(target_ids))
+        cur.execute(f"""
             UPDATE vehicles 
             SET latitude = %s,
                 longitude = %s,
                 last_gps_update = CURRENT_TIMESTAMP,
                 last_address = COALESCE(%s, last_address),
                 gps_status = %s
-            WHERE id = %s
-        """, (lat, lng, address, gps_status, vehicle_id))
+            WHERE id IN ({placeholders})
+        """, (lat, lng, address, gps_status, *target_ids))
 
-        # 2. Check last recorded point to avoid spamming identical locations within 30 seconds
-        cur.execute("""
+        # 2. Check last recorded point across all matching vehicle records
+        cur.execute(f"""
             SELECT latitude, longitude, created_at
             FROM vehicle_gps_logs
-            WHERE vehicle_id = %s
+            WHERE vehicle_id IN ({placeholders})
             ORDER BY id DESC LIMIT 1
-        """, (vehicle_id,))
+        """, tuple(target_ids))
         last_log = cur.fetchone()
 
         should_log = True
         if last_log:
             lat_diff = abs(float(last_log['latitude']) - float(lat))
             lng_diff = abs(float(last_log['longitude']) - float(lng))
-            # If coordinates barely moved (< 10 meters ~ 0.0001 deg), don't insert duplicate log
-            if lat_diff < 0.0001 and lng_diff < 0.0001:
+            elapsed_sec = 999999
+            if last_log.get('created_at'):
+                last_dt = last_log['created_at']
+                try:
+                    if hasattr(last_dt, 'timestamp'):
+                        elapsed_sec = abs(datetime.now(timezone.utc).timestamp() - last_dt.timestamp())
+                except Exception:
+                    pass
+            # If coordinates barely moved (< 10 meters ~ 0.0001 deg) and logged within last 15 minutes, skip redundant log
+            if lat_diff < 0.0001 and lng_diff < 0.0001 and elapsed_sec < 900:
                 should_log = False
 
         if should_log:
@@ -5489,12 +5515,24 @@ def get_vehicle_gps_history(vehicle_id):
 
     try:
         cur = get_cursor()
-        query = """
+
+        # Check if vehicle has siblings by plate_number (e.g. duplicate vehicle records)
+        cur.execute("SELECT plate_number FROM vehicles WHERE id = %s", (vehicle_id,))
+        p_row = cur.fetchone()
+        target_ids = [vehicle_id]
+        if p_row and p_row.get('plate_number'):
+            cur.execute("SELECT id FROM vehicles WHERE plate_number = %s", (p_row['plate_number'],))
+            s_rows = cur.fetchall()
+            if s_rows:
+                target_ids = [r['id'] for r in s_rows]
+
+        placeholders = ','.join(['%s'] * len(target_ids))
+        query = f"""
             SELECT id, vehicle_id, latitude, longitude, speed, address, gps_status, created_at
             FROM vehicle_gps_logs
-            WHERE vehicle_id = %s
+            WHERE vehicle_id IN ({placeholders})
         """
-        params = [vehicle_id]
+        params = list(target_ids)
 
         if start_date:
             query += " AND created_at >= %s"
@@ -5525,6 +5563,119 @@ def get_vehicle_gps_history(vehicle_id):
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/gps/sync-all', methods=['GET', 'POST'])
+@app.route('/api/admin/gps/sync-all', methods=['GET', 'POST'])
+def sync_all_fleet_gps():
+    """
+    Server-side fleet GPS telemetry harvester. Queries Blynk IoT cloud directly
+    for active units (pins v1-v4 for Montero, pins v5-v8 for Vios DBJ 9483),
+    updates current coordinates, and logs breadcrumbs into vehicle_gps_logs.
+    """
+    import urllib.request
+    import json
+    from datetime import datetime, timezone
+    token = '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz'
+    server = 'sgp1.blynk.cloud'
+    url = f"https://{server}/external/api/get?token={token}&v1&v2&v3&v4&v5&v6&v7&v8"
+    
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as res:
+            data = json.loads(res.read().decode('utf-8'))
+    except Exception as e:
+        return jsonify({"error": f"Blynk fetch failed: {e}"}), 502
+
+    results = {}
+    try:
+        cur = get_cursor()
+
+        # Unit 1: Montero (DUY 6527 -> veh 12)
+        raw_lat1 = str(data.get('v1', '')).strip()
+        raw_lng1 = str(data.get('v2', '')).strip()
+        if raw_lat1 and raw_lat1 != '0' and 'ENCRYPTED' not in raw_lat1:
+            try:
+                lat1 = float(raw_lat1)
+                lng1 = float(raw_lng1)
+                if -90 <= lat1 <= 90 and -180 <= lng1 <= 180 and (lat1 != 0 or lng1 != 0):
+                    cur.execute("SELECT id FROM vehicles WHERE plate_number ILIKE '%DUY%' OR id = 12 LIMIT 1")
+                    v1_row = cur.fetchone()
+                    v1_id = v1_row['id'] if v1_row else 12
+                    
+                    cur.execute("""
+                        UPDATE vehicles 
+                        SET latitude = %s, longitude = %s, last_gps_update = CURRENT_TIMESTAMP, gps_status = 'online'
+                        WHERE id = %s
+                    """, (lat1, lng1, v1_id))
+
+                    cur.execute("SELECT latitude, longitude, created_at FROM vehicle_gps_logs WHERE vehicle_id = %s ORDER BY id DESC LIMIT 1", (v1_id,))
+                    last_l1 = cur.fetchone()
+                    should_log1 = True
+                    if last_l1:
+                        lat_diff = abs(float(last_l1['latitude']) - lat1)
+                        lng_diff = abs(float(last_l1['longitude']) - lng1)
+                        elapsed = 999999
+                        if last_l1.get('created_at') and hasattr(last_l1['created_at'], 'timestamp'):
+                            elapsed = abs(datetime.now(timezone.utc).timestamp() - last_l1['created_at'].timestamp())
+                        if lat_diff < 0.0001 and lng_diff < 0.0001 and elapsed < 900:
+                            should_log1 = False
+                    if should_log1:
+                        cur.execute("""
+                            INSERT INTO vehicle_gps_logs (vehicle_id, latitude, longitude, speed, address, gps_status, created_at)
+                            VALUES (%s, %s, %s, 0, 'Auto-Recorded Point', 'online', NOW())
+                        """, (v1_id, lat1, lng1))
+                    results['unit_1'] = {'lat': lat1, 'lng': lng1, 'logged': should_log1}
+            except Exception as e1:
+                results['unit_1_err'] = str(e1)
+
+        # Unit 2: Vios (DBJ 9483 -> veh 18 & 35)
+        raw_lat2 = str(data.get('v5', '')).strip()
+        raw_lng2 = str(data.get('v6', '')).strip()
+        if raw_lat2 and raw_lat2 != '0' and 'ENCRYPTED' not in raw_lat2:
+            try:
+                lat2 = float(raw_lat2)
+                lng2 = float(raw_lng2)
+                if -90 <= lat2 <= 90 and -180 <= lng2 <= 180 and (lat2 != 0 or lng2 != 0):
+                    cur.execute("SELECT id FROM vehicles WHERE plate_number ILIKE '%DBJ%'")
+                    v2_rows = cur.fetchall()
+                    v2_ids = [r['id'] for r in v2_rows] or [18]
+                    
+                    for v_id in v2_ids:
+                        cur.execute("""
+                            UPDATE vehicles 
+                            SET latitude = %s, longitude = %s, last_gps_update = CURRENT_TIMESTAMP, gps_status = 'online'
+                            WHERE id = %s
+                        """, (lat2, lng2, v_id))
+
+                    placeholders2 = ','.join(['%s']*len(v2_ids))
+                    cur.execute(f"SELECT latitude, longitude, created_at FROM vehicle_gps_logs WHERE vehicle_id IN ({placeholders2}) ORDER BY id DESC LIMIT 1", tuple(v2_ids))
+                    last_l2 = cur.fetchone()
+                    should_log2 = True
+                    if last_l2:
+                        lat_diff = abs(float(last_l2['latitude']) - lat2)
+                        lng_diff = abs(float(last_l2['longitude']) - lng2)
+                        elapsed = 999999
+                        if last_l2.get('created_at') and hasattr(last_l2['created_at'], 'timestamp'):
+                            elapsed = abs(datetime.now(timezone.utc).timestamp() - last_l2['created_at'].timestamp())
+                        if lat_diff < 0.0001 and lng_diff < 0.0001 and elapsed < 900:
+                            should_log2 = False
+                    if should_log2:
+                        cur.execute("""
+                            INSERT INTO vehicle_gps_logs (vehicle_id, latitude, longitude, speed, address, gps_status, created_at)
+                            VALUES (%s, %s, %s, 0, 'Auto-Recorded Point', 'online', NOW())
+                        """, (18, lat2, lng2))
+                    results['unit_2'] = {'lat': lat2, 'lng': lng2, 'logged': should_log2}
+            except Exception as e2:
+                results['unit_2_err'] = str(e2)
+
+        commit_db()
+        return jsonify({"success": True, "sync": results}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 
 @app.route('/admin/vehicles/<int:vehicle_id>/gps-config', methods=['GET'])

@@ -24046,6 +24046,9 @@ function toggleNewsletterModal(show = true) {
         },
 
         async refresh() {
+            if (!this.fleetVehicles || this.fleetVehicles.length === 0) {
+                await this.loadFleetVehicles();
+            }
             const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
             if (!currentVeh) return;
 
@@ -24067,16 +24070,10 @@ function toggleNewsletterModal(show = true) {
                 currentVeh.gps_server = 'sgp1.blynk.cloud';
             }
 
-            const token = currentVeh?.gps_device_token;
+            const token = currentVeh?.gps_device_token || '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz';
             const server = currentVeh?.gps_server || 'sgp1.blynk.cloud';
 
             this._updateHeaderDeviceLabel();
-
-            if (!token) {
-                this._showNoDevice();
-                this.loadLastKnownLocationFromDB();
-                return;
-            }
 
             const latPin = isCar2 ? 'v5' : 'v1';
             const lngPin = isCar2 ? 'v6' : 'v2';
@@ -24096,6 +24093,53 @@ function toggleNewsletterModal(show = true) {
                 const data = await res.json();
                 const now = Date.now();
 
+                // 1. Concurrently record Car 1 (Unit 1 / Montero DUY 6527 -> vehicle 12)
+                const rawLat1 = String(data.v1 || '');
+                const rawLng1 = String(data.v2 || '');
+                const isOnline1 = data.v4 !== undefined || (rawLat1 !== '' && rawLat1 !== '0');
+                if (rawLat1 && rawLat1 !== '0' && !rawLat1.includes('ENCRYPTED')) {
+                    const lat1 = parseFloat(rawLat1);
+                    const lng1 = parseFloat(rawLng1);
+                    if (!isNaN(lat1) && !isNaN(lng1) && lat1 !== 0 && lng1 !== 0) {
+                        const car1 = this.fleetVehicles.find(v => v.id === 12 || (v.plate_number && v.plate_number.toUpperCase().includes('DUY')));
+                        const c1Id = car1 ? car1.id : 12;
+                        fetch(`${API_BASE}/api/vehicles/${c1Id}/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                latitude: lat1,
+                                longitude: lng1,
+                                speed: 0,
+                                gps_status: isOnline1 ? 'online' : 'offline'
+                            })
+                        }).catch(() => {});
+                    }
+                }
+
+                // 2. Concurrently record Car 2 (Unit 2 / Vios DBJ 9483 -> vehicle 18 & 35)
+                const rawLat2 = String(data.v5 || '');
+                const rawLng2 = String(data.v6 || '');
+                const isOnline2 = data.v8 !== undefined || (rawLat2 !== '' && rawLat2 !== '0');
+                if (rawLat2 && rawLat2 !== '0' && !rawLat2.includes('ENCRYPTED')) {
+                    const lat2 = parseFloat(rawLat2);
+                    const lng2 = parseFloat(rawLng2);
+                    if (!isNaN(lat2) && !isNaN(lng2) && lat2 !== 0 && lng2 !== 0) {
+                        const car2 = this.fleetVehicles.find(v => v.id === 18 || v.id === 35 || (v.plate_number && v.plate_number.toUpperCase().includes('DBJ')));
+                        const c2Id = car2 ? car2.id : 18;
+                        fetch(`${API_BASE}/api/vehicles/${c2Id}/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                latitude: lat2,
+                                longitude: lng2,
+                                speed: 0,
+                                gps_status: isOnline2 ? 'online' : 'offline'
+                            })
+                        }).catch(() => {});
+                    }
+                }
+
+                // 3. Update UI telemetry for the SELECTED vehicle
                 if (data[pingPin] !== undefined) this.lastActive = now;
                 const isOnline = (now - this.lastActive) < 30000;
 
@@ -24124,23 +24168,7 @@ function toggleNewsletterModal(show = true) {
                             if (addr) this.currentAddress = addr;
                         }
 
-                        // Auto-persist to database for selected vehicle
                         const vehId = this.selectedVehicleId || currentVeh.id;
-                        if (vehId) {
-                            try {
-                                await fetch(`${API_BASE}/api/vehicles/${vehId}/location`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        latitude: lat,
-                                        longitude: lng,
-                                        address: this.currentAddress || undefined,
-                                        speed: 0,
-                                        gps_status: isOnline ? 'online' : 'offline'
-                                    })
-                                });
-                            } catch (e) {}
-                        }
 
                         // Update UI Card
                         this._updateCardWithData({
@@ -24205,9 +24233,20 @@ function toggleNewsletterModal(show = true) {
             const modal = document.getElementById('gpsTripHistoryModal');
             if (modal) modal.style.display = 'flex';
 
+            const veh = this.fleetVehicles.find(v => v.id === vehId);
+            const sub = document.getElementById('gpsHistSubtitle');
+            if (sub && veh) {
+                sub.textContent = `${veh.name || 'Vehicle'} (${veh.plate_number || ''}) • Recent breadcrumb trail logs`;
+            }
+
             const container = document.getElementById('gpsHistoryListContainer');
             if (!container) return;
             container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading trail logs...</div>';
+
+            // Auto-refresh freshest GPS telemetry before loading history
+            try {
+                await this.refresh();
+            } catch (e) {}
 
             try {
                 const res = await fetch(`${API_BASE}/api/vehicles/${vehId}/gps-history?limit=50`);
@@ -24474,9 +24513,9 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
-        startLive() {
-            this.init();
-            this.refresh();
+        async startLive() {
+            await this.init();
+            await this.refresh();
             if (this.timer) clearInterval(this.timer);
             this.timer = setInterval(() => this.refresh(), 10000);
         },
