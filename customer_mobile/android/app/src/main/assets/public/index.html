@@ -1450,7 +1450,7 @@
           #profileSummaryCard { order: 1 !important; margin-bottom: 0 !important; }
           #profileEditCard    { order: 2 !important; margin-bottom: 0 !important; }
           #profileLicenseCard { order: 3 !important; margin-bottom: 0 !important; }
-          #profileAccountCard { order: 4 !important; margin-bottom: 0 !important; }
+          #profileAccountCard { order: 99 !important; margin-bottom: 0 !important; }
 
           /* Vehicle Detail Mobile Flow */
           .veh-detail-desktop {
@@ -2182,11 +2182,12 @@
             }
             .profile-desktop-col-left,
             .profile-desktop-col-right {
-              display: flex !important;
-              flex-direction: column !important;
-              gap: 20px !important;
-              width: 100% !important;
+              display: contents !important;
             }
+            #profileSummaryCard { order: 1 !important; margin-bottom: 0 !important; }
+            #profileEditCard    { order: 2 !important; margin-bottom: 0 !important; }
+            #profileLicenseCard { order: 3 !important; margin-bottom: 0 !important; }
+            #profileAccountCard { order: 99 !important; margin-bottom: 0 !important; }
           }
 
           #page-profile #profileSummaryCard,
@@ -6372,7 +6373,7 @@
             <span>All rights reserved</span>
           </div>
           <div class="more-version-tag">
-            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.5
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.6
           </div>
         </div>
       </div>
