@@ -10,6 +10,10 @@ files_to_sync = [
     ('frontend/js/app.js', [
         'customer_mobile/www/js/app.js',
         'customer_mobile/android/app/src/main/assets/public/js/app.js'
+    ]),
+    ('admin_app/index.html', [
+        'admin_mobile/www/index.html',
+        'admin_mobile/android/app/src/main/assets/public/index.html'
     ])
 ]
 

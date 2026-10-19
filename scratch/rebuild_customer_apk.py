@@ -85,16 +85,16 @@ for t in targets:
 with zipfile.ZipFile(cust_apk_src, 'r') as z:
     idx = z.read('assets/public/index.html').decode('utf-8', errors='ignore')
     app_js = z.read('assets/public/js/app.js').decode('utf-8', errors='ignore')
-    has_v10 = 'v2026.10.19.10' in idx
+    has_en_cam = 'Take Selfie' in idx and 'Face Here' in idx
     has_rate_box_css = 'vd-rate-action-box' in idx
     has_desktop_cam_html = 'desktopCameraModal' in idx
     has_desktop_cam_js = 'openDesktopCameraModal' in app_js
     print(f"\n[VERIFICATION]")
-    print(f"  v2026.10.19.10 in index.html: {has_v10}")
+    print(f"  English camera in index.html: {has_en_cam}")
     print(f"  vd-rate-action-box CSS in index.html: {has_rate_box_css}")
     print(f"  desktopCameraModal in index.html: {has_desktop_cam_html}")
     print(f"  openDesktopCameraModal in app.js: {has_desktop_cam_js}")
-    if not (has_v10 and has_rate_box_css and has_desktop_cam_html and has_desktop_cam_js):
+    if not (has_en_cam and has_rate_box_css and has_desktop_cam_html and has_desktop_cam_js):
         raise ValueError("Verification failed: APK missing new fixes!")
 
 print("\n" + "=" * 60)

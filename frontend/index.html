@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.19.3">
+    <meta name="build-version" content="2026.10.19.11">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -7249,7 +7249,7 @@
 
     <!-- Instructions & Device switcher -->
     <div style="padding:10px 20px 8px;font-size:0.78rem;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1322;">
-      <span id="desktopCameraHintText"><i class="fas fa-info-circle" style="color:#00B14F;margin-right:4px;"></i> Iposisyon ang mukha sa loob ng oval guide. Siguraduhing maliwanag.</span>
+      <span id="desktopCameraHintText"><i class="fas fa-info-circle" style="color:#00B14F;margin-right:6px;"></i> Position your face inside the oval guide. Ensure good lighting.</span>
       <select id="desktopCameraDeviceSelect" style="display:none;max-width:160px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:0.7rem;outline:none;" onchange="onDesktopCameraDeviceChange(this.value)"></select>
     </div>
 
@@ -7261,15 +7261,15 @@
       
       <!-- Selfie Oval Guide -->
       <div id="desktopCameraSelfieGuide" class="desktop-cam-guide-selfie">
-        <span style="background:rgba(0,177,79,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
-          <i class="fas fa-user"></i> Mukha Dito
+        <span style="background:rgba(0,177,79,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);white-space:nowrap;">
+          <i class="fas fa-user"></i> Face Here
         </span>
       </div>
 
       <!-- Document/License Guide -->
       <div id="desktopCameraDocGuide" class="desktop-cam-guide-doc">
-        <span style="background:rgba(59,130,246,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">
-          <i class="fas fa-id-card"></i> Iposisyon ang Lisensya
+        <span style="background:rgba(59,130,246,0.9);color:#fff;font-size:0.65rem;font-weight:800;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);white-space:nowrap;">
+          <i class="fas fa-id-card"></i> Position License Here
         </span>
       </div>
 
@@ -7281,27 +7281,27 @@
     <div class="desktop-cam-footer">
       <!-- Live Controls (Before Capture) -->
       <div id="desktopCameraLiveControls" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
-        <button type="button" class="btn-secondary" onclick="desktopCameraFallbackToFile()" style="padding:9px 14px;border-radius:20px;font-size:0.78rem;background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-          <i class="fas fa-folder-open"></i> <span>Pumili ng File</span>
+        <button type="button" class="btn-secondary" onclick="desktopCameraFallbackToFile()" style="padding:9px 14px;border-radius:20px;font-size:0.78rem;background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
+          <i class="fas fa-folder-open"></i> <span>Upload File</span>
         </button>
 
-        <button type="button" id="desktopCameraSnapBtn" onclick="snapDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);transition:transform 0.15s,box-shadow 0.15s;">
-          <i class="fas fa-camera"></i> <span id="desktopCameraSnapBtnText">Kumuha ng Selfie</span>
+        <button type="button" id="desktopCameraSnapBtn" onclick="snapDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 24px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);transition:transform 0.15s,box-shadow 0.15s;white-space:nowrap !important;min-width:140px;">
+          <i class="fas fa-camera"></i> <span id="desktopCameraSnapBtnText">Take Selfie</span>
         </button>
 
-        <button type="button" onclick="closeDesktopCameraModal()" style="background:transparent;border:none;color:#94a3b8;font-size:0.82rem;font-weight:600;cursor:pointer;padding:8px 12px;">
-          Kanselahin
+        <button type="button" onclick="closeDesktopCameraModal()" style="background:transparent;border:none;color:#94a3b8;font-size:0.82rem;font-weight:600;cursor:pointer;padding:8px 12px;white-space:nowrap;">
+          Cancel
         </button>
       </div>
 
       <!-- Review Controls (After Capture) -->
       <div id="desktopCameraReviewControls" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:10px;">
-        <button type="button" onclick="retakeDesktopCamera()" style="padding:10px 18px;border-radius:24px;font-size:0.84rem;background:rgba(255,255,255,0.08);color:#f1f5f9;border:1px solid rgba(255,255,255,0.15);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-          <i class="fas fa-redo"></i> <span>Kumuha Muli</span>
+        <button type="button" onclick="retakeDesktopCamera()" style="padding:10px 18px;border-radius:24px;font-size:0.84rem;background:rgba(255,255,255,0.08);color:#f1f5f9;border:1px solid rgba(255,255,255,0.15);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
+          <i class="fas fa-redo"></i> <span>Retake Photo</span>
         </button>
 
-        <button type="button" onclick="confirmDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 26px;border-radius:30px;font-size:0.9rem;font-weight:800;display:inline-flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);">
-          <i class="fas fa-check"></i> <span>Gamitin ang Larawan</span>
+        <button type="button" onclick="confirmDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 26px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);white-space:nowrap !important;">
+          <i class="fas fa-check"></i> <span>Use Photo</span>
         </button>
       </div>
     </div>
@@ -7718,6 +7718,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261019_v10_desktop_selfie_fixed"></script>
+<script src="js/app.js?v=20261019_v11_camera_en_receipt_polish"></script>
 </body>
 </html>

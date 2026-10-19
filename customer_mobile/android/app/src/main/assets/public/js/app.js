@@ -9542,11 +9542,11 @@ function openDesktopCameraModal(options) {
   }
   if (hintTextEl) {
     hintTextEl.innerHTML = isSelfie
-      ? '<i class="fas fa-info-circle" style="color:#00B14F;margin-right:4px;"></i> Iposisyon ang mukha sa loob ng oval guide. Siguraduhing maliwanag.'
-      : '<i class="fas fa-info-circle" style="color:#3b82f6;margin-right:4px;"></i> Iposisyon ang lisensya nang tuwid sa loob ng kahon.';
+      ? '<i class="fas fa-info-circle" style="color:#00B14F;margin-right:6px;"></i> Position your face inside the oval guide. Ensure good lighting.'
+      : '<i class="fas fa-info-circle" style="color:#3b82f6;margin-right:6px;"></i> Position your license flat and clearly inside the frame.';
   }
   if (snapBtnText) {
-    snapBtnText.textContent = isSelfie ? 'Kumuha ng Selfie' : 'Kunan ng Litrato';
+    snapBtnText.textContent = isSelfie ? 'Take Selfie' : 'Capture Photo';
   }
 
   if (selfieGuide) selfieGuide.style.display = isSelfie ? 'flex' : 'none';
@@ -9567,7 +9567,7 @@ function openDesktopCameraModal(options) {
 
 function startDesktopCameraStream() {
   if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-    showToast('Hindi suportado ang desktop camera sa browser na ito. Pakipili ang file upload.', 'warning');
+    showToast('Desktop camera is not supported in this browser. Please select file upload.', 'warning');
     desktopCameraFallbackToFile();
     return;
   }
@@ -9607,11 +9607,11 @@ function startDesktopCameraStream() {
         .then(applyStream)
         .catch(function(err2) {
           console.error('Webcam getUserMedia failed:', err2);
-          var msg = 'Hindi mabuksan ang camera: ';
+          var msg = 'Unable to access camera: ';
           if (err2.name === 'NotAllowedError' || err2.name === 'PermissionDeniedError') {
-            msg = 'Na-block ang camera access. Paki-allow ang camera permissions sa browser.';
+            msg = 'Camera access was blocked. Please allow camera permissions in your browser.';
           } else if (err2.name === 'NotFoundError' || err2.name === 'DevicesNotFoundError') {
-            msg = 'Walang nakitang camera sa device na ito.';
+            msg = 'No camera detected on this device.';
           } else {
             msg += (err2.message || 'Error accessing webcam');
           }
@@ -9686,7 +9686,7 @@ function snapDesktopCamera() {
 
   canvasEl.toBlob(function(blob) {
     if (!blob) {
-      showToast('Hindi na-capture ang larawan. Subukan muli.', 'error');
+      showToast('Failed to capture photo. Please try again.', 'error');
       return;
     }
     window._desktopCameraCurrentBlob = blob;
@@ -9728,7 +9728,7 @@ function retakeDesktopCamera() {
 
 function confirmDesktopCamera() {
   if (!window._desktopCameraCurrentBlob) {
-    showToast('Walang nakitang larawan.', 'warning');
+    showToast('No captured photo found.', 'warning');
     return;
   }
   var blob = window._desktopCameraCurrentBlob;
