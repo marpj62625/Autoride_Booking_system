@@ -4518,6 +4518,33 @@
             background: var(--surface-container);
             opacity: 0.92;
         }
+        /* Strictly respect display: none on settings cards */
+        .settings-action-card[style*="display: none"],
+        .settings-action-card[style*="display:none"],
+        .locked-card[style*="display: none"],
+        .locked-card[style*="display:none"],
+        .revenue-restricted[style*="display: none"],
+        .revenue-restricted[style*="display:none"] {
+            display: none !important;
+        }
+        /* Role-based overrides: Super Admin must NEVER see locked permission cards or regular change password */
+        html.role-super .locked-card,
+        body.role-super .locked-card,
+        html.role-super [id^="lockPerm_"],
+        body.role-super [id^="lockPerm_"],
+        html.role-super #adminChangePasswordCard,
+        body.role-super #adminChangePasswordCard {
+            display: none !important;
+        }
+        /* Role-based overrides: Staff must NEVER see Super Admin management cards */
+        html.role-staff #superAdminEditProfileCard,
+        body.role-staff #superAdminEditProfileCard,
+        html.role-staff #superAdminPermissionsCard,
+        body.role-staff #superAdminPermissionsCard,
+        html.role-staff #superAdminProfileEditPill,
+        body.role-staff #superAdminProfileEditPill {
+            display: none !important;
+        }
         .settings-action-icon {
             width: 42px;
             height: 42px;
@@ -12447,8 +12474,12 @@ input:checked + .ctrl-slider:before {
         try {
             const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
             if (!user) return false;
+            if (user.is_super_admin === true || user.is_superadmin === true) return true;
             const r = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
-            return r.includes('super admin') || r.includes('superadmin') || user.role === 'super_admin';
+            if (r.includes('super admin') || r.includes('superadmin') || user.role === 'super_admin') return true;
+            const email = (user.email || '').toLowerCase().trim();
+            if (email === 'admin@autoride.com' || email === 'superadmin@autoride.com') return true;
+            return false;
         } catch(_) { return false; }
     }
     window.isSuperAdmin = isSuperAdmin;
@@ -12489,20 +12520,29 @@ input:checked + .ctrl-slider:before {
         if (archConfig) archConfig.style.display = isSuper ? 'block' : 'none';
 
         const saPermCard = document.getElementById('superAdminPermissionsCard');
-        if (saPermCard) saPermCard.style.display = isSuper ? 'flex' : 'none';
+        if (saPermCard) {
+            if (isSuper) saPermCard.style.setProperty('display', 'flex', 'important');
+            else saPermCard.style.setProperty('display', 'none', 'important');
+        }
 
         // Delegatable controls (granted by Super Admin or requested by staff)
         const hasChatAI = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_chat_ai'));
         const chatCard = document.getElementById('adminChatControlsConfigCard');
         if (chatCard) chatCard.style.display = hasChatAI ? 'block' : 'none';
         const chatLock = document.getElementById('lockPerm_chat_ai');
-        if (chatLock) chatLock.style.display = (!isSuper && !hasChatAI) ? 'flex' : 'none';
+        if (chatLock) {
+            if (isSuper || hasChatAI) chatLock.style.setProperty('display', 'none', 'important');
+            else chatLock.style.setProperty('display', 'flex', 'important');
+        }
 
         const hasBlackouts = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_blackout_dates'));
         const blackoutsCard = document.getElementById('mobileBlackoutsConfig');
         if (blackoutsCard) blackoutsCard.style.display = hasBlackouts ? 'block' : 'none';
         const blackoutsLock = document.getElementById('lockPerm_blackout_dates');
-        if (blackoutsLock) blackoutsLock.style.display = (!isSuper && !hasBlackouts) ? 'flex' : 'none';
+        if (blackoutsLock) {
+            if (isSuper || hasBlackouts) blackoutsLock.style.setProperty('display', 'none', 'important');
+            else blackoutsLock.style.setProperty('display', 'flex', 'important');
+        }
 
         const hasAddons = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_addons'));
         const addonsCard = document.getElementById('mobileAddonsConfig');
@@ -12510,19 +12550,28 @@ input:checked + .ctrl-slider:before {
         const insuranceCard = document.getElementById('mobileInsuranceConfig');
         if (insuranceCard) insuranceCard.style.display = hasAddons ? 'block' : 'none';
         const addonsLock = document.getElementById('lockPerm_addons');
-        if (addonsLock) addonsLock.style.display = (!isSuper && !hasAddons) ? 'flex' : 'none';
+        if (addonsLock) {
+            if (isSuper || hasAddons) addonsLock.style.setProperty('display', 'none', 'important');
+            else addonsLock.style.setProperty('display', 'flex', 'important');
+        }
 
         const hasLocations = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_locations'));
         const locationsCard = document.getElementById('mobileLocationsConfig');
         if (locationsCard) locationsCard.style.display = hasLocations ? 'block' : 'none';
         const locationsLock = document.getElementById('lockPerm_locations');
-        if (locationsLock) locationsLock.style.display = (!isSuper && !hasLocations) ? 'flex' : 'none';
+        if (locationsLock) {
+            if (isSuper || hasLocations) locationsLock.style.setProperty('display', 'none', 'important');
+            else locationsLock.style.setProperty('display', 'flex', 'important');
+        }
 
         const hasSysConfig = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_system_config'));
         const sysConfigCard = document.getElementById('mobileSystemConfig');
         if (sysConfigCard) sysConfigCard.style.display = hasSysConfig ? 'block' : 'none';
         const sysConfigLock = document.getElementById('lockPerm_system_config');
-        if (sysConfigLock) sysConfigLock.style.display = (!isSuper && !hasSysConfig) ? 'flex' : 'none';
+        if (sysConfigLock) {
+            if (isSuper || hasSysConfig) sysConfigLock.style.setProperty('display', 'none', 'important');
+            else sysConfigLock.style.setProperty('display', 'flex', 'important');
+        }
 
         const hasReports = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_reports_view'));
         document.querySelectorAll('[data-tab="reports"]').forEach(el => {
@@ -12530,11 +12579,28 @@ input:checked + .ctrl-slider:before {
         });
 
         const superAdminPill = document.getElementById('superAdminProfileEditPill');
-        if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
+        if (superAdminPill) {
+            if (isSuper) superAdminPill.style.setProperty('display', 'flex', 'important');
+            else superAdminPill.style.setProperty('display', 'none', 'important');
+        }
         const superAdminCard = document.getElementById('superAdminEditProfileCard');
-        if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
+        if (superAdminCard) {
+            if (isSuper) superAdminCard.style.setProperty('display', 'flex', 'important');
+            else superAdminCard.style.setProperty('display', 'none', 'important');
+        }
         const regularPassCard = document.getElementById('adminChangePasswordCard');
-        if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
+        if (regularPassCard) {
+            if (isSuper) regularPassCard.style.setProperty('display', 'none', 'important');
+            else regularPassCard.style.setProperty('display', 'flex', 'important');
+        }
+
+        // Additional safeguard: If Super Admin, strictly ensure all locked preview cards are hidden
+        if (isSuper) {
+            ['lockPerm_system_config', 'lockPerm_chat_ai', 'lockPerm_addons', 'lockPerm_locations', 'lockPerm_blackout_dates'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.setProperty('display', 'none', 'important');
+            });
+        }
     }
     window.applyRolePermissions = applyRolePermissions;
 
@@ -19188,13 +19254,14 @@ function toggleNewsletterModal(show = true) {
 
                     if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
 
-                    const isSuper = (user.role === 'super_admin') || (user.role || '').toLowerCase().includes('super');
+                    const isSuper = typeof isSuperAdmin === 'function' ? isSuperAdmin() : ((user.role === 'super_admin') || (user.role || '').toLowerCase().includes('super'));
+                    if (typeof applyRolePermissions === 'function') applyRolePermissions();
                     const superAdminPill = document.getElementById('superAdminProfileEditPill');
-                    if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
+                    if (superAdminPill) superAdminPill.style.setProperty('display', isSuper ? 'flex' : 'none', 'important');
                     const superAdminCard = document.getElementById('superAdminEditProfileCard');
-                    if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
+                    if (superAdminCard) superAdminCard.style.setProperty('display', isSuper ? 'flex' : 'none', 'important');
                     const regularPassCard = document.getElementById('adminChangePasswordCard');
-                    if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
+                    if (regularPassCard) regularPassCard.style.setProperty('display', isSuper ? 'none' : 'flex', 'important');
 
                     if (typeof Settings !== 'undefined') Settings.fetch();
 

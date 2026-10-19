@@ -613,9 +613,9 @@
         border: 1px solid var(--border) !important;
         border-radius: 14px !important;
         padding: 13px 16px !important;
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         gap: 14px !important;
         cursor: pointer !important;
         transition: all 0.18s ease !important;
@@ -625,6 +625,33 @@
         margin-bottom: 0 !important;
         width: 100% !important;
         box-sizing: border-box !important;
+    }
+    /* Strictly respect display: none on settings cards */
+    .settings-action-card[style*="display: none"],
+    .settings-action-card[style*="display:none"],
+    .locked-card[style*="display: none"],
+    .locked-card[style*="display:none"],
+    .revenue-restricted[style*="display: none"],
+    .revenue-restricted[style*="display:none"] {
+        display: none !important;
+    }
+    /* Role-based overrides: Super Admin must NEVER see locked permission cards or regular change password */
+    html.role-super .locked-card,
+    body.role-super .locked-card,
+    html.role-super [id^="lockPerm_"],
+    body.role-super [id^="lockPerm_"],
+    html.role-super #adminChangePasswordCard,
+    body.role-super #adminChangePasswordCard {
+        display: none !important;
+    }
+    /* Role-based overrides: Staff must NEVER see Super Admin management cards */
+    html.role-staff #superAdminEditProfileCard,
+    body.role-staff #superAdminEditProfileCard,
+    html.role-staff #superAdminPermissionsCard,
+    body.role-staff #superAdminPermissionsCard,
+    html.role-staff #superAdminProfileEditPill,
+    body.role-staff #superAdminProfileEditPill {
+        display: none !important;
     }
     .settings-action-card:hover {
         background: var(--surface) !important;
