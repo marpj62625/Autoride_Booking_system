@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.19.11">
+    <meta name="build-version" content="2026.10.19.12">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -1441,14 +1441,14 @@
           -webkit-backdrop-filter: blur(8px);
         }
         .desktop-cam-card {
-          background: #0f172a !important;
-          color: #f8fafc !important;
-          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          background: #ffffff !important;
+          color: #0f172a !important;
+          border: 1px solid #e2e8f0 !important;
           border-radius: 20px !important;
           width: 100% !important;
           max-width: 520px !important;
           overflow: hidden !important;
-          box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85) !important;
+          box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.35), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
           display: flex !important;
           flex-direction: column !important;
           animation: dCamFadeIn 0.25s ease-out;
@@ -1460,11 +1460,12 @@
           to { opacity: 1; transform: scale(1); }
         }
         .desktop-cam-header {
-          padding: 16px 20px 12px !important;
+          padding: 16px 20px 14px !important;
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          background: #ffffff !important;
+          border-bottom: 1px solid #f1f5f9 !important;
         }
         .desktop-cam-viewport {
           position: relative !important;
@@ -1523,8 +1524,8 @@
         }
         .desktop-cam-footer {
           padding: 14px 20px !important;
-          background: #090d16 !important;
-          border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+          background: #f8fafc !important;
+          border-top: 1px solid #e2e8f0 !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
@@ -7232,25 +7233,25 @@
 </div>
 
 <!-- DESKTOP LIVE CAMERA / WEBCAM MODAL -->
-<div id="desktopCameraModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,0.88);z-index:9999999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="if(event.target===this)closeDesktopCameraModal()">
+<div id="desktopCameraModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(15,23,42,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9999999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;" onclick="if(event.target===this)closeDesktopCameraModal()">
   <div class="desktop-cam-card" onclick="event.stopPropagation()">
     <div class="desktop-cam-header">
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,177,79,0.15);color:#00B14F;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,177,79,0.12);color:#00B14F;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">
           <i class="fas fa-camera"></i>
         </div>
         <div>
-          <h4 id="desktopCameraTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:#fff;">Live Camera Selfie</h4>
-          <span style="font-size:0.72rem;color:#94a3b8;" id="desktopCameraSubTitle">Desktop Webcam Capture</span>
+          <h4 id="desktopCameraTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:#0f172a;">Live Camera Selfie</h4>
+          <span style="font-size:0.75rem;color:#64748b;" id="desktopCameraSubTitle">Desktop Webcam Capture</span>
         </div>
       </div>
-      <button type="button" onclick="closeDesktopCameraModal()" style="background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px;" aria-label="Close">&times;</button>
+      <button type="button" onclick="closeDesktopCameraModal()" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;font-size:1.1rem;cursor:pointer;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:10px;transition:all 0.2s;" aria-label="Close" onmouseover="this.style.background='#e2e8f0';this.style.color='#0f172a';" onmouseout="this.style.background='#f1f5f9';this.style.color='#64748b';">&times;</button>
     </div>
 
     <!-- Instructions & Device switcher -->
-    <div style="padding:10px 20px 8px;font-size:0.78rem;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1322;">
+    <div style="padding:10px 20px 8px;font-size:0.8rem;color:#475569;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
       <span id="desktopCameraHintText"><i class="fas fa-info-circle" style="color:#00B14F;margin-right:6px;"></i> Position your face inside the oval guide. Ensure good lighting.</span>
-      <select id="desktopCameraDeviceSelect" style="display:none;max-width:160px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:6px;padding:3px 6px;font-size:0.7rem;outline:none;" onchange="onDesktopCameraDeviceChange(this.value)"></select>
+      <select id="desktopCameraDeviceSelect" style="display:none;max-width:160px;background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;padding:3px 6px;font-size:0.75rem;outline:none;" onchange="onDesktopCameraDeviceChange(this.value)"></select>
     </div>
 
     <!-- Viewport -->
@@ -7281,26 +7282,26 @@
     <div class="desktop-cam-footer">
       <!-- Live Controls (Before Capture) -->
       <div id="desktopCameraLiveControls" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
-        <button type="button" class="btn-secondary" onclick="desktopCameraFallbackToFile()" style="padding:9px 14px;border-radius:20px;font-size:0.78rem;background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.12);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
-          <i class="fas fa-folder-open"></i> <span>Upload File</span>
+        <button type="button" class="btn-secondary" onclick="desktopCameraFallbackToFile()" style="padding:9px 16px;border-radius:20px;font-size:0.82rem;font-weight:600;background:#ffffff;color:#334155;border:1px solid #cbd5e1;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <i class="fas fa-folder-open" style="color:#00B14F;"></i> <span>Upload File</span>
         </button>
 
-        <button type="button" id="desktopCameraSnapBtn" onclick="snapDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 24px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);transition:transform 0.15s,box-shadow 0.15s;white-space:nowrap !important;min-width:140px;">
+        <button type="button" id="desktopCameraSnapBtn" onclick="snapDesktopCamera()" style="background:#00B14F;color:#ffffff;border:none;padding:11px 24px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.35);transition:transform 0.15s,box-shadow 0.15s;white-space:nowrap !important;min-width:140px;">
           <i class="fas fa-camera"></i> <span id="desktopCameraSnapBtnText">Take Selfie</span>
         </button>
 
-        <button type="button" onclick="closeDesktopCameraModal()" style="background:transparent;border:none;color:#94a3b8;font-size:0.82rem;font-weight:600;cursor:pointer;padding:8px 12px;white-space:nowrap;">
+        <button type="button" onclick="closeDesktopCameraModal()" style="background:transparent;border:none;color:#64748b;font-size:0.84rem;font-weight:600;cursor:pointer;padding:8px 12px;white-space:nowrap;">
           Cancel
         </button>
       </div>
 
       <!-- Review Controls (After Capture) -->
       <div id="desktopCameraReviewControls" style="display:none;align-items:center;justify-content:space-between;width:100%;gap:10px;">
-        <button type="button" onclick="retakeDesktopCamera()" style="padding:10px 18px;border-radius:24px;font-size:0.84rem;background:rgba(255,255,255,0.08);color:#f1f5f9;border:1px solid rgba(255,255,255,0.15);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;">
+        <button type="button" onclick="retakeDesktopCamera()" style="padding:10px 18px;border-radius:24px;font-size:0.84rem;font-weight:600;background:#ffffff;color:#334155;border:1px solid #cbd5e1;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
           <i class="fas fa-redo"></i> <span>Retake Photo</span>
         </button>
 
-        <button type="button" onclick="confirmDesktopCamera()" style="background:#00B14F;color:#fff;border:none;padding:11px 26px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(0,177,79,0.35);white-space:nowrap !important;">
+        <button type="button" onclick="confirmDesktopCamera()" style="background:#00B14F;color:#ffffff;border:none;padding:11px 26px;border-radius:30px;font-size:0.88rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.35);white-space:nowrap !important;">
           <i class="fas fa-check"></i> <span>Use Photo</span>
         </button>
       </div>
@@ -7718,6 +7719,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261019_v11_camera_en_receipt_polish"></script>
+<script src="js/app.js?v=20261019_v12_light_theme_modals"></script>
 </body>
 </html>
