@@ -9561,7 +9561,7 @@ function openDesktopCameraModal(options) {
   }
 
   retakeDesktopCamera();
-  modal.style.display = 'flex';
+  modal.style.setProperty('display', 'flex', 'important');
   startDesktopCameraStream();
 }
 
@@ -9758,7 +9758,7 @@ function closeDesktopCameraModal() {
   if (videoEl) videoEl.srcObject = null;
 
   var modal = document.getElementById('desktopCameraModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.style.setProperty('display', 'none', 'important');
 }
 
 function desktopCameraFallbackToFile() {
