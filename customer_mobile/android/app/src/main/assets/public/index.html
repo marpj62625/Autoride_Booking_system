@@ -2450,6 +2450,11 @@
               grid-template-columns: 1fr !important;
               gap: 20px !important;
             }
+            #page-home .home-hero-left {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 12px !important;
+            }
             #page-home .home-hero-title {
               font-size: 1.65rem !important;
             }
@@ -3263,14 +3268,12 @@
           gap: 16px;
         }
         .home-hero-left {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
+          display: none;
         }
         .home-hero-top {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 12px;
           margin-bottom: 2px;
         }
         .home-hero-logo {
@@ -5618,21 +5621,29 @@
     <div id="homeBanner">
       <div style="position:absolute;top:0;right:0;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%);pointer-events:none;"></div>
       
-      <div class="home-hero-grid" style="position:relative;z-index:1;">
-        <!-- Left: Branding, Greeting, CTA -->
-        <div class="home-hero-left">
-          <div class="home-hero-top">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
-                <img src="Autoride-logo-nobg.png" alt="Autoride" class="home-hero-logo">
-              </a>
-              <div>
-                <p class="home-hero-kicker">GOOD DAY</p>
-                <h2 class="home-hero-title"><span id="homeUserName">there</span> 👋</h2>
-              </div>
-            </div>
+      <!-- Top Header Row: Greeting & Branding on Left, Notification Bell on Top-Right -->
+      <div class="home-banner-top-row" style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;margin-bottom:14px;">
+        <div class="home-hero-top" style="display:flex;align-items:center;gap:12px;">
+          <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" class="home-hero-logo">
+          </a>
+          <div>
+            <p class="home-hero-kicker">GOOD DAY</p>
+            <h2 class="home-hero-title"><span id="homeUserName">there</span> 👋</h2>
           </div>
+        </div>
 
+        <div class="notif-btn-wrap" style="position:relative;display:inline-flex;">
+          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#ffffff;width:38px;height:38px;border-radius:12px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;transition:background 0.2s;" title="Notifications" aria-label="Notifications">
+            <i class="fas fa-bell"></i>
+          </button>
+          <span class="notif-badge hidden" id="notifBadge">0</span>
+        </div>
+      </div>
+
+      <div class="home-hero-grid" style="position:relative;z-index:1;">
+        <!-- Left: Description, CTA -->
+        <div class="home-hero-left">
           <p class="home-hero-desc">Rent self-drive and with-driver vehicles across the Philippines. Transparent rates, flexible bookings, and 24/7 dedicated support.</p>
 
           <div class="home-hero-actions">
@@ -5657,15 +5668,7 @@
                 <div id="homePoints" style="font-size:1.65rem;font-weight:900;color:#ffffff;line-height:1;margin-top:2px;">0</div>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-left:auto;">
-              <div id="loyaltyTierBadge" style="background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:900;letter-spacing:0.5px;white-space:nowrap;">BRONZE</div>
-              <div class="notif-btn-wrap" style="position:relative;display:inline-flex;">
-                <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#ffffff;width:38px;height:38px;border-radius:12px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;transition:background 0.2s;" title="Notifications" aria-label="Notifications">
-                  <i class="fas fa-bell"></i>
-                </button>
-                <span class="notif-badge hidden" id="notifBadge">0</span>
-              </div>
-            </div>
+            <div id="loyaltyTierBadge" style="background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:900;letter-spacing:0.5px;white-space:nowrap;">BRONZE</div>
           </div>
 
           <div style="font-size:0.68rem;display:flex;justify-content:space-between;margin-bottom:6px;">
