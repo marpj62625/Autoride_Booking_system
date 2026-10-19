@@ -4267,6 +4267,336 @@
                 font-size: 0.78rem !important;
                 padding: 8px 6px !important;
             }
+        /* ==========================================================================
+           SETTINGS SECTION (2-COLUMN RESPONSIVE LAYOUT)
+           ========================================================================== */
+        .settings-page-header {
+            margin-bottom: 24px;
+        }
+        .settings-layout-container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+            align-items: start;
+            max-width: 1220px;
+            margin: 0 auto;
+        }
+
+        /* LEFT COLUMN */
+        .settings-col-left {
+            position: sticky;
+            top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .settings-profile-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 22px 24px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .settings-profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #00B14F, #10b981, #059669);
+        }
+        .settings-role-pill {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            background: rgba(0, 177, 79, 0.12);
+            color: var(--primary);
+            border: 1px solid rgba(0, 177, 79, 0.3);
+            margin-bottom: 14px;
+        }
+        .settings-avatar-wrap {
+            position: relative;
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 16px;
+        }
+        .settings-avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00B14F 0%, #00873c 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: 800;
+            box-shadow: 0 10px 25px rgba(0, 177, 79, 0.25);
+            border: 3px solid var(--surface);
+        }
+        .settings-online-status {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 3px solid var(--surface);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        .settings-user-name {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0 0 6px;
+            letter-spacing: -0.3px;
+        }
+        .settings-email-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            background: var(--surface-container);
+            padding: 6px 14px;
+            border-radius: 12px;
+            max-width: 100%;
+            word-break: break-all;
+        }
+        .settings-edit-profile-btn {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            background: var(--primary);
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 177, 79, 0.25);
+            transition: transform 0.15s, opacity 0.15s;
+            margin-top: 16px;
+        }
+        .settings-edit-profile-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+        .settings-profile-meta {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px dashed var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+        }
+        .settings-meta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+        .settings-meta-item .meta-label {
+            color: var(--text-muted);
+        }
+        .settings-meta-item .meta-val {
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+        .meta-dot-green {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .settings-security-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        /* RIGHT COLUMN */
+        .settings-col-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .settings-group {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px 22px;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03);
+        }
+        .settings-group-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .settings-group-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .settings-group-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0 0 2px;
+            letter-spacing: -0.2px;
+        }
+        .settings-group-desc {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .settings-cards-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .settings-action-card {
+            background: var(--surface-container);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            text-decoration: none;
+            position: relative;
+            user-select: none;
+            margin-bottom: 0 !important;
+        }
+        .settings-action-card:hover {
+            background: var(--surface);
+            border-color: rgba(0, 177, 79, 0.4);
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        }
+        .settings-action-card.highlight-emerald {
+            border-color: rgba(0, 177, 79, 0.35);
+            background: rgba(0, 177, 79, 0.03);
+        }
+        .settings-action-card.highlight-border {
+            border-left: 4px solid var(--primary);
+        }
+        .settings-action-card.locked-card {
+            border: 1px dashed var(--border);
+            background: var(--surface-container);
+            opacity: 0.92;
+        }
+        .settings-action-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+        .settings-action-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .settings-action-body h4 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 2px;
+            letter-spacing: -0.1px;
+        }
+        .settings-action-body p {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.35;
+        }
+        .settings-action-tail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .settings-action-badge {
+            background: rgba(0, 177, 79, 0.12);
+            color: var(--primary);
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+        .settings-pill-action {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 8px;
+        }
+        .settings-req-btn {
+            padding: 7px 14px;
+            font-size: 0.75rem;
+            border-radius: 8px;
+            background: rgba(0, 177, 79, 0.12);
+            color: var(--primary);
+            border: 1px solid rgba(0, 177, 79, 0.3);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .settings-layout-container {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+            .settings-col-left {
+                position: static;
+            }
+            .settings-profile-card {
+                padding: 22px 18px;
+            }
+            .settings-group {
+                padding: 16px 14px;
+            }
+            .settings-action-card:hover {
+                transform: none;
+            }
         }
 
 </style>
@@ -5242,427 +5572,420 @@
 
 
 
-    <!-- SETTINGS TAB -->
-
-
-
+        <!-- SETTINGS TAB -->
     <div id="settings" class="tab-content" style="display: none;">
-
-
-
-        <h1 class="page-title">Settings</h1>
-
-
-
-        
-
-
-
-        <!-- Profile Card -->
-
-
-
-        <div class="stat-card" style="padding: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--primary-glow);">
-
-
-
-            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #00B14F, #00B14F); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
-
-
-
-            <h2 id="settingsName" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px;">Super Admin</h2>
-
-
-
-            <p id="settingsRole" style="font-size: 0.75rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">SUPER ADMIN</p>
-
-
-
-            <p id="settingsEmail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">admin@autoride.com</p>
-
-
-
-            <!-- Super Admin Edit Profile Pill (Super Admin Only) -->
-            <div id="superAdminProfileEditPill" style="display: none; justify-content: center; margin-top: 14px;">
-                <button type="button" onclick="openSuperAdminProfileModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 20px; background: rgba(0, 177, 79, 0.12); border: 1px solid rgba(0, 177, 79, 0.4); color: #00B14F; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                    <i class="fas fa-user-edit"></i> Edit Profile (Super Admin)
-                </button>
-            </div>
-
-
-
+        <div class="settings-page-header">
+            <h1 class="page-title" style="margin: 0 0 4px;">Settings &amp; Preferences</h1>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Manage your account, platform configurations, and system controls</p>
         </div>
 
-
-
-
-
-
-
-        <div style="display: grid; gap: 12px;">
-
-
-
-            <!-- Super Admin Edit Profile Option (Super Admin Only) -->
-            <div id="superAdminEditProfileCard" class="stat-card" onclick="openSuperAdminProfileModal()" style="padding: 15px; display: none; align-items: center; gap: 15px; cursor: pointer; border: 1px solid rgba(0, 177, 79, 0.3);">
-                <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-user-shield" style="color: #00B14F;"></i>
-                </div>
-                <div style="flex: 1;">
-                    <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Edit Profile</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Change email address & password</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-
-            <!-- Regular Admin Change Password (Hidden for Super Admin) -->
-            <div id="adminChangePasswordCard" class="stat-card" onclick="openChangePasswordModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-lock" style="color: var(--text-muted);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Change Password</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Secure your account</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-
-
-
-            </div>
-
-
-
-
-
-
-
-            <div class="stat-card" onclick="testAdminPushNotification()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-
-
-
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-
-
-
-                    <i class="fas fa-bell" style="color: var(--text-muted);"></i>
-
-
-
-                </div>
-
-
-
-                <div style="flex: 1;">
-
-
-
-                    <h4 style="font-size: 0.95rem;">Push Notifications</h4>
-
-
-
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Tap to send a test push</p>
-
-
-
-                </div>
-
-
-
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-
-
-
-            </div>
-
-
-
-
-
-
-
-            <div class="stat-card" onclick="toggleDarkMode()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-
-
-
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-
-
-
-                    <i id="adminDarkModeIcon" class="fas fa-moon" style="color: var(--text-muted);"></i>
-
-
-
-                </div>
-
-
-
-                <div style="flex: 1;">
-
-
-
-                    <h4 id="adminDarkModeLabel" style="font-size: 0.95rem;">Dark Mode</h4>
-
-
-
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Switch appearance</p>
-
-
-
-                </div>
-
-
-
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-
-
-
-            </div>
-
-
-
-            
-            <!-- Super Admin Staff Permissions Card -->
-            <div id="superAdminPermissionsCard" class="stat-card" onclick="StaffPermissions.openSuperAdminModal()" style="padding: 15px; display: none; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 15px;">
-                <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-user-shield" style="color: var(--primary);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0;">Staff Permissions &amp; Requests</h4>
-                        <span id="pendingRequestsBadge" style="display: none; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 10px;">0 NEW</span>
-                    </div>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Allow or restrict controls for staff members &amp; review requests</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-
-            <!-- Locked Preview Cards for Staff Admin -->
-            <div id="lockPerm_chat_ai" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-robot" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Live Chat FAQs &amp; AI Controls <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Configure automated chat FAQ chips &amp; AI chatbot</div>
-                    </div>
-                </div>
-                <button type="button" onclick="StaffPermissions.openRequestModal('perm_chat_ai')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    Request Access
-                </button>
-            </div>
-
-            <div id="lockPerm_blackout_dates" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-times" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Blackout Dates <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Block rentals during holidays or maintenance</div>
-                    </div>
-                </div>
-                <button type="button" onclick="StaffPermissions.openRequestModal('perm_blackout_dates')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    Request Access
-                </button>
-            </div>
-
-            <div id="lockPerm_addons" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-plus-circle" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Add-ons Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage rental add-ons and pricing</div>
-                    </div>
-                </div>
-                <button type="button" onclick="StaffPermissions.openRequestModal('perm_addons')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    Request Access
-                </button>
-            </div>
-
-            <div id="lockPerm_locations" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-map-marker-alt" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Locations Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage delivery zones and pick-up branches</div>
-                    </div>
-                </div>
-                <button type="button" onclick="StaffPermissions.openRequestModal('perm_locations')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    Request Access
-                </button>
-            </div>
-
-            <div id="lockPerm_system_config" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-cogs" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">System Configuration <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage rental duration rules &amp; company settings</div>
-                    </div>
-                </div>
-                <button type="button" onclick="StaffPermissions.openRequestModal('perm_system_config')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    Request Access
-                </button>
-            </div>
-
-            <div id="mobileSystemConfig" class="revenue-restricted">
-
-
-
-                <div class="stat-card" onclick="toggleSystemConfigModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-
-
-
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-
-
-
-                        <i class="fas fa-cogs" style="color: var(--text-muted);"></i>
-
-
-
+        <div class="settings-layout-container">
+            <!-- LEFT COLUMN: Profile & Quick Info -->
+            <div class="settings-col-left">
+                <!-- Profile Card -->
+                <div class="settings-profile-card">
+                    <div class="settings-profile-badge-ribbon">
+                        <span id="settingsRole" class="settings-role-pill">SUPER ADMIN</span>
                     </div>
 
-
-
-                    <div style="flex: 1;">
-
-
-
-                        <h4 style="font-size: 0.95rem;">System Configuration</h4>
-
-
-
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage system settings</p>
-
-
-
+                    <div class="settings-avatar-wrap">
+                        <div id="settingsAvatar" class="settings-avatar">S</div>
+                        <span class="settings-online-status" title="Active Session"></span>
                     </div>
 
+                    <h2 id="settingsName" class="settings-user-name">Super Admin</h2>
+                    <div class="settings-email-row">
+                        <i class="far fa-envelope" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                        <span id="settingsEmail" class="settings-user-email">admin@autoride.com</span>
+                    </div>
 
+                    <!-- Super Admin Edit Profile Pill (Super Admin Only) -->
+                    <div id="superAdminProfileEditPill" style="display: none; justify-content: center; width: 100%;">
+                        <button type="button" onclick="openSuperAdminProfileModal()" class="settings-edit-profile-btn">
+                            <i class="fas fa-user-edit"></i> Edit Profile (Super Admin)
+                        </button>
+                    </div>
 
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-
-
-
+                    <!-- Admin Quick Info Stats / Badges -->
+                    <div class="settings-profile-meta">
+                        <div class="settings-meta-item">
+                            <span class="meta-label">Access Level</span>
+                            <span class="meta-val" id="settingsAccessLevel"><i class="fas fa-shield-alt" style="color:var(--primary); margin-right:5px;"></i> Root Access</span>
+                        </div>
+                        <div class="settings-meta-item">
+                            <span class="meta-label">Session Status</span>
+                            <span class="meta-val"><span class="meta-dot-green"></span> Active &amp; Verified</span>
+                        </div>
+                        <div class="settings-meta-item">
+                            <span class="meta-label">Platform Engine</span>
+                            <span class="meta-val"><i class="fas fa-server" style="color:var(--text-muted); margin-right:5px;"></i> Autoride v2026.10</span>
+                        </div>
+                    </div>
                 </div>
 
-
-
-            </div>
-
-            
-            <div id="adminChatControlsConfigCard" class="revenue-restricted">
-                <div class="stat-card" onclick="AdminChatControls.openModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-robot" style="color: var(--primary);"></i>
+                <!-- Quick Security Card -->
+                <div class="settings-security-card">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                        <div style="width:32px; height:32px; border-radius:8px; background:rgba(0,177,79,0.12); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                            <i class="fas fa-shield-virus" style="font-size:0.9rem;"></i>
+                        </div>
+                        <span style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Security &amp; Audit</span>
                     </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Live Chat FAQs &amp; AI Assistant</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Configure chat FAQ chips, auto-replies &amp; AI chatbot</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                    <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.45; margin:0 0 10px;">
+                        All administrator actions, configuration updates, and system operations are actively logged for compliance.
+                    </p>
+                    <a href="#activity" onclick="showTab('activity'); return false;" style="font-size:0.75rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                        View Activity Log <i class="fas fa-arrow-right" style="font-size:0.7rem;"></i>
+                    </a>
                 </div>
             </div>
 
-            <div id="mobileAddonsConfig" class="revenue-restricted">
-                <div class="stat-card" onclick="toggleAddonsModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-plus-circle" style="color: var(--text-muted);"></i>
+            <!-- RIGHT COLUMN: Settings Options Grouped into Categories -->
+            <div class="settings-col-right">
+                <!-- GROUP 1: Account & Security -->
+                <div class="settings-group">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background: rgba(0, 177, 79, 0.1); color: var(--primary);">
+                            <i class="fas fa-user-lock"></i>
+                        </div>
+                        <div>
+                            <h3 class="settings-group-title">Account &amp; Security</h3>
+                            <p class="settings-group-desc">Manage credentials, permissions, and administrative access</p>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">Add-ons Management</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage rental add-ons and pricing</p>
-                    </div>                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-                </div>
-            </div>
 
-            <div id="mobileInsuranceConfig" class="revenue-restricted">
-                <div class="stat-card" onclick="toggleInsuranceModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-shield-alt" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">Insurance Packages</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage rental protection coverage &amp; daily rates</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-                </div>
-            </div>
+                    <div class="settings-cards-stack">
+                        <!-- Super Admin Edit Profile Option (Super Admin Only) -->
+                        <div id="superAdminEditProfileCard" class="settings-action-card stat-card highlight-emerald" onclick="openSuperAdminProfileModal()" style="display: none;">
+                            <div class="settings-action-icon" style="background: rgba(0, 177, 79, 0.12); color: var(--primary);">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div class="settings-action-body">
+                                <h4>Edit Profile</h4>
+                                <p>Change email address &amp; root password</p>
+                            </div>
+                            <div class="settings-action-tail">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
 
-            <div id="mobileLocationsConfig" class="revenue-restricted">
-                <div class="stat-card" onclick="toggleLocationsModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-map-marker-alt" style="color: var(--text-muted);"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">Locations Management</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage delivery zones and pick-up areas</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-                </div>
-            </div>
+                        <!-- Regular Admin Change Password (Hidden for Super Admin) -->
+                        <div id="adminChangePasswordCard" class="settings-action-card stat-card" onclick="openChangePasswordModal()" style="display: flex;">
+                            <div class="settings-action-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="settings-action-body">
+                                <h4>Change Password</h4>
+                                <p>Secure your administrator account</p>
+                            </div>
+                            <div class="settings-action-tail">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
 
-            <div id="mobileBlackoutsConfig" class="revenue-restricted" style="margin-top: 15px;">
-                <div class="stat-card" onclick="toggleBlackoutsModal(true)" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-calendar-times" style="color: var(--text-muted);"></i>
+                        <!-- Super Admin Staff Permissions Card -->
+                        <div id="superAdminPermissionsCard" class="settings-action-card stat-card highlight-border" onclick="StaffPermissions.openSuperAdminModal()" style="display: none;">
+                            <div class="settings-action-icon" style="background: rgba(0, 177, 79, 0.15); color: var(--primary);">
+                                <i class="fas fa-users-cog"></i>
+                            </div>
+                            <div class="settings-action-body">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <h4>Staff Permissions &amp; Requests</h4>
+                                    <span id="pendingRequestsBadge" style="display: none; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 10px;">0 NEW</span>
+                                </div>
+                                <p>Allow or restrict controls for staff members &amp; review requests</p>
+                            </div>
+                            <div class="settings-action-tail">
+                                <span class="settings-action-badge">Manage</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">Blackout Dates</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Block rentals during holidays or maintenance</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
-            </div>
 
-            <div id="mobileSmtpConfig" class="revenue-restricted" style="margin-top: 15px;">
-                <div class="stat-card" onclick="toggleSmtpConfigModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-envelope" style="color: var(--text-muted);"></i>
+                <!-- GROUP 2: Preferences & Interface -->
+                <div class="settings-group">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="fas fa-sliders-h"></i>
+                        </div>
+                        <div>
+                            <h3 class="settings-group-title">Preferences &amp; Notifications</h3>
+                            <p class="settings-group-desc">Customize theme appearance and real-time alert delivery</p>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">System Email Settings</h4>
-                        <p id="smtpStatusLabel" style="font-size: 0.7rem; color: var(--text-muted);">Loading email status...</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-                </div>
-            </div>
 
-            <div id="mobileNewsletterConfig" style="margin-top: 15px;">
-                <div class="stat-card" onclick="toggleNewsletterModal(true)" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 3px solid #3b82f6;">
-                    <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-newspaper" style="color: #3b82f6;"></i>
+                    <div class="settings-cards-stack">
+                        <!-- Push Notifications -->
+                        <div class="settings-action-card stat-card" onclick="testAdminPushNotification()">
+                            <div class="settings-action-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="settings-action-body">
+                                <h4>Push Notifications</h4>
+                                <p>Tap to send a test push</p>
+                            </div>
+                            <div class="settings-action-tail">
+                                <span class="settings-pill-action">Test Alert</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <!-- Dark Mode -->
+                        <div class="settings-action-card stat-card" onclick="toggleDarkMode()">
+                            <div class="settings-action-icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+                                <i id="adminDarkModeIcon" class="fas fa-moon"></i>
+                            </div>
+                            <div class="settings-action-body">
+                                <h4 id="adminDarkModeLabel">Dark Mode</h4>
+                                <p>Switch appearance</p>
+                            </div>
+                            <div class="settings-action-tail">
+                                <span class="settings-pill-action">Switch</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem; font-weight: 700;">Newsletters & Promo Broadcasts</h4>
-                        <p id="nlSettingsSubtitle" style="font-size: 0.7rem; color: var(--text-muted);">Broadcast promos, manage campaigns & subscriber audience</p>
+                </div>
+
+                <!-- GROUP 3: Platform Operations & Fleet Controls -->
+                <div class="settings-group">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div>
+                            <h3 class="settings-group-title">Operations &amp; Rental Controls</h3>
+                            <p class="settings-group-desc">Configure business rules, branch coverage, add-ons, and automation</p>
+                        </div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+
+                    <div class="settings-cards-stack">
+                        <!-- Locked Preview Cards for Staff Admin -->
+                        <div id="lockPerm_system_config" class="settings-action-card stat-card locked-card" style="display: none; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div class="settings-action-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4 style="display: flex; align-items: center; gap: 6px;">System Configuration <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></h4>
+                                    <p>Manage rental duration rules &amp; company settings</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="StaffPermissions.openRequestModal('perm_system_config')" class="settings-req-btn">
+                                Request Access
+                            </button>
+                        </div>
+
+                        <!-- System Configuration -->
+                        <div id="mobileSystemConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleSystemConfigModal()">
+                                <div class="settings-action-icon" style="background: rgba(0, 177, 79, 0.12); color: var(--primary);">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>System Configuration</h4>
+                                    <p>Manage system settings &amp; rental duration rules</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Locked chat preview -->
+                        <div id="lockPerm_chat_ai" class="settings-action-card stat-card locked-card" style="display: none; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div class="settings-action-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4 style="display: flex; align-items: center; gap: 6px;">Live Chat FAQs &amp; AI Controls <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></h4>
+                                    <p>Configure automated chat FAQ chips &amp; AI chatbot</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="StaffPermissions.openRequestModal('perm_chat_ai')" class="settings-req-btn">
+                                Request Access
+                            </button>
+                        </div>
+
+                        <!-- Chat Controls -->
+                        <div id="adminChatControlsConfigCard" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="AdminChatControls.openModal()">
+                                <div class="settings-action-icon" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Live Chat FAQs &amp; AI Assistant</h4>
+                                    <p>Configure chat FAQ chips, auto-replies &amp; AI chatbot</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Locked addons preview -->
+                        <div id="lockPerm_addons" class="settings-action-card stat-card locked-card" style="display: none; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div class="settings-action-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4 style="display: flex; align-items: center; gap: 6px;">Add-ons Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></h4>
+                                    <p>Manage rental add-ons and pricing</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="StaffPermissions.openRequestModal('perm_addons')" class="settings-req-btn">
+                                Request Access
+                            </button>
+                        </div>
+
+                        <!-- Add-ons Management -->
+                        <div id="mobileAddonsConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleAddonsModal()">
+                                <div class="settings-action-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Add-ons Management</h4>
+                                    <p>Manage rental add-ons and pricing</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Insurance Package -->
+                        <div id="mobileInsuranceConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleInsuranceModal()">
+                                <div class="settings-action-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Insurance Packages</h4>
+                                    <p>Manage rental protection coverage &amp; daily rates</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Locked locations preview -->
+                        <div id="lockPerm_locations" class="settings-action-card stat-card locked-card" style="display: none; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div class="settings-action-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4 style="display: flex; align-items: center; gap: 6px;">Locations Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></h4>
+                                    <p>Manage delivery zones and pick-up areas</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="StaffPermissions.openRequestModal('perm_locations')" class="settings-req-btn">
+                                Request Access
+                            </button>
+                        </div>
+
+                        <!-- Locations Management -->
+                        <div id="mobileLocationsConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleLocationsModal()">
+                                <div class="settings-action-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Locations Management</h4>
+                                    <p>Manage delivery zones and pick-up areas</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Locked blackouts preview -->
+                        <div id="lockPerm_blackout_dates" class="settings-action-card stat-card locked-card" style="display: none; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div class="settings-action-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                                    <i class="fas fa-calendar-times"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4 style="display: flex; align-items: center; gap: 6px;">Blackout Dates <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></h4>
+                                    <p>Block rentals during holidays or maintenance</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="StaffPermissions.openRequestModal('perm_blackout_dates')" class="settings-req-btn">
+                                Request Access
+                            </button>
+                        </div>
+
+                        <!-- Blackout Dates -->
+                        <div id="mobileBlackoutsConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleBlackoutsModal(true)">
+                                <div class="settings-action-icon" style="background: rgba(234, 88, 12, 0.12); color: #ea580c;">
+                                    <i class="fas fa-calendar-times"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Blackout Dates</h4>
+                                    <p>Block rentals during holidays or maintenance</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUP 4: Messaging & System Maintenance -->
+                <div class="settings-group">
+                    <div class="settings-group-header">
+                        <div class="settings-group-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div>
+                            <h3 class="settings-group-title">Communications &amp; Maintenance</h3>
+                            <p class="settings-group-desc">Email delivery infrastructure, subscriber broadcasts &amp; database health</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-cards-stack">
+                        <!-- SMTP Email -->
+                        <div id="mobileSmtpConfig" class="revenue-restricted">
+                            <div class="settings-action-card stat-card" onclick="toggleSmtpConfigModal()">
+                                <div class="settings-action-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>System Email Settings</h4>
+                                    <p id="smtpStatusLabel">Loading email status...</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Newsletters -->
+                        <div id="mobileNewsletterConfig">
+                            <div class="settings-action-card stat-card" onclick="toggleNewsletterModal(true)">
+                                <div class="settings-action-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Newsletters &amp; Promo Broadcasts</h4>
+                                    <p id="nlSettingsSubtitle">Broadcast promos, manage campaigns &amp; subscriber audience</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+
+                        <!-- Database Archive -->
+                        <div id="adminMaintenanceConfig">
+                            <div class="settings-action-card stat-card" onclick="toggleArchiveMaintenanceModal(true)">
+                                <div class="settings-action-icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">
+                                    <i class="fas fa-archive"></i>
+                                </div>
+                                <div class="settings-action-body">
+                                    <h4>Database Archive &amp; Maintenance</h4>
+                                    <p>Archive old bookings, clean audit logs &amp; optimize database storage</p>
+                                </div>
+                                <div class="settings-action-tail"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="adminMaintenanceConfig" style="margin-top: 15px;">
-                <div class="stat-card" onclick="toggleArchiveMaintenanceModal(true)" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 3px solid #8b5cf6;">
-                    <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-archive" style="color: #8b5cf6;"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem; font-weight: 700;">Database Archive & Maintenance</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Archive old bookings, clean audit logs & optimize database storage</p>
-                    </div>
-                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-                </div>
-            </div>
+        </div>
     </div>
-
 
 
 
