@@ -456,4 +456,256 @@
         background: #00B14F !important;
         border-color: #27272a !important;
     }
+
+    /* ---- SETTINGS SECTION (2-COLUMN SPLIT) ---- */
+    #settings {
+        max-width: 1280px !important;
+        margin: 0 auto !important;
+        padding-bottom: 60px !important;
+    }
+    .settings-layout-container {
+        display: grid !important;
+        grid-template-columns: 340px 1fr !important;
+        gap: 24px !important;
+        align-items: start !important;
+        width: 100% !important;
+        max-width: 1220px !important;
+        margin: 0 auto !important;
+    }
+    .settings-col-left {
+        position: sticky !important;
+        top: 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+    .settings-profile-card {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 20px !important;
+        padding: 28px 22px 24px !important;
+        text-align: center !important;
+        position: relative !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+        overflow: hidden !important;
+    }
+    .settings-profile-card::before {
+        content: '' !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 6px !important;
+        background: linear-gradient(90deg, #00B14F, #10b981, #059669) !important;
+    }
+    .settings-role-pill {
+        display: inline-block !important;
+        padding: 4px 14px !important;
+        border-radius: 20px !important;
+        font-size: 0.72rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.8px !important;
+        text-transform: uppercase !important;
+        background: rgba(0, 177, 79, 0.12) !important;
+        color: var(--primary) !important;
+        border: 1px solid rgba(0, 177, 79, 0.3) !important;
+    }
+    .settings-avatar-wrap {
+        position: relative !important;
+        width: 88px !important;
+        height: 88px !important;
+        margin: 0 auto 16px !important;
+    }
+    .settings-avatar {
+        width: 88px !important;
+        height: 88px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(135deg, #00B14F 0%, #00873c 100%) !important;
+        color: #ffffff !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 2.8rem !important;
+        font-weight: 800 !important;
+        box-shadow: 0 10px 25px rgba(0, 177, 79, 0.25) !important;
+        border: 3px solid var(--surface) !important;
+    }
+    .settings-online-status {
+        position: absolute !important;
+        bottom: 4px !important;
+        right: 4px !important;
+        width: 16px !important;
+        height: 16px !important;
+        border-radius: 50% !important;
+        background: #10b981 !important;
+        border: 3px solid var(--surface) !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    .settings-user-name {
+        font-size: 1.35rem !important;
+        font-weight: 800 !important;
+        color: var(--text-main) !important;
+        margin: 0 0 6px !important;
+        letter-spacing: -0.3px !important;
+    }
+    .settings-email-row {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        font-size: 0.82rem !important;
+        color: var(--text-muted) !important;
+        background: var(--surface-container) !important;
+        padding: 6px 14px !important;
+        border-radius: 12px !important;
+        max-width: 100% !important;
+        word-break: break-all !important;
+    }
+    .settings-col-right {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 20px !important;
+        min-width: 0 !important;
+    }
+    .settings-group {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 20px !important;
+        padding: 20px 22px !important;
+        box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03) !important;
+    }
+    .settings-group-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        margin-bottom: 16px !important;
+        padding-bottom: 14px !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+    .settings-group-icon {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1rem !important;
+        flex-shrink: 0 !important;
+    }
+    .settings-group-title {
+        font-size: 1.05rem !important;
+        font-weight: 800 !important;
+        color: var(--text-main) !important;
+        margin: 0 0 2px !important;
+        letter-spacing: -0.2px !important;
+    }
+    .settings-group-desc {
+        font-size: 0.76rem !important;
+        color: var(--text-muted) !important;
+        margin: 0 !important;
+    }
+    .settings-cards-stack {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    .settings-action-card {
+        background: var(--surface-container) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 14px !important;
+        padding: 13px 16px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 14px !important;
+        cursor: pointer !important;
+        transition: all 0.18s ease !important;
+        text-decoration: none !important;
+        position: relative !important;
+        user-select: none !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .settings-action-card:hover {
+        background: var(--surface) !important;
+        border-color: rgba(0, 177, 79, 0.4) !important;
+        transform: translateX(4px) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    }
+    .settings-action-card.highlight-emerald {
+        border-color: rgba(0, 177, 79, 0.35) !important;
+        background: rgba(0, 177, 79, 0.03) !important;
+    }
+    .settings-action-card.highlight-border {
+        border-left: 4px solid var(--primary) !important;
+    }
+    .settings-action-card.locked-card {
+        border: 1px dashed var(--border) !important;
+        background: var(--surface-container) !important;
+        opacity: 0.92 !important;
+    }
+    .settings-action-icon {
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 11px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.05rem !important;
+        flex-shrink: 0 !important;
+    }
+    .settings-action-body {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+    .settings-action-body h4 {
+        font-size: 0.92rem !important;
+        font-weight: 700 !important;
+        color: var(--text-main) !important;
+        margin: 0 0 2px !important;
+        letter-spacing: -0.1px !important;
+    }
+    .settings-action-body p {
+        font-size: 0.73rem !important;
+        color: var(--text-muted) !important;
+        margin: 0 !important;
+        line-height: 1.35 !important;
+    }
+    .settings-action-tail {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        color: var(--text-muted) !important;
+        font-size: 0.8rem !important;
+        flex-shrink: 0 !important;
+    }
+    .settings-action-badge {
+        background: rgba(0, 177, 79, 0.12) !important;
+        color: var(--primary) !important;
+        font-size: 0.68rem !important;
+        font-weight: 800 !important;
+        padding: 3px 8px !important;
+        border-radius: 6px !important;
+        text-transform: uppercase !important;
+    }
+    .settings-pill-action {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text-muted) !important;
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        padding: 3px 9px !important;
+        border-radius: 8px !important;
+    }
+    .settings-req-btn {
+        padding: 7px 14px !important;
+        font-size: 0.75rem !important;
+        border-radius: 8px !important;
+        background: rgba(0, 177, 79, 0.12) !important;
+        color: var(--primary) !important;
+        border: 1px solid rgba(0, 177, 79, 0.3) !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+    }
 }
+
