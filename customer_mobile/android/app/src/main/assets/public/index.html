@@ -4833,7 +4833,7 @@
     <div class="auth-hero-inner">
       <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:220px;height:auto;object-fit:contain;margin-bottom:24px;position:relative;z-index:1;flex-shrink:0;">
       <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Reset Password</div>
-      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;position:relative;z-index:1;letter-spacing:0.3px;">Recover access to your account.<br>We'll send you a temporary password.</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;position:relative;z-index:1;letter-spacing:0.3px;">Recover access to your account.<br>We'll send you a secure 6-digit code.</div>
     </div>
     <!-- Trust text -->
     <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:340px;z-index:1;text-align:center;">
@@ -4842,65 +4842,99 @@
     </div>
   </div>
   <div class="auth-container">
-
-
     <div class="auth-logo">
-
-
       <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
-
-
       <h1 style="font-size:1.4rem;margin-top:8px;">Reset Password</h1>
-
-
     </div>
 
+    <div class="auth-card" style="max-width: 440px; width: 100%;">
+      <!-- STEP 1: Email Request -->
+      <div id="forgotPwStep1">
+        <h2>Forgot Password?</h2>
+        <p class="subtitle">Enter your email and we'll send you a 6-digit verification code to reset your password.</p>
 
-    <div class="auth-card">
+        <div class="form-group" style="margin-top:16px;">
+          <label>Email Address</label>
+          <input type="email" id="forgotPwEmail" placeholder="yourname@email.com" autocomplete="email" maxlength="60" onkeydown="if(event.key==='Enter')doSendForgotPasswordOtp()">
+          <span class="field-error" id="forgotPwErr"></span>
+        </div>
 
+        <button class="btn-primary" id="forgotPwBtn" onclick="doSendForgotPasswordOtp()">
+          <i class="fas fa-paper-plane"></i> <span id="forgotPwBtnText">Send Reset Code</span>
+        </button>
 
-      <h2>Forgot Password?</h2>
-
-
-      <p class="subtitle">Enter your email and we'll send you a temporary password</p>
-
-
-      <div class="form-group" style="margin-top:16px;">
-
-
-        <label>Email Address</label>
-
-
-        <input type="email" id="forgotPwEmail" placeholder="yourname@email.com" autocomplete="email" maxlength="60" onkeydown="if(event.key==='Enter')doForgotPassword()">
-
-
-        <span class="field-error" id="forgotPwErr"></span>
-
-
+        <div class="auth-link" style="margin-top:18px;">
+          <a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Login</a>
+        </div>
       </div>
 
+      <!-- STEP 2: Verify Code & Set New Password -->
+      <div id="forgotPwStep2" style="display:none;">
+        <h2>Verify &amp; Reset</h2>
+        <p class="subtitle">Enter the 6-digit code sent to <strong id="forgotPwTargetEmailDisplay" style="color:var(--primary, #00b14f); word-break:break-all;"></strong></p>
 
-      <div id="forgotPwSuccess" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 14px;font-size:0.85rem;color:#10b981;margin-bottom:14px;font-weight:600;text-align:center;"></div>
+        <!-- 6-digit OTP Inputs -->
+        <div class="otp-inputs" style="margin-top:16px;">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp0" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,1)" onkeydown="forgotOtpBackspace(event, this, -1)">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp1" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,2)" onkeydown="forgotOtpBackspace(event, this, 0)">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp2" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,3)" onkeydown="forgotOtpBackspace(event, this, 1)">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp3" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,4)" onkeydown="forgotOtpBackspace(event, this, 2)">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp4" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,5)" onkeydown="forgotOtpBackspace(event, this, 3)">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="forgotOtp5" onpaste="handleForgotOtpPaste(event)" oninput="forgotOtpNext(this,-1)" onkeydown="forgotOtpBackspace(event, this, 4)">
+        </div>
 
+        <!-- Resend Countdown Row -->
+        <div style="margin: 10px 0 16px; text-align: center; font-size: 0.85rem;">
+          <a href="#" id="forgotResendLink" onclick="resendForgotPasswordOtp()" style="font-weight:600; color:var(--primary, #00b14f);">Resend Code</a>
+          <span id="forgotResendTimer" style="display:none; color:var(--text-muted); font-weight:600;">Resend in <span id="forgotCountdown">30</span>s</span>
+        </div>
 
-      <button class="btn-primary" id="forgotPwBtn" onclick="doForgotPassword()"><i class="fas fa-paper-plane"></i> <span id="forgotPwBtnText">Send Temporary Password</span></button>
+        <!-- New Password Field -->
+        <div class="form-group" style="margin-top:12px;">
+          <label>New Password</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="password" id="forgotNewPw" placeholder="Create new password" maxlength="64" autocomplete="new-password" style="padding-right:44px;width:100%;" oninput="validatePassword(this.value, 'forgotNewPwErr', 'fp'); if(document.getElementById('forgotConfirmPw').value) checkConfirmPasswordMatch('forgotNewPw', 'forgotConfirmPw', 'forgotConfirmPwErr');">
+            <button type="button" onclick="togglePasswordVisibility('forgotNewPw', this)" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:6px 8px;font-size:0.95rem;z-index:2;" title="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <!-- Live Password Requirements Checklist -->
+          <div class="password-requirements" style="font-size:0.75rem;margin-top:8px;display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:rgba(0,0,0,0.03);border-radius:8px;">
+            <div id="fp-req-len" class="req-item invalid" style="display:flex;align-items:center;gap:6px;color:var(--text-muted);"><i class="fas fa-times-circle" style="font-size:0.75rem;"></i> 8–64 characters</div>
+            <div id="fp-req-upper" class="req-item invalid" style="display:flex;align-items:center;gap:6px;color:var(--text-muted);"><i class="fas fa-times-circle" style="font-size:0.75rem;"></i> At least 1 uppercase letter (A-Z)</div>
+            <div id="fp-req-lower" class="req-item invalid" style="display:flex;align-items:center;gap:6px;color:var(--text-muted);"><i class="fas fa-times-circle" style="font-size:0.75rem;"></i> At least 1 lowercase letter (a-z)</div>
+            <div id="fp-req-num" class="req-item invalid" style="display:flex;align-items:center;gap:6px;color:var(--text-muted);"><i class="fas fa-times-circle" style="font-size:0.75rem;"></i> At least 1 number (0-9)</div>
+            <div id="fp-req-sym" class="req-item invalid" style="display:flex;align-items:center;gap:6px;color:var(--text-muted);"><i class="fas fa-times-circle" style="font-size:0.75rem;"></i> At least 1 special character (!@#$%^&*)</div>
+          </div>
+          <span class="field-error" id="forgotNewPwErr"></span>
+        </div>
 
+        <!-- Confirm Password Field -->
+        <div class="form-group" style="margin-top:12px;">
+          <label>Confirm New Password</label>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input type="password" id="forgotConfirmPw" placeholder="Re-enter new password" maxlength="64" autocomplete="new-password" style="padding-right:44px;width:100%;" oninput="checkConfirmPasswordMatch('forgotNewPw', 'forgotConfirmPw', 'forgotConfirmPwErr')">
+            <button type="button" onclick="togglePasswordVisibility('forgotConfirmPw', this)" style="position:absolute;right:10px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:6px 8px;font-size:0.95rem;z-index:2;" title="Toggle password visibility">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <span class="field-error" id="forgotConfirmPwErr"></span>
+        </div>
 
-      <div class="auth-link" style="margin-top:16px;">
+        <!-- Global Step 2 Error -->
+        <span class="field-error" id="forgotPwStep2Err" style="display:block;margin-top:8px;text-align:center;"></span>
 
+        <button class="btn-primary" id="forgotPwSubmitBtn" onclick="doSubmitResetPassword()" style="margin-top:16px;">
+          <i class="fas fa-check-circle"></i> <span id="forgotPwSubmitBtnText">Reset Password &amp; Sign In</span>
+        </button>
 
-        <a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Login</a>
-
-
+        <div class="auth-link" style="margin-top:16px; display:flex; justify-content:space-between; align-items:center; font-size:0.84rem;">
+          <a href="#" onclick="backToForgotStep1()" style="color:var(--text-muted);"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Change Email</a>
+          <a href="#" onclick="showPage('page-login')">Cancel &amp; Login</a>
+        </div>
       </div>
-
-
     </div>
-
-
   </div>
-
-
 </div>
 
 
@@ -6338,7 +6372,7 @@
             <span>All rights reserved</span>
           </div>
           <div class="more-version-tag">
-            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.4
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.19.5
           </div>
         </div>
       </div>

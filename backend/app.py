@@ -2370,16 +2370,16 @@ def generate_verification_email_html(otp: str, email: str = "") -> str:
 </html>"""
 
 
-def generate_password_reset_email_html(temp_password: str, full_name: str = "", email: str = "") -> str:
-    """Generates a professional, responsive HTML email template for password reset with official Autoride logo."""
-    clean_pw = str(temp_password).strip()
+def generate_password_reset_email_html(otp: str, full_name: str = "", email: str = "") -> str:
+    """Generates a professional, responsive HTML email template for password reset OTP with official Autoride logo."""
+    clean_code = str(otp).strip()
     display_name = full_name or "Valued Customer"
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autoride Password Reset</title>
+  <title>Autoride Password Reset Code</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1f2937;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f3f4f6; padding: 40px 16px;">
@@ -2403,7 +2403,7 @@ def generate_password_reset_email_html(temp_password: str, full_name: str = "", 
                       </tr>
                     </table>
                     <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">AUTORIDE</h1>
-                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Account Security &amp; Recovery</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Account Security &amp; Password Recovery</p>
                   </td>
                 </tr>
               </table>
@@ -2413,28 +2413,31 @@ def generate_password_reset_email_html(temp_password: str, full_name: str = "", 
           <!-- Content Body -->
           <tr>
             <td style="padding: 36px 36px 28px 36px;">
-              <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 800; color: #111827;">Password Reset Request</h2>
+              <h2 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 800; color: #111827;">Password Reset Code</h2>
               <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #4b5563;">
                 Hello <strong>{display_name}</strong>,
               </p>
               <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #4b5563;">
-                We received a request to reset your password for your Autoride account ({email}). Please use your temporary password below to sign in:
+                We received a request to reset the password for your Autoride account ({email}). Please use your 6-digit verification code below to set your new password:
               </p>
 
-              <!-- Temporary Password Card -->
+              <!-- Verification Code Card -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
                 <tr>
                   <td align="center" style="background: #f0fdf4; border: 2px dashed #00b14f; border-radius: 12px; padding: 22px 16px;">
-                    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 1.5px; margin-bottom: 8px;">Temporary Password</div>
-                    <div style="font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 34px; font-weight: 900; letter-spacing: 4px; color: #007a36; line-height: 1.2;">
-                      {clean_pw}
+                    <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #15803d; letter-spacing: 1.5px; margin-bottom: 8px;">6-Digit Verification Code</div>
+                    <div style="font-family: 'Courier New', Courier, monospace, sans-serif; font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #007a36; line-height: 1.2;">
+                      {clean_code}
+                    </div>
+                    <div style="font-size: 12px; color: #166534; margin-top: 8px; font-weight: 500;">
+                      Expires in 15 minutes
                     </div>
                   </td>
                 </tr>
               </table>
 
               <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4b5563;">
-                <strong>Next Step:</strong> Sign in with this temporary password and immediately go to <strong>Profile &gt; Security &gt; Change Password</strong> to create a new, permanent password.
+                <strong>Next Step:</strong> Return to the Autoride app, enter this 6-digit code, and choose your new password. You will be signed in automatically once confirmed.
               </p>
 
               <!-- Warning Callout -->
@@ -2442,10 +2445,10 @@ def generate_password_reset_email_html(temp_password: str, full_name: str = "", 
                 <tr>
                   <td style="padding: 14px 16px;">
                     <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #991b1b;">
-                      ⚠️ Didn't request this change?
+                      🛡️ Didn't request this change?
                     </p>
                     <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #7f1d1d;">
-                      If you did not request a password reset, please log in immediately to verify your account or contact our support team.
+                      If you did not request a password reset, you can safely disregard this email. Your current password remains active and has not been modified.
                     </p>
                   </td>
                 </tr>
@@ -3027,7 +3030,7 @@ def health_check():
 @app.route('/user/forgot-password', methods=['POST'])
 @app.route('/api/user/forgot-password', methods=['POST'])
 def user_forgot_password():
-    """Forgot password endpoint for customers. Generates a temporary password and emails it."""
+    """Forgot password endpoint for customers. Generates a 6-digit OTP and emails it without altering user's password."""
     data = request.get_json(silent=True) or {}
     email = data.get('email', '').strip().lower()
     if not email or len(email) > 60:
@@ -3035,26 +3038,29 @@ def user_forgot_password():
         
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, full_name, auth_provider, password FROM users WHERE LOWER(email) = %s", (email,))
+        cur.execute("SELECT id, full_name, auth_provider, password, is_frozen, freeze_reason FROM users WHERE LOWER(email) = %s", (email,))
         user = cur.fetchone()
         
         if not user:
-            return jsonify({'error': 'Email address not found'}), 404
+            return jsonify({'error': 'No account found with this email address.'}), 404
             
         if user.get('auth_provider') == 'google' and not user.get('password'):
-            return jsonify({'error': 'This email is registered using Google Sign-In. Please log in using Google.'}), 400
+            return jsonify({'error': 'This account was registered using Google Sign-In. Please sign in with Google.'}), 400
 
-        # Generate random 8-character temporary password
-        import string
+        if user.get('is_frozen'):
+            reason = user.get('freeze_reason') or 'Your account has been suspended. Please contact support.'
+            return jsonify({'error': f'Account Suspended: {reason}'}), 403
+
+        # Generate secure random 6-digit OTP
         import random
-        import bcrypt
+        otp = f"{random.randint(100000, 999999):06d}"
         
-        temp_chars = string.ascii_letters + string.digits
-        temp_password = ''.join(random.choice(temp_chars) for _ in range(8))
+        # Save OTP to PostgreSQL table
+        save_email_otp(email, otp)
         
-        # Send temporary password via email FIRST before touching the database
-        subject = "Autoride Password Reset - Temporary Password"
-        html_message = generate_password_reset_email_html(temp_password, user.get('full_name') or '', email)
+        # Prepare responsive HTML email
+        subject = f"Autoride Password Reset Code: {otp}"
+        html_message = generate_password_reset_email_html(otp, user.get('full_name') or '', email)
         
         try:
             email_sent = send_email_notifications(email, subject, html_message, is_html=True)
@@ -3064,16 +3070,94 @@ def user_forgot_password():
             
         if not email_sent:
             return jsonify({
-                'error': 'Failed to send password reset email. The system email delivery service could not deliver the email. Please contact the administrator to re-link Gmail SMTP.'
+                'error': 'Failed to send verification email. The email delivery service could not deliver the email. Please try again or contact support.'
             }), 500
 
-        # Hash temporary password and update database ONLY AFTER email was confirmed sent!
-        hashed_pw = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        print(f"[FORGOT_PW] Verification OTP {otp} sent successfully to {email}")
+        
+        return jsonify({
+            'message': 'A 6-digit verification code has been sent to your email inbox.',
+            'email': email
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/user/reset-password-otp', methods=['POST'])
+@app.route('/api/user/reset-password-otp', methods=['POST'])
+def user_reset_password_otp():
+    """Verifies the 6-digit password reset OTP and sets the new password."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    otp = str(data.get('otp', '')).strip()
+    new_password = str(data.get('new_password', '')).strip()
+
+    if not email or len(email) > 60:
+        return jsonify({'error': 'A valid email address is required'}), 400
+    if not otp or len(otp) != 6 or not otp.isdigit():
+        return jsonify({'error': 'Please enter a valid 6-digit verification code'}), 400
+    if not new_password:
+        return jsonify({'error': 'New password is required'}), 400
+
+    # Password complexity checks
+    import re
+    if len(new_password) < 8 or len(new_password) > 64:
+        return jsonify({'error': 'Password must be between 8 and 64 characters long'}), 400
+    if not re.search(r'[A-Z]', new_password):
+        return jsonify({'error': 'Password must contain at least one uppercase letter (A-Z)'}), 400
+    if not re.search(r'[a-z]', new_password):
+        return jsonify({'error': 'Password must contain at least one lowercase letter (a-z)'}), 400
+    if not re.search(r'[0-9]', new_password):
+        return jsonify({'error': 'Password must contain at least one number (0-9)'}), 400
+    if not re.search(r'[^A-Za-z0-9]', new_password):
+        return jsonify({'error': 'Password must contain at least one special character (!@#$%^&*)'}), 400
+
+    # Verify OTP
+    if not verify_email_otp(email, otp):
+        return jsonify({'error': 'Invalid or expired verification code. Please request a new code.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email, is_verified, is_frozen, freeze_reason, 
+                   profile_picture, license_image_url, phone, is_regular_customer, regular_customer_manual
+            FROM users 
+            WHERE LOWER(email) = %s
+        """, (email,))
+        user = cur.fetchone()
+
+        if not user:
+            return jsonify({'error': 'User account not found'}), 404
+
+        if user.get('is_frozen'):
+            reason = user.get('freeze_reason') or 'Your account has been suspended.'
+            return jsonify({'error': f'Account Suspended: {reason}'}), 403
+
+        import bcrypt
+        hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user['id']))
         commit_db()
-        
-        return jsonify({'message': "Temporary password sent successfully! Please check your email inbox. (If you don't see it, check your Spam folder and click 'Report not spam')"}), 200
-        
+
+        print(f"[RESET_PW] Password successfully updated for user {user['id']} ({email})")
+
+        return jsonify({
+            'message': 'Password reset successfully!',
+            'user': {
+                'id': user['id'],
+                'fullName': user.get('full_name'),
+                'email': user.get('email'),
+                'isVerified': user.get('is_verified', 0),
+                'profile_picture': user.get('profile_picture'),
+                'license_image_url': user.get('license_image_url'),
+                'phone': user.get('phone'),
+                'is_regular_customer': bool(user.get('is_regular_customer', False)),
+                'regular_customer_manual': bool(user.get('regular_customer_manual', False))
+            }
+        }), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

@@ -2002,60 +2002,339 @@ function doLogin() {
     .finally(function() { showLoading(false); restoreBtn(); });
 }
 
-// AUTH: FORGOT PASSWORD
+// AUTH: FORGOT PASSWORD (6-Digit Email OTP Flow)
+var forgotPendingEmail = '';
+var forgotResendCountdown = 0;
+var forgotResendInterval = null;
+
 function openForgotPasswordPage(e) {
   if (e) e.preventDefault();
-  // Reset the form state
+  forgotPendingEmail = '';
+  if (forgotResendInterval) clearInterval(forgotResendInterval);
+  
+  // Show Step 1, Hide Step 2
+  var step1 = document.getElementById('forgotPwStep1');
+  var step2 = document.getElementById('forgotPwStep2');
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
+
+  // Clear Step 1 inputs and errors
   var emailEl = document.getElementById('forgotPwEmail');
   var errEl = document.getElementById('forgotPwErr');
-  var successEl = document.getElementById('forgotPwSuccess');
-  var btnText = document.getElementById('forgotPwBtnText');
   var btn = document.getElementById('forgotPwBtn');
-  if (emailEl) emailEl.value = '';
+  var btnText = document.getElementById('forgotPwBtnText');
+  
   if (errEl) errEl.textContent = '';
-  if (successEl) { successEl.style.display = 'none'; successEl.textContent = ''; }
-  if (btnText) btnText.textContent = 'Send Temporary Password';
   if (btn) btn.disabled = false;
+  if (btnText) btnText.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Send Reset Code</span>';
+
+  // Pre-fill email if user is logged in or if email was in login field
+  var loginEmailEl = document.getElementById('loginEmail');
+  if (currentUser && currentUser.email) {
+    if (emailEl) emailEl.value = currentUser.email;
+  } else if (loginEmailEl && loginEmailEl.value.trim()) {
+    if (emailEl) emailEl.value = loginEmailEl.value.trim();
+  }
+
   showPage('page-forgot-password');
+  if (emailEl && !emailEl.value) {
+    setTimeout(function() { emailEl.focus(); }, 150);
+  }
 }
 
-function doForgotPassword() {
+function backToForgotStep1() {
+  if (forgotResendInterval) clearInterval(forgotResendInterval);
+  var step1 = document.getElementById('forgotPwStep1');
+  var step2 = document.getElementById('forgotPwStep2');
+  if (step1) step1.style.display = 'block';
+  if (step2) step2.style.display = 'none';
+  var emailEl = document.getElementById('forgotPwEmail');
+  if (emailEl) {
+    if (forgotPendingEmail) emailEl.value = forgotPendingEmail;
+    setTimeout(function() { emailEl.focus(); }, 100);
+  }
+}
+
+function doSendForgotPasswordOtp() {
   var emailEl = document.getElementById('forgotPwEmail');
   var errEl = document.getElementById('forgotPwErr');
-  var successEl = document.getElementById('forgotPwSuccess');
   var btn = document.getElementById('forgotPwBtn');
   var btnText = document.getElementById('forgotPwBtnText');
-  var email = emailEl ? emailEl.value.trim() : '';
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
 
   if (errEl) errEl.textContent = '';
-  if (successEl) { successEl.style.display = 'none'; }
 
   if (!email) {
     if (errEl) errEl.textContent = 'Please enter your email address.';
+    if (emailEl) emailEl.focus();
+    return;
+  }
+  var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    if (errEl) errEl.textContent = 'Please enter a valid email address.';
+    if (emailEl) emailEl.focus();
     return;
   }
 
   if (btn) btn.disabled = true;
-  if (btnText) btnText.textContent = 'Sending...';
+  if (btnText) btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Code...';
 
   apiCall('/user/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email: email })
   })
   .then(function(data) {
-    if (successEl) {
-      successEl.textContent = '✅ ' + (data.message || "Temporary password sent! Check your email inbox. (If you don't see it, check your Spam folder and click 'Report not spam')");
-      successEl.style.display = 'block';
+    forgotPendingEmail = email;
+    // Transition to Step 2
+    var step1 = document.getElementById('forgotPwStep1');
+    var step2 = document.getElementById('forgotPwStep2');
+    if (step1) step1.style.display = 'none';
+    if (step2) step2.style.display = 'block';
+
+    var displayEl = document.getElementById('forgotPwTargetEmailDisplay');
+    if (displayEl) displayEl.textContent = email;
+
+    // Clear step 2 inputs
+    for (var i = 0; i < 6; i++) {
+      var otpBox = document.getElementById('forgotOtp' + i);
+      if (otpBox) otpBox.value = '';
     }
-    if (btnText) btnText.textContent = 'Email Sent!';
-    if (emailEl) emailEl.value = '';
+    var newPw = document.getElementById('forgotNewPw');
+    var confirmPw = document.getElementById('forgotConfirmPw');
+    if (newPw) newPw.value = '';
+    if (confirmPw) confirmPw.value = '';
+    var step2Err = document.getElementById('forgotPwStep2Err');
+    if (step2Err) step2Err.textContent = '';
+    var newPwErr = document.getElementById('forgotNewPwErr');
+    if (newPwErr) newPwErr.textContent = '';
+    var confirmPwErr = document.getElementById('forgotConfirmPwErr');
+    if (confirmPwErr) confirmPwErr.textContent = '';
+
+    // Reset password checklist
+    if (typeof validatePassword === 'function') {
+      validatePassword('', 'forgotNewPwErr', 'fp');
+    }
+
+    // Start resend countdown
+    startForgotResendCountdown();
+
+    // Focus first OTP box
+    setTimeout(function() {
+      var firstOtp = document.getElementById('forgotOtp0');
+      if (firstOtp) firstOtp.focus();
+    }, 150);
+
+    showToast('6-digit code sent to your email!', 'info');
   })
   .catch(function(err) {
-    if (errEl) errEl.textContent = '❌ ' + (err.message || 'Failed to send email. Please try again.');
+    if (errEl) errEl.textContent = err.message || 'Failed to send verification code. Please try again.';
+  })
+  .finally(function() {
     if (btn) btn.disabled = false;
-    if (btnText) btnText.textContent = 'Send Temporary Password';
+    if (btnText) btnText.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reset Code';
   });
 }
+
+function startForgotResendCountdown() {
+  forgotResendCountdown = 30;
+  var link = document.getElementById('forgotResendLink');
+  var timer = document.getElementById('forgotResendTimer');
+  var cd = document.getElementById('forgotCountdown');
+  if (link) link.style.display = 'none';
+  if (timer) timer.style.display = 'inline';
+  if (cd) cd.textContent = forgotResendCountdown;
+
+  if (forgotResendInterval) clearInterval(forgotResendInterval);
+
+  forgotResendInterval = setInterval(function() {
+    forgotResendCountdown--;
+    if (cd) cd.textContent = forgotResendCountdown;
+    if (forgotResendCountdown <= 0) {
+      clearInterval(forgotResendInterval);
+      if (link) link.style.display = 'inline';
+      if (timer) timer.style.display = 'none';
+    }
+  }, 1000);
+}
+
+function resendForgotPasswordOtp() {
+  if (!forgotPendingEmail || forgotResendCountdown > 0) return;
+  showLoading(true);
+  apiCall('/user/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email: forgotPendingEmail })
+  })
+  .then(function() {
+    showToast('New verification code sent!', 'success');
+    startForgotResendCountdown();
+    for (var i = 0; i < 6; i++) {
+      var otpBox = document.getElementById('forgotOtp' + i);
+      if (otpBox) otpBox.value = '';
+    }
+    var firstOtp = document.getElementById('forgotOtp0');
+    if (firstOtp) firstOtp.focus();
+  })
+  .catch(function(err) {
+    showToast(err.message || 'Failed to resend code', 'error');
+  })
+  .finally(function() {
+    showLoading(false);
+  });
+}
+
+function handleForgotOtpPaste(e) {
+  var clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+  var pastedData = clipboardData.getData('Text') || '';
+  var digits = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
+  if (digits.length > 0) {
+    e.preventDefault();
+    for (var i = 0; i < digits.length; i++) {
+      var input = document.getElementById('forgotOtp' + i);
+      if (input) input.value = digits[i];
+    }
+    var focusIdx = Math.min(digits.length, 5);
+    var target = document.getElementById('forgotOtp' + focusIdx);
+    if (target) target.focus();
+    var err = document.getElementById('forgotPwStep2Err');
+    if (err) err.textContent = '';
+  }
+}
+
+function forgotOtpNext(el, nextIdx) {
+  if (el.value) {
+    el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
+  }
+  if (el.value.length >= 1 && nextIdx >= 0) {
+    var next = document.getElementById('forgotOtp' + nextIdx);
+    if (next) next.focus();
+  }
+}
+
+function forgotOtpBackspace(event, currentInput, prevIdx) {
+  if (event.key === 'Backspace' && currentInput.value === '' && prevIdx >= 0) {
+    var prev = document.getElementById('forgotOtp' + prevIdx);
+    if (prev) {
+      prev.focus();
+      prev.select();
+    }
+  }
+}
+
+function doSubmitResetPassword() {
+  var email = forgotPendingEmail || (document.getElementById('forgotPwTargetEmailDisplay') ? document.getElementById('forgotPwTargetEmailDisplay').textContent.trim() : '');
+  var step2Err = document.getElementById('forgotPwStep2Err');
+  var newPwEl = document.getElementById('forgotNewPw');
+  var confirmPwEl = document.getElementById('forgotConfirmPw');
+  var btn = document.getElementById('forgotPwSubmitBtn');
+  var btnText = document.getElementById('forgotPwSubmitBtnText');
+
+  if (step2Err) step2Err.textContent = '';
+
+  // Get 6-digit OTP
+  var otp = '';
+  for (var i = 0; i < 6; i++) {
+    var box = document.getElementById('forgotOtp' + i);
+    otp += box ? (box.value || '').trim() : '';
+  }
+
+  if (otp.length < 6) {
+    if (step2Err) step2Err.textContent = 'Please enter the complete 6-digit verification code.';
+    var firstEmpty = null;
+    for (var j = 0; j < 6; j++) {
+      var b = document.getElementById('forgotOtp' + j);
+      if (b && !b.value.trim()) { firstEmpty = b; break; }
+    }
+    if (firstEmpty) firstEmpty.focus();
+    return;
+  }
+
+  var newPw = newPwEl ? newPwEl.value : '';
+  var confirmPw = confirmPwEl ? confirmPwEl.value : '';
+
+  // Client-side password validation
+  if (typeof validatePassword === 'function') {
+    var pwValid = validatePassword(newPw, 'forgotNewPwErr', 'fp');
+    if (!pwValid) {
+      if (newPwEl) newPwEl.focus();
+      return;
+    }
+  } else {
+    if (!newPw || newPw.length < 8) {
+      if (step2Err) step2Err.textContent = 'Password must be at least 8 characters.';
+      if (newPwEl) newPwEl.focus();
+      return;
+    }
+  }
+
+  if (newPw !== confirmPw) {
+    if (step2Err) step2Err.textContent = 'New password and confirmation do not match.';
+    if (confirmPwEl) confirmPwEl.focus();
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting Password...';
+
+  apiCall('/user/reset-password-otp', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: email,
+      otp: otp,
+      new_password: newPw
+    })
+  })
+  .then(function(data) {
+    showToast('Password reset successfully! Welcome back.', 'success');
+    
+    // Auto-login user if payload returned
+    if (data && data.user) {
+      currentUser = data.user;
+      Session.save(currentUser);
+
+      if (typeof supabase !== 'undefined' && typeof SUPABASE_URL !== 'undefined') {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      if (typeof loadNotifications === 'function') loadNotifications(data.user.id);
+      if (typeof subscribeToNotifications === 'function') subscribeToNotifications(data.user.id);
+      if (typeof initializePushForUser === 'function') initializePushForUser();
+
+      setTimeout(function() {
+        if (typeof loadHome === 'function') loadHome();
+        showPage('page-home');
+      }, 500);
+    } else {
+      // Fallback: send to login with email prefilled
+      setTimeout(function() {
+        showPage('page-login');
+        var loginEmail = document.getElementById('loginEmail');
+        if (loginEmail) loginEmail.value = email;
+      }, 800);
+    }
+  })
+  .catch(function(err) {
+    if (step2Err) step2Err.textContent = err.message || 'Failed to reset password. Please verify the code and try again.';
+  })
+  .finally(function() {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.innerHTML = '<i class="fas fa-check-circle"></i> Reset Password &amp; Sign In';
+  });
+}
+
+// Backward compatibility alias
+function doForgotPassword() {
+  doSendForgotPasswordOtp();
+}
+
+window.openForgotPasswordPage = openForgotPasswordPage;
+window.backToForgotStep1 = backToForgotStep1;
+window.doSendForgotPasswordOtp = doSendForgotPasswordOtp;
+window.resendForgotPasswordOtp = resendForgotPasswordOtp;
+window.handleForgotOtpPaste = handleForgotOtpPaste;
+window.forgotOtpNext = forgotOtpNext;
+window.forgotOtpBackspace = forgotOtpBackspace;
+window.doSubmitResetPassword = doSubmitResetPassword;
+window.doForgotPassword = doForgotPassword;
 
 // AUTH: LOGOUT
 function doLogout() {
