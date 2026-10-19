@@ -6530,7 +6530,7 @@ function renderBookingDetail(b) {
         var remMins = Math.floor(remMs / 60000);
 
         var extendQuickBtn = canExtend
-          ? '<button type="button" class="btn-outline" style="border-color:#d97706;color:#d97706;padding:5px 12px;font-size:0.75rem;font-weight:800;border-radius:10px;cursor:pointer;background:rgba(245,158,11,0.06);margin-top:8px;" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Need More Time? Extend Rental</button>'
+          ? '<button type="button" class="bkd-extend-btn" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Need More Time? Extend Rental</button>'
           : '';
 
         if (remMs <= 0) {
