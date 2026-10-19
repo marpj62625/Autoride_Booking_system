@@ -6720,14 +6720,28 @@ def user_change_password():
 @app.route('/update-profile', methods=['POST'])
 @app.route('/api/update-profile', methods=['POST'])
 def update_profile():
-
     try:
-
         user_id = request.form.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'User ID is required.'}), 400
+
+        cur = get_cursor()
+
         first_name = request.form.get('first_name')
         middle_name = request.form.get('middle_name', '')
         last_name = request.form.get('last_name')
         phone = request.form.get('phone')
+
+        # If name/phone are missing (e.g. direct selfie upload), pull existing user data
+        if not first_name or not last_name or not phone:
+            cur.execute("SELECT first_name, middle_name, last_name, phone FROM users WHERE id=%s", (user_id,))
+            u_row = cur.fetchone()
+            if not u_row:
+                return jsonify({'error': 'User not found.'}), 404
+            first_name = first_name or u_row.get('first_name') or ''
+            middle_name = middle_name or u_row.get('middle_name') or ''
+            last_name = last_name or u_row.get('last_name') or ''
+            phone = phone or u_row.get('phone') or ''
 
         ok_fn, err_fn, first_name = _validate_person_name_py(first_name, "First name", required=True)
         if not ok_fn:
@@ -6751,70 +6765,45 @@ def update_profile():
         if not ok_ph:
             return jsonify({'error': err_ph}), 400
 
-        cur = get_cursor()
-
-        
-
+        public_url = None
         if 'profile_picture' in request.files:
-
             file = request.files['profile_picture']
-
             _img_err = reject_non_image(file, 'profile_picture')
-
             if _img_err: return _img_err
 
             if file.filename != '':
-
-                filename = secure_filename(f"profile_{user_id}_{file.filename}")
+                import time
+                ts = int(time.time())
+                ext = 'jpg'
+                if file.filename and '.' in file.filename:
+                    ext = file.filename.rsplit('.', 1)[-1].lower()
+                    if ext not in ['jpg', 'jpeg', 'png', 'webp']:
+                        ext = 'jpg'
+                filename = secure_filename(f"profile_{user_id}_{ts}.{ext}")
 
                 # Convert FileStorage to bytes for Supabase
-
                 file_content = file.read()
 
-                
-
                 # Upload to Supabase Storage
-
                 bucket_name = "uploads"
-
                 path_on_supa = f"avatars/{filename}"
 
-                
-
                 try:
-
                     # Upload file (upsert=True allows replacing if it already exists)
-
                     supabase.storage.from_(bucket_name).upload(
-
                         path=path_on_supa,
-
                         file=file_content,
-
                         file_options={"content-type": file.content_type, "upsert": "true"}
-
                     )
 
-                    
-
                     # Get Public URL
-
                     public_url = supabase.storage.from_(bucket_name).get_public_url(path_on_supa)
-
-                    
-
                     cur.execute("UPDATE users SET profile_picture=%s WHERE id=%s", (public_url, user_id))
 
-
                 except Exception as storage_err:
-
                     print(f"STORAGE ERROR: {str(storage_err)}")
-
                     # Fallback to local filename just in case, or handle error
-
                     raise storage_err
-
-
 
         cur.execute("UPDATE users SET first_name=%s, middle_name=%s, last_name=%s, phone=%s WHERE id=%s", (first_name, middle_name, last_name, phone, user_id))
 
@@ -6833,9 +6822,10 @@ def update_profile():
 
         commit_db()
 
-        
-
-        return jsonify({"message": "Profile updated"}), 200
+        return jsonify({
+            "message": "Profile updated",
+            "profile_picture": public_url
+        }), 200
 
     except Exception as e:
 

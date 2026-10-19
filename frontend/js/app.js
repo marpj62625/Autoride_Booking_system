@@ -9219,12 +9219,13 @@ var Profile = {
     var btn = document.getElementById('profileEditBtn');
     if (btn) btn.style.display = 'none';
     var prev = document.getElementById('profilePicPreview');
-    if (prev && currentUser && currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined') {
-      prev.src = currentUser._profileData.profile_picture;
+    var currentPic = (currentUser && currentUser._profileData && currentUser._profileData.profile_picture) || (currentUser && currentUser.profile_picture);
+    if (prev && currentPic && currentPic !== 'null' && currentPic !== 'undefined') {
+      prev.src = (typeof buildImgUrl === 'function') ? buildImgUrl(currentPic) : currentPic;
       prev.style.display = 'block';
     }
   },
-  cancelEdit: function() {
+  cancelEdit: function(keepAvatar) {
     var card = document.getElementById('profileEditCard');
     if (card) card.style.display = 'none';
     var btn = document.getElementById('profileEditBtn');
@@ -9232,10 +9233,11 @@ var Profile = {
     profilePicBlob = null;
     var prev = document.getElementById('profilePicPreview');
     if (prev) {
-      if (currentUser && currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined') {
-        prev.src = currentUser._profileData.profile_picture;
+      var currentPic = (currentUser && currentUser._profileData && currentUser._profileData.profile_picture) || (currentUser && currentUser.profile_picture);
+      if (currentPic && currentPic !== 'null' && currentPic !== 'undefined') {
+        prev.src = (typeof buildImgUrl === 'function') ? buildImgUrl(currentPic) : currentPic;
         prev.style.display = 'block';
-      } else {
+      } else if (!keepAvatar) {
         prev.style.display = 'none';
         prev.src = '';
       }
@@ -10357,11 +10359,16 @@ function loadProfile(callback) {
       // Profile picture
       var avatarWrap = document.getElementById('profileAvatarWrap');
       if (avatarWrap) {
-        if (profile.profile_picture) {
-          avatarWrap.innerHTML = '<img class="profile-avatar" src="' + buildImgUrl(profile.profile_picture) + '" alt="Avatar">';
+        var picUrl = profile.profile_picture || (currentUser && currentUser.profile_picture);
+        if (picUrl && picUrl !== 'null' && picUrl !== 'undefined') {
+          avatarWrap.innerHTML = '<img class="profile-avatar" src="' + buildImgUrl(picUrl) + '" alt="Avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 4px 12px rgba(0,177,79,0.35);">';
         } else {
           var placeholder = document.getElementById('profileAvatarPlaceholder');
-          if (placeholder) placeholder.textContent = (profile.full_name || '₱')[0].toUpperCase();
+          if (placeholder) {
+            placeholder.textContent = (profile.full_name || '₱')[0].toUpperCase();
+          } else {
+            avatarWrap.innerHTML = '<div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">' + (profile.full_name || '₱')[0].toUpperCase() + '</div>';
+          }
         }
       }
 
@@ -10560,6 +10567,44 @@ function loadProfile(callback) {
     .finally(function() { showLoading(false); });
 }
 
+function updateProfileAvatarPreview(urlOrBlob) {
+  if (!urlOrBlob) return;
+  var src = (typeof urlOrBlob === 'string') ? urlOrBlob : URL.createObjectURL(urlOrBlob);
+  var preview = document.getElementById('profilePicPreview');
+  if (preview) {
+    preview.src = src;
+    preview.style.display = 'block';
+  }
+  var avatarWrap = document.getElementById('profileAvatarWrap');
+  if (avatarWrap) {
+    avatarWrap.innerHTML = '<img class="profile-avatar" src="' + src + '" alt="Avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 4px 12px rgba(0,177,79,0.35);">';
+  }
+}
+window.updateProfileAvatarPreview = updateProfileAvatarPreview;
+
+function autoSaveProfilePicture(blob) {
+  if (!currentUser || !currentUser.id) return;
+  var fd = new FormData();
+  fd.append('user_id', currentUser.id);
+  var firstEl = document.getElementById('editFirstName');
+  var lastEl = document.getElementById('editLastName');
+  var phoneEl = document.getElementById('editPhone');
+  if (firstEl && firstEl.value.trim()) fd.append('first_name', firstEl.value.trim());
+  if (lastEl && lastEl.value.trim()) fd.append('last_name', lastEl.value.trim());
+  if (phoneEl && phoneEl.value.trim()) fd.append('phone', phoneEl.value.trim());
+  fd.append('profile_picture', blob, 'avatar.jpg');
+  uploadFile('/update-profile', fd).then(function(res) {
+    if (res && res.profile_picture) {
+      currentUser.profile_picture = res.profile_picture;
+      if (currentUser._profileData) currentUser._profileData.profile_picture = res.profile_picture;
+      Session.save(currentUser);
+      updateProfileAvatarPreview(res.profile_picture);
+    }
+  }).catch(function(err) {
+    console.warn('Auto-save profile picture failed, user can still click Save Changes:', err);
+  });
+}
+
 function handleProfilePicSelected(e) {
   var file = e && e.target && e.target.files ? e.target.files[0] : null;
   if (!file) return;
@@ -10573,20 +10618,14 @@ function handleProfilePicSelected(e) {
 
   compressPromise.then(function(compressed) {
     profilePicBlob = compressed;
-    var preview = document.getElementById('profilePicPreview');
-    if (preview) {
-      preview.src = URL.createObjectURL(compressed);
-      preview.style.display = 'block';
-    }
-    showToast('Profile photo ready! Click Save Changes to update.', 'success');
+    updateProfileAvatarPreview(compressed);
+    autoSaveProfilePicture(compressed);
+    showToast('Profile photo ready! Click Save Changes to update all profile fields.', 'success');
   }).catch(function() {
     profilePicBlob = file;
-    var preview = document.getElementById('profilePicPreview');
-    if (preview) {
-      preview.src = URL.createObjectURL(file);
-      preview.style.display = 'block';
-    }
-    showToast('Profile photo selected! Click Save Changes to update.', 'success');
+    updateProfileAvatarPreview(file);
+    autoSaveProfilePicture(file);
+    showToast('Profile photo selected! Click Save Changes to update all profile fields.', 'success');
   });
 }
 
@@ -10608,12 +10647,9 @@ function pickProfilePicture() {
         return typeof compressImage === 'function' ? compressImage(file, 800, 800, 0.7) : Promise.resolve(file);
       }).then(function(compressed) {
         profilePicBlob = compressed;
-        var preview = document.getElementById('profilePicPreview');
-        if (preview) {
-          preview.src = URL.createObjectURL(compressed);
-          preview.style.display = 'block';
-        }
-        showToast('Live selfie captured! Click Save Changes to update.', 'success');
+        updateProfileAvatarPreview(compressed);
+        autoSaveProfilePicture(compressed);
+        showToast('Live selfie captured and updated!', 'success');
       });
     }).catch(function(err) {
       console.log('Native camera error or dismissed:', err);
@@ -10633,20 +10669,14 @@ function pickProfilePicture() {
           : Promise.resolve(file);
         compressPromise.then(function(compressed) {
           profilePicBlob = compressed;
-          var preview = document.getElementById('profilePicPreview');
-          if (preview) {
-            preview.src = URL.createObjectURL(compressed);
-            preview.style.display = 'block';
-          }
-          showToast('Live selfie captured! Click Save Changes to update.', 'success');
+          updateProfileAvatarPreview(compressed);
+          autoSaveProfilePicture(compressed);
+          showToast('Live selfie captured and updated!', 'success');
         }).catch(function() {
           profilePicBlob = file;
-          var preview = document.getElementById('profilePicPreview');
-          if (preview) {
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-          }
-          showToast('Live selfie captured! Click Save Changes to update.', 'success');
+          updateProfileAvatarPreview(file);
+          autoSaveProfilePicture(file);
+          showToast('Live selfie captured and updated!', 'success');
         });
       }
     });
@@ -10775,12 +10805,19 @@ function doUpdateProfile() {
     if (finalPic) fd.append('profile_picture', finalPic, 'avatar.jpg');
     return uploadFile('/update-profile', fd);
   })
-    .then(function() {
+    .then(function(res) {
       currentUser.fullName = name;
       if (email) currentUser.email = email;
+      if (res && res.profile_picture) {
+        currentUser.profile_picture = res.profile_picture;
+        if (currentUser._profileData) {
+          currentUser._profileData.profile_picture = res.profile_picture;
+        }
+        updateProfileAvatarPreview(res.profile_picture);
+      }
       Session.save(currentUser);
       showToast('Profile updated successfully!', 'success');
-      Profile.cancelEdit();
+      Profile.cancelEdit(true);
       loadProfile(function(newProfile) {
         if (window._pendingVerificationFlow) {
           delete window._pendingVerificationFlow;
