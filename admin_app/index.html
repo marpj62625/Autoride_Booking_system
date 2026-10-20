@@ -6889,13 +6889,7 @@
 
 
         <!-- NEW BOOKINGS TAB CONTENT -->
-
-
-
         <div id="tabNew" class="booking-tab-content" style="display: none;">
-
-
-
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">New Bookings</h3>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -6912,23 +6906,26 @@
                         <option value="amount_desc">Amount (High to Low)</option>
                         <option value="amount_asc">Amount (Low to High)</option>
                     </select>
+                    <select id="newBookingsPageSize" onchange="Bookings.setNewPageSize(this.value)" style="padding: 7px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.78rem; font-weight: 600; outline: none; cursor: pointer;">
+                        <option value="10">10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
                     <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-muted); padding: 7px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer;" title="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
             </div>
 
-
+            <!-- Search bar -->
+            <div style="margin-bottom: 14px; position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                <input type="text" id="newBookingsSearch" maxlength="50" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;" oninput="Bookings.setNewSearch(this.value)">
+            </div>
 
             <!-- Status filter chips for new bookings tab -->
-
-
-
             <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
-
-
-
-                
                 <button class="nb-chip nb-chip-active" data-filter="all" onclick="Bookings.setNewFilter('all',this)" style="flex-shrink:0;padding:7px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All New</button>
                 <button class="nb-chip" data-filter="pickup_soon" onclick="Bookings.setNewFilter('pickup_soon',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-check" style="margin-right:5px;color:var(--primary);"></i>Pickup Soon</button>
                 <button class="nb-chip" data-filter="return_soon" onclick="Bookings.setNewFilter('return_soon',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-undo-alt" style="margin-right:5px;color:#d97706;"></i>Return Soon</button>
@@ -6938,20 +6935,42 @@
                 <button class="nb-chip" data-filter="pending" onclick="Bookings.setNewFilter('pending',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Pending Review</button>
             </div>
 
-
-
-            <div id="newBookingsList">
-
-
-
-                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading...</div>
-
-
-
+            <!-- List Table Container -->
+            <div style="overflow-x: auto; margin-bottom: 16px;">
+                <table id="newBookingsTable" style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <thead>
+                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rental Dates</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+                            <th style="padding: 12px 10px; text-align: right; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Price</th>
+                            <th style="padding: 12px 10px; text-align: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="newBookingsTableBody">
+                    </tbody>
+                </table>
             </div>
 
+            <!-- Empty State -->
+            <div id="newBookingsEmpty" style="display: none; text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">No New Bookings</h3>
+                <p style="font-size: 0.85rem;">No bookings found matching your selected queue/filters.</p>
+            </div>
 
-
+            <!-- Pagination Controls -->
+            <div id="newBookingsPagination" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;">
+                <button id="newBookingsPrevBtn" onclick="Bookings.prevNewPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    <i class="fas fa-chevron-left" style="margin-right: 6px;"></i> Previous
+                </button>
+                <span id="newBookingsPageInfo" style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">Page 1 of 1</span>
+                <button id="newBookingsNextBtn" onclick="Bookings.nextNewPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    Next <i class="fas fa-chevron-right" style="margin-left: 6px;"></i>
+                </button>
+            </div>
         </div>
 
 
@@ -7053,13 +7072,7 @@
 
 
         <!-- ALL BOOKINGS TAB CONTENT -->
-
-
-
         <div id="tabAll" class="booking-tab-content" style="display: none;">
-
-
-
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">All Bookings</h3>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -7076,70 +7089,71 @@
                         <option value="amount_desc">Amount (High to Low)</option>
                         <option value="amount_asc">Amount (Low to High)</option>
                     </select>
+                    <select id="allBookingsPageSize" onchange="Bookings.setPageSize(this.value)" style="padding: 7px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.78rem; font-weight: 600; outline: none; cursor: pointer;">
+                        <option value="10">10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
                     <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">Refresh</button>
                 </div>
             </div>
 
-
+            <!-- Search bar -->
+            <div style="margin-bottom: 14px; position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                <input type="text" id="allBookingsSearch" maxlength="50" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; box-sizing: border-box;" oninput="Bookings.setSearch(this.value)">
+            </div>
 
             <!-- Booking Status Filter Chips -->
-
-
-
             <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
-
-
-
                 <button class="bk-chip bk-chip-active" data-filter="all" onclick="Bookings.setFilter('all',this)" style="flex-shrink:0;padding:8px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
                 <button class="bk-chip" data-filter="pickup_soon" onclick="Bookings.setFilter('pickup_soon',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-check" style="margin-right:5px;color:var(--primary);"></i>Pickup Soon</button>
                 <button class="bk-chip" data-filter="return_soon" onclick="Bookings.setFilter('return_soon',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-undo-alt" style="margin-right:5px;color:#d97706;"></i>Return Soon</button>
-
-
-
                 <button class="bk-chip" data-filter="pending" onclick="Bookings.setFilter('pending',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
-
-
-
                 <button class="bk-chip" data-filter="confirmed" onclick="Bookings.setFilter('confirmed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Confirmed</button>
-
-
-
                 <button class="bk-chip" data-filter="approved" onclick="Bookings.setFilter('approved',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Approved</button>
-
-
-
                 <button class="bk-chip" data-filter="picked_up" onclick="Bookings.setFilter('picked_up',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Picked Up</button>
-
-
-
                 <button class="bk-chip" data-filter="completed" onclick="Bookings.setFilter('completed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Completed</button>
-
-
-
                 <button class="bk-chip" data-filter="cancelled" onclick="Bookings.setFilter('cancelled',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Cancelled</button>
-
-
-
             </div>
 
-
-
-
-
-
-
-            <div id="bookingsList">
-
-
-
-                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
-
-
-
+            <!-- List Table Container -->
+            <div style="overflow-x: auto; margin-bottom: 16px;">
+                <table id="allBookingsTable" style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <thead>
+                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rental Dates</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+                            <th style="padding: 12px 10px; text-align: right; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Price</th>
+                            <th style="padding: 12px 10px; text-align: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allBookingsTableBody">
+                    </tbody>
+                </table>
             </div>
 
+            <!-- Empty State -->
+            <div id="allBookingsEmpty" style="display: none; text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">No Bookings Found</h3>
+                <p style="font-size: 0.85rem;">No bookings found matching your selected filters.</p>
+            </div>
 
-
+            <!-- Pagination Controls -->
+            <div id="allBookingsPagination" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;">
+                <button id="allBookingsPrevBtn" onclick="Bookings.prevPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    <i class="fas fa-chevron-left" style="margin-right: 6px;"></i> Previous
+                </button>
+                <span id="allBookingsPageInfo" style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">Page 1 of 1</span>
+                <button id="allBookingsNextBtn" onclick="Bookings.nextPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    Next <i class="fas fa-chevron-right" style="margin-left: 6px;"></i>
+                </button>
+            </div>
         </div>
 
 
@@ -8062,7 +8076,7 @@
 
 
 
-        <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 28px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 680px; width: 100%;">
 
 
 
@@ -19838,29 +19852,137 @@ function toggleNewsletterModal(show = true) {
 
 
 
+                _newSearch: '',
+        _newCurrentPage: 1,
+        _newPageSize: 10,
+        _allSearch: '',
+        _allCurrentPage: 1,
+        _allPageSize: 10,
+
+        setNewSearch(val) {
+            this._newSearch = (val || '').trim().toLowerCase();
+            this._newCurrentPage = 1;
+            this.renderNew();
+        },
+
+        setNewPageSize(size) {
+            this._newPageSize = parseInt(size, 10) || 10;
+            this._newCurrentPage = 1;
+            this.renderNew();
+        },
+
+        prevNewPage() {
+            if (this._newCurrentPage > 1) {
+                this._newCurrentPage--;
+                this.renderNew();
+            }
+        },
+
+        nextNewPage() {
+            if (this._newCurrentPage < this._newTotalPages) {
+                this._newCurrentPage++;
+                this.renderNew();
+            }
+        },
+
+        setSearch(val) {
+            this._allSearch = (val || '').trim().toLowerCase();
+            this._allCurrentPage = 1;
+            this.render();
+        },
+
+        setPageSize(size) {
+            this._allPageSize = parseInt(size, 10) || 10;
+            this._allCurrentPage = 1;
+            this.render();
+        },
+
+        prevPage() {
+            if (this._allCurrentPage > 1) {
+                this._allCurrentPage--;
+                this.render();
+            }
+        },
+
+        nextPage() {
+            if (this._allCurrentPage < this._allTotalPages) {
+                this._allCurrentPage++;
+                this.render();
+            }
+        },
+
+        _renderActionButtons(b) {
+            const st = (b.status || '').toLowerCase();
+            let buttons = [];
+
+            // Details Button (always available)
+            buttons.push(`
+                <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `);
+
+            // Pending cash received / reject
+            if (b.payment_status === 'Pending Payment' && st === 'pending') {
+                buttons.push(`
+                    <button onclick="Bookings.markCashReceived(${b.id})" style="padding: 6px 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                        <i class="fas fa-money-bill-wave"></i> Cash
+                    </button>
+                    <button onclick="Bookings.reject(${b.id})" style="padding: 6px 10px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                `);
+            }
+
+            // Confirmed / Approved: Pickup Inspect & No Show
+            if (st === 'confirmed' || st === 'approved') {
+                const act = Bookings.getPickupInspectAction(b);
+                buttons.push(`
+                    <button onclick="${act.onClick}" style="padding: 6px 10px; background: ${act.active ? 'var(--amber, #f59e0b)' : '#94a3b8'}; color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: ${act.active ? 'pointer' : 'not-allowed'}; opacity: ${act.active ? '1' : '0.6'}; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-search-plus"></i> Pickup Inspect
+                    </button>
+                `);
+                if (Bookings.isPickupPast(b)) {
+                    buttons.push(`
+                        <button onclick="Bookings.markNoShow(${b.id})" style="padding: 6px 10px; background: #ef4444; color: #fff; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-user-slash"></i> No Show
+                        </button>
+                    `);
+                }
+            }
+
+            // Picked Up / Ongoing: Return Inspect
+            if (st === 'picked up' || st === 'ongoing') {
+                buttons.push(`
+                    <button onclick="Inspections.openModal(${b.id}, 'return')" style="padding: 6px 10px; background: var(--amber, #f59e0b); color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-clipboard-check"></i> Return Inspect
+                    </button>
+                `);
+            }
+
+            // Archive for finished/cancelled bookings
+            if (['completed', 'cancelled', 'rejected', 'no show', 'no-show'].includes(st) && !b.is_archived) {
+                buttons.push(`
+                    <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="padding: 6px 10px; background: rgba(139,92,246,0.12); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                `);
+            }
+
+            return `<div style="display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap;">${buttons.join('')}</div>`;
+        },
+
         renderNew() {
-
-
-
-            const list = document.getElementById('newBookingsList');
-
-
-
-            if (!list) return;
-
-
-
-            // Show pending + confirmed + approved + picked up
-
-
+            const tableBody = document.getElementById('newBookingsTableBody');
+            const emptyEl = document.getElementById('newBookingsEmpty');
+            const tableEl = document.getElementById('newBookingsTable');
+            const paginationEl = document.getElementById('newBookingsPagination');
+            const prevBtn = document.getElementById('newBookingsPrevBtn');
+            const nextBtn = document.getElementById('newBookingsNextBtn');
+            const pageInfo = document.getElementById('newBookingsPageInfo');
 
             const activeStatuses = ['pending', 'confirmed', 'approved', 'picked up', 'ongoing'];
-
-
-
             const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up' };
-
-
 
             const allActive = (this.data || []).filter(b => activeStatuses.includes((b.status||'').toLowerCase()));
             let filtered = allActive;
@@ -19885,7 +20007,18 @@ function toggleNewsletterModal(show = true) {
                 filtered = this.sortBookings(filtered, this._newSortBy || 'date_desc');
             }
 
-            // Update chip counter labels dynamically so admin sees exact breakdown
+            // Apply search filter
+            if (this._newSearch) {
+                const q = this._newSearch;
+                filtered = filtered.filter(b => {
+                    const idStr = String(b.id || b.booking_id || '');
+                    const cust = (b.customer_name || b.renter_name || '').toLowerCase();
+                    const car = (b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`).toLowerCase();
+                    return idStr.includes(q) || cust.includes(q) || car.includes(q);
+                });
+            }
+
+            // Update chip counter labels dynamically
             const chipCounts = {
                 all: allActive.length,
                 pickup_soon: allActive.filter(b => ['confirmed', 'approved', 'pending'].includes((b.status || '').toLowerCase())).length,
@@ -19914,639 +20047,170 @@ function toggleNewsletterModal(show = true) {
             });
 
             // Update badge count
-
-
-
             const pendingCount = this.data.filter(b => (b.status||'').toLowerCase() === 'pending').length;
-
-
-
             const badge = document.getElementById('newBookingsBadge');
-
-
-
             if (badge) {
-
-
-
                 badge.textContent = pendingCount;
-
-
-
                 badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
-
-
-
             }
 
+            // Pagination calculation
+            const pageSize = this._newPageSize || 10;
+            const totalRecords = filtered.length;
+            this._newTotalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+            if (this._newCurrentPage > this._newTotalPages) this._newCurrentPage = this._newTotalPages;
+            if (this._newCurrentPage < 1) this._newCurrentPage = 1;
 
+            const startIndex = (this._newCurrentPage - 1) * pageSize;
+            const pageData = filtered.slice(startIndex, startIndex + pageSize);
 
-            if (filtered.length === 0) {
+            if (pageInfo) pageInfo.textContent = `Page ${this._newCurrentPage} of ${this._newTotalPages} (${totalRecords} records)`;
+            if (prevBtn) prevBtn.disabled = this._newCurrentPage <= 1;
+            if (nextBtn) nextBtn.disabled = this._newCurrentPage >= this._newTotalPages;
 
-
-
-                list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
-
-
-
-                    <i class="fas fa-inbox" style="font-size:2.5rem;opacity:0.3;margin-bottom:12px;display:block;"></i>
-
-
-
-                    <p style="font-weight:600;">No bookings in this queue.</p></div>`;
-
-
-
+            if (totalRecords === 0) {
+                if (emptyEl) emptyEl.style.display = 'block';
+                if (tableEl) tableEl.style.display = 'none';
+                if (paginationEl) paginationEl.style.display = 'none';
                 return;
-
-
-
             }
 
-
-
-            list.innerHTML = filtered.map(b => `
-
-
-
-                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
-
-
-
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-
-
-
-                        <div>
-
-
-
-                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
-
-
-
-                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
-
-
-
-                        </div>
-
-
-
-                        <div style="display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:5px;">
-                            ${(() => {
-                                const now = Date.now();
-                                const pTime = Bookings.getPickupTime(b);
-                                const rTime = Bookings.getReturnTime(b);
-                                const st = (b.status || '').toLowerCase();
-                                if (['picked up', 'ongoing'].includes(st)) {
-                                    if (rTime < now) {
-                                        return `<span style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-exclamation-circle"></i> RETURN OVERDUE</span>`;
-                                    } else if (rTime - now <= 36 * 3600 * 1000) {
-                                        return `<span style="background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-undo-alt"></i> RETURN SOON</span>`;
-                                    }
-                                } else if (['confirmed', 'approved', 'pending'].includes(st)) {
-                                    if (pTime >= now - 12 * 3600 * 1000 && pTime - now <= 36 * 3600 * 1000) {
-                                        return `<span style="background:rgba(0,177,79,0.15);color:#00B14F;border:1px solid rgba(0,177,79,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-clock"></i> PICKUP SOON</span>`;
-                                    }
-                                }
-                                return '';
-                            })()}
-                            <span class="pill ${this.getPillClass(b.status)}">${b.status || 'PENDING'}</span>
-                        </div>
-
-
-
-                    </div>
-
-
-
-                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
-
-
-
-                        <div style="width: 44px; height: 44px; background: rgba(99,102,241,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-
-
-
-                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
-
-
-
-                        </div>
-
-
-
-                        <div style="flex: 1;">
-
-
-
-                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
-
-
-
-                            <p style="font-size: 0.75rem; color: var(--text-muted);">
-
-
-
-                                <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
-
-
-
-                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
-
-
-
-                            </p>
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
-                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
-
-
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-
-
-
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">₱${parseFloat(b.total_price||0).toLocaleString()}</div>
-
-
-
-                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; font-weight: 700; border-radius: 10px;">
-
-
-
-                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
-
-
-
-                            </button>
-
-
-
-                        </div>
-
-
-
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-
-
-
-                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
-
-
-
-                                <button onclick="Bookings.markCashReceived(${b.id})" style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-
-
-
-                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
-
-
-
-                                </button>
-
-
-
-                                <button onclick="Bookings.reject(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-
-
-
-                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
-
-
-
-                                </button>
-
-
-
-                            ` : ''}
-
-
-
-                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? (() => {
-                                const act = Bookings.getPickupInspectAction(b);
-                                return `
-                                    <button onclick="${act.onClick}" style="flex:1; min-width:110px; padding:10px 8px; background:${act.active ? 'var(--amber,#f59e0b)' : '#94a3b8'}; color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:${act.active ? 'pointer' : 'not-allowed'}; opacity:${act.active ? '1' : '0.6'};">
-                                        <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
-                                    </button>
-                                    ${Bookings.isPickupPast(b) ? `<button onclick="Bookings.markNoShow(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:#ef4444; color:#fff; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;"><i class="fas fa-user-slash" style="margin-right:4px;"></i>No Show</button>` : ''}
-                                `;
-                            })() : ''}
-                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'return')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
-                                </button>
-                            ` : ''}
-                            ${['completed', 'cancelled', 'rejected', 'no show', 'no-show'].includes((b.status||'').toLowerCase()) && !b.is_archived ? `
-                                <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(139,92,246,0.12); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;" title="Archive Booking">
-                                    <i class="fas fa-archive" style="margin-right:4px;"></i>Archive
-                                </button>
-                            ` : ''}
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
-                </div>
-
-
-
-            `).join('');
-
-
-
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (tableEl) tableEl.style.display = 'table';
+            if (paginationEl) paginationEl.style.display = 'flex';
+
+            if (!tableBody) return;
+
+            tableBody.innerHTML = pageData.map(b => {
+                const startDateStr = b.start_date ? new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+                const endDateStr = b.end_date ? new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const rentalDates = `${startDateStr} - ${endDateStr}`;
+                const totalPrice = b.total_price ? parseFloat(b.total_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                const carDisplay = b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`.trim() || 'N/A';
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
+                            <div>${b.customer_name || 'N/A'}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">${b.customer_phone || b.phone || ''}</div>
+                        </td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${carDisplay}</td>
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
+                        <td style="padding: 12px 10px;">
+                            <span class="pill ${this.getPillClass(b.status)}" style="font-size: 0.65rem; padding: 2px 8px;">${b.status || 'PENDING'}</span>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">₱${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                            ${this._renderActionButtons(b)}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         },
 
-
-
         render() {
+            const tableBody = document.getElementById('allBookingsTableBody');
+            const emptyEl = document.getElementById('allBookingsEmpty');
+            const tableEl = document.getElementById('allBookingsTable');
+            const paginationEl = document.getElementById('allBookingsPagination');
+            const prevBtn = document.getElementById('allBookingsPrevBtn');
+            const nextBtn = document.getElementById('allBookingsNextBtn');
+            const pageInfo = document.getElementById('allBookingsPageInfo');
 
-
-
-            const list = document.getElementById('bookingsList');
-
-
-
-            // Apply status filter
-
-
-
-            // Apply status filter
             const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up', completed: 'Completed', cancelled: 'Cancelled' };
-            let filteredList = this.data;
+            let filteredList = this.data || [];
             let activeSortKey = this._sortBy || 'date_desc';
 
             if (this._filter === 'pickup_soon') {
                 const pickupStatuses = ['confirmed', 'approved', 'pending'];
-                filteredList = this.data.filter(b => pickupStatuses.includes((b.status || '').toLowerCase()));
+                filteredList = filteredList.filter(b => pickupStatuses.includes((b.status || '').toLowerCase()));
                 if (!this._sortBy || this._sortBy === 'date_desc') activeSortKey = 'pickup_asc';
             } else if (this._filter === 'return_soon') {
                 const returnStatuses = ['picked up', 'ongoing'];
-                filteredList = this.data.filter(b => returnStatuses.includes((b.status || '').toLowerCase()));
+                filteredList = filteredList.filter(b => returnStatuses.includes((b.status || '').toLowerCase()));
                 if (!this._sortBy || this._sortBy === 'date_desc') activeSortKey = 'return_asc';
             } else if (this._filter !== 'all') {
-                filteredList = this.data.filter(b => {
+                filteredList = filteredList.filter(b => {
                     const s = (b.status||'').toLowerCase().replace(' ', '_');
                     return s === this._filter || (b.status||'') === statusMap[this._filter];
                 });
             }
 
-            // Apply selected sorting to all bookings
-            const sorted = this.sortBookings(filteredList, activeSortKey);
-            if (sorted.length === 0) {
-
-
-
-                list.innerHTML = `
-
-
-
-                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-
-
-
-                        <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
-
-
-
-                        <p style="color: var(--text-muted); font-weight: 600;">No bookings found.</p>
-
-
-
-                    </div>`;
-
-
-
-                return;
-
-
-
+            // Apply search filter
+            if (this._allSearch) {
+                const q = this._allSearch;
+                filteredList = filteredList.filter(b => {
+                    const idStr = String(b.id || b.booking_id || '');
+                    const cust = (b.customer_name || b.renter_name || '').toLowerCase();
+                    const car = (b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`).toLowerCase();
+                    return idStr.includes(q) || cust.includes(q) || car.includes(q);
+                });
             }
 
+            // Apply selected sorting to all bookings
+            const sorted = this.sortBookings(filteredList, activeSortKey);
 
+            // Pagination calculation
+            const pageSize = this._allPageSize || 10;
+            const totalRecords = sorted.length;
+            this._allTotalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+            if (this._allCurrentPage > this._allTotalPages) this._allCurrentPage = this._allTotalPages;
+            if (this._allCurrentPage < 1) this._allCurrentPage = 1;
 
-            list.innerHTML = sorted.map(b => `
+            const startIndex = (this._allCurrentPage - 1) * pageSize;
+            const pageData = sorted.slice(startIndex, startIndex + pageSize);
 
+            if (pageInfo) pageInfo.textContent = `Page ${this._allCurrentPage} of ${this._allTotalPages} (${totalRecords} records)`;
+            if (prevBtn) prevBtn.disabled = this._allCurrentPage <= 1;
+            if (nextBtn) nextBtn.disabled = this._allCurrentPage >= this._allTotalPages;
 
+            if (totalRecords === 0) {
+                if (emptyEl) emptyEl.style.display = 'block';
+                if (tableEl) tableEl.style.display = 'none';
+                if (paginationEl) paginationEl.style.display = 'none';
+                return;
+            }
 
-                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (tableEl) tableEl.style.display = 'table';
+            if (paginationEl) paginationEl.style.display = 'flex';
 
+            if (!tableBody) return;
 
+            tableBody.innerHTML = pageData.map(b => {
+                const startDateStr = b.start_date ? new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+                const endDateStr = b.end_date ? new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const rentalDates = `${startDateStr} - ${endDateStr}`;
+                const totalPrice = b.total_price ? parseFloat(b.total_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                const carDisplay = b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`.trim() || 'N/A';
 
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-
-
-
-                        <div>
-
-
-
-                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
-
-
-
-                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
-
-
-
-                        </div>
-
-
-
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-
-
-
-                        <div style="display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:5px;">
-                            ${(() => {
-                                const now = Date.now();
-                                const pTime = Bookings.getPickupTime(b);
-                                const rTime = Bookings.getReturnTime(b);
-                                const st = (b.status || '').toLowerCase();
-                                if (['picked up', 'ongoing'].includes(st)) {
-                                    if (rTime < now) {
-                                        return `<span style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-exclamation-circle"></i> RETURN OVERDUE</span>`;
-                                    } else if (rTime - now <= 36 * 3600 * 1000) {
-                                        return `<span style="background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-undo-alt"></i> RETURN SOON</span>`;
-                                    }
-                                } else if (['confirmed', 'approved', 'pending'].includes(st)) {
-                                    if (pTime >= now - 12 * 3600 * 1000 && pTime - now <= 36 * 3600 * 1000) {
-                                        return `<span style="background:rgba(0,177,79,0.15);color:#00B14F;border:1px solid rgba(0,177,79,0.35);padding:2px 8px;border-radius:12px;font-size:0.62rem;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-clock"></i> PICKUP SOON</span>`;
-                                    }
+                return `
+                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
+                            <div>${b.customer_name || 'N/A'}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">${b.customer_phone || b.phone || ''}</div>
+                        </td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${carDisplay}</td>
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
+                        <td style="padding: 12px 10px;">
+                            <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start;">
+                                <span class="pill ${this.getPillClass(b.status)}" style="font-size: 0.65rem; padding: 2px 8px;">${b.status || 'PENDING'}</span>
+                                ${b.payment_status === 'Refund Pending' ? 
+                                    `<span class="pill danger" style="font-size: 0.55rem; padding: 1px 6px;">REFUND NEEDED</span>` : 
+                                    ((['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) ? `<span class="pill success" style="font-size: 0.55rem; padding: 1px 6px;">PAID</span>` : '')
                                 }
-                                return '';
-                            })()}
-                            <span class="pill ${this.getPillClass(b.status)}">${b.status || 'PENDING'}</span>
-                        </div>
-
-
-
-                            ${b.payment_status === 'Refund Pending' ? 
-
-
-
-                                `<span class="pill danger" style="font-size: 0.55rem; padding: 2px 8px;">REFUND NEEDED</span>` : 
-
-
-
-                                ((['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
-
-
-
-                            }
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
-                    
-
-
-
-                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 14px; border: 1px solid var(--border);">
-
-
-
-                        <div style="width: 44px; height: 44px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(99, 102, 241, 0.2);">
-
-
-
-                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
-
-
-
-                        </div>
-
-
-
-                        <div style="flex: 1;">
-
-
-
-                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
-
-
-
-                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
-
-
-
-                                <i class="far fa-calendar-alt" style="margin-right: 4px;"></i>
-
-
-
-                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
-
-
-
-                            </p>
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
- 
-
-
-
-                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
-
-
-
-                        <!-- Price row -->
-
-
-
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-
-
-
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${parseFloat(b.total_price || 0).toLocaleString()}</div>
-
-
-
-                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: 700;">
-
-
-
-                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
-
-
-
-                            </button>
-
-
-
-                        </div>
-
-
-
-
-
-
-
-                        <!-- Contextual action buttons -->
-
-
-
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-
-
-
-
-
-
-
-                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
-
-
-
-                                <button onclick="Bookings.markCashReceived(${b.id})"
-
-
-
-                                    style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-
-
-
-                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
-
-
-
-                                </button>
-
-
-
-                                <button onclick="Bookings.reject(${b.id})"
-
-
-
-                                    style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-
-
-
-                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
-
-
-
-                                </button>
-
-
-
-                            ` : ''}
-
-
-
-
-
-
-
-                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? (() => {
-                                const act = Bookings.getPickupInspectAction(b);
-                                return `
-                                    <button onclick="${act.onClick}"
-                                        style="flex:1; min-width:110px; padding:10px 8px; background:${act.active ? 'var(--amber,#f59e0b)' : '#94a3b8'}; color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:${act.active ? 'pointer' : 'not-allowed'}; opacity:${act.active ? '1' : '0.6'};">
-                                        <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
-                                    </button>
-                                    ${Bookings.isPickupPast(b) ? `<button onclick="Bookings.markNoShow(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:#ef4444; color:#fff; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;"><i class="fas fa-user-slash" style="margin-right:4px;"></i>No Show</button>` : ''}
-                                `;
-                            })() : ''}
-
-
-
-
-
-
-
-                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'return')"
-                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
-
-
-                            ` : ''}
-
-
-
-
-
-
-
-                            ${b.payment_status === 'Partially Paid' ? `
-
-
-
-                                <button onclick="Bookings.markPaid(${b.id})"
-
-
-
-                                    style="flex:1; min-width:110px; padding:10px 8px; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-
-
-
-                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Mark Fully Paid
-
-
-
-                                </button>
-
-
-
-                            ` : ''}
-
-
-
-
-
-
-
-                        </div>
-
-
-
-                    </div>
-
-
-
-                </div>
-
-
-
-            `).join('');
-
-
-
+                            </div>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">₱${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                            ${this._renderActionButtons(b)}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         },
-
-
 
         async view(id) {
             let b = (this.data && this.data.find(x => x.id == id || x.booking_id == id)) 

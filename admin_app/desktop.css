@@ -137,6 +137,10 @@
         max-width: 540px !important;
         width: 100% !important;
     }
+    #bookingDetailsModal .modal-content {
+        max-width: 680px !important;
+        width: 100% !important;
+    }
     #adminLoginOverlay .login-card { max-width: 460px !important; margin: auto !important; }
 }
 
