@@ -1809,11 +1809,16 @@
             display: contents !important;
           }
 
-          /* Profile Mobile: Single-column flow with order */
+          /* Profile Mobile: Single-column flow with order & no excess bottom space */
+          #page-profile,
+          #page-profile.page.active {
+            padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px)) !important;
+          }
           #page-profile .scroll-content {
             display: flex !important;
             flex-direction: column !important;
             gap: 16px !important;
+            padding: 14px 14px 12px !important;
           }
           .profile-desktop-col-left,
           .profile-desktop-col-right {
@@ -2633,7 +2638,14 @@
 
 
 
-          /* Profile Responsive Layout */
+          /* Profile Responsive Layout (No excess bottom space) */
+          #page-profile,
+          #page-profile.page.active {
+            padding-bottom: 0 !important;
+          }
+          #page-profile .page-header {
+            padding: 14px 28px !important;
+          }
           @media (min-width: 1024px) {
             #page-profile .scroll-content {
               display: grid !important;
@@ -2645,7 +2657,7 @@
               box-sizing: border-box !important;
               margin-left: 0 !important;
               margin-right: 0 !important;
-              padding: 24px 32px 48px !important;
+              padding: 18px 32px 14px !important;
             }
             .profile-desktop-col-left {
               display: flex !important;
@@ -2669,7 +2681,7 @@
               gap: 20px !important;
               max-width: 720px !important;
               margin: 0 auto !important;
-              padding: 20px 24px 60px !important;
+              padding: 18px 24px 16px !important;
             }
             .profile-desktop-col-left,
             .profile-desktop-col-right {
@@ -3193,13 +3205,14 @@
           #browseActiveBanner { margin: 0 32px 12px; }
           .scroll-content { padding: 24px 32px; max-width: 900px; }
           .page-header { padding: 20px 32px; }
+          #page-profile .page-header { padding: 14px 36px !important; }
           #page-profile .scroll-content {
             grid-template-columns: 360px 1fr !important;
-            gap: 28px !important;
+            gap: 24px !important;
             max-width: 1300px !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
-            padding: 28px 36px 48px !important;
+            padding: 18px 36px 14px !important;
           }
           #page-bookings .bookings-page-container {
             max-width: 1280px;
@@ -3211,11 +3224,12 @@
         @media (min-width: 1280px) {
           #page-vehicles .vehicle-grid { grid-template-columns: repeat(4, 1fr) !important; padding: 0 !important; gap: 24px !important; }
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
+          #page-profile .page-header { padding: 14px 40px !important; }
           #page-profile .scroll-content {
             grid-template-columns: 380px 1fr !important;
-            gap: 32px !important;
+            gap: 28px !important;
             max-width: 1440px !important;
-            padding: 32px 40px 56px !important;
+            padding: 20px 40px 14px !important;
           }
           #page-bookings .bookings-page-container {
             max-width: 1380px;
