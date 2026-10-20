@@ -8470,6 +8470,33 @@ function handleExtendBack(bookingId) {
 }
 window.handleExtendBack = handleExtendBack;
 
+
+// ============================================================
+// POPUP MODAL: CHANGE SCHEDULE (Mini Availability Calendar & Long-Term Discount)
+// ============================================================
+var _csCalState = {
+  bookingId: null,
+  vehicleId: null,
+  mode: 'modify', // 'modify' (start & end) or 'extend' (end only)
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  blocked: [],
+  origStart: '',
+  origEnd: '',
+  minDate: '',
+  maxDate: '',
+  dailyRate: 0,
+  amountPaid: 0,
+  selectedStart: '',
+  selectedEnd: ''
+};
+
+function _closeChangeScheduleModal() {
+  var el = document.getElementById('changeScheduleModal');
+  if (el) el.remove();
+}
+window._closeChangeScheduleModal = _closeChangeScheduleModal;
+
 function openChangeSchedule(bookingId) {
   var b = null;
   if (activeBookingData && activeBookingData.id == bookingId) {
@@ -8477,22 +8504,572 @@ function openChangeSchedule(bookingId) {
   } else if (typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData)) {
     b = _allBookingsData.find(function(x) { return x.id == bookingId; });
   }
-  var isPickedUpOrOngoing = b && (b.status === 'Picked Up' || b.status === 'Ongoing');
-  if (isPickedUpOrOngoing) {
-    // Car already in renter's possession: route to extend flow (new return date + admin approval)
-    window._openedExtendFromDetail = true;
-    var endDateStr = (b && b.end_date ? String(b.end_date).split('T')[0] : '');
-    var rateVal = (b && b.daily_rate ? b.daily_rate : 0);
-    openExtendBooking(bookingId, endDateStr, rateVal);
-  } else {
-    // Prior to vehicle handover: renter can modify dates/reschedule
-    var sDate = (b && b.start_date ? String(b.start_date).split('T')[0] : '');
-    var eDate = (b && b.end_date ? String(b.end_date).split('T')[0] : '');
-    var amtPaid = (b && b.amount_paid ? b.amount_paid : 0);
-    openModifyBooking(bookingId, sDate, eDate, amtPaid);
+  if (!b) {
+    showToast('Booking details not found', 'error');
+    return;
+  }
+  activeBookingData = b;
+
+  var isPickedUpOrOngoing = (b.status === 'Picked Up' || b.status === 'Ongoing');
+  var origS = (b.start_date ? String(b.start_date).split('T')[0] : '');
+  var origE = (b.end_date ? String(b.end_date).split('T')[0] : '');
+  var rate = parseFloat(b.daily_rate || (vehicleUnitMap && vehicleUnitMap[b.vehicle_id] && vehicleUnitMap[b.vehicle_id].daily_rate) || 0);
+  var amtPaid = parseFloat(b.amount_paid || 0);
+
+  var todayStr = new Date().toISOString().split('T')[0];
+  var minS = isPickedUpOrOngoing ? origE : todayStr;
+
+  // Compute minDate for end date:
+  var minE = minS;
+  if (isPickedUpOrOngoing && origE) {
+    try {
+      var p0 = origE.split('-');
+      var dNext = new Date(parseInt(p0[0]), parseInt(p0[1]) - 1, parseInt(p0[2]));
+      dNext.setDate(dNext.getDate() + 1);
+      var y = dNext.getFullYear();
+      var mo = String(dNext.getMonth() + 1).padStart(2, '0');
+      var dy = String(dNext.getDate()).padStart(2, '0');
+      minE = y + '-' + mo + '-' + dy;
+    } catch(e) {}
+  }
+
+  // Max date: default 730 days from now
+  var dMax = new Date();
+  dMax.setDate(dMax.getDate() + 730);
+  var maxDateStr = dMax.toISOString().split('T')[0];
+
+  var initDt = isPickedUpOrOngoing ? (minE ? new Date(minE) : new Date()) : (origS ? new Date(origS) : new Date());
+  if (isNaN(initDt.getTime())) initDt = new Date();
+
+  _csCalState = {
+    bookingId: bookingId,
+    vehicleId: b.vehicle_id,
+    mode: isPickedUpOrOngoing ? 'extend' : 'modify',
+    year: initDt.getFullYear(),
+    month: initDt.getMonth(),
+    blocked: [],
+    origStart: origS,
+    origEnd: origE,
+    minDate: minS,
+    minEndDate: minE,
+    maxDate: maxDateStr,
+    dailyRate: rate,
+    amountPaid: amtPaid,
+    selectedStart: origS,
+    selectedEnd: isPickedUpOrOngoing ? '' : origE
+  };
+
+  _renderChangeScheduleModal();
+
+  // Load blocked dates for this vehicle
+  if (b.vehicle_id) {
+    apiCall('/vehicles/' + b.vehicle_id + '/blocked-dates')
+      .then(function(dates) {
+        // Exclude current booking's own range so renter sees their own days as eligible
+        _csCalState.blocked = (dates || []).filter(function(r) {
+          var s = String(r.start_date).substring(0, 10);
+          var e = String(r.end_date).substring(0, 10);
+          // if it exactly matches current booking start & end, don't block
+          if (s === origS && e === origE) return false;
+          return true;
+        });
+        _renderCsCalGrid();
+      })
+      .catch(function() {
+        _csCalState.blocked = [];
+        _renderCsCalGrid();
+      });
   }
 }
 window.openChangeSchedule = openChangeSchedule;
+
+function _csCalPrev() {
+  if (_csCalState.month === 0) { _csCalState.month = 11; _csCalState.year--; }
+  else { _csCalState.month--; }
+  _renderCsCalGrid();
+}
+window._csCalPrev = _csCalPrev;
+
+function _csCalNext() {
+  if (_csCalState.month === 11) { _csCalState.month = 0; _csCalState.year++; }
+  else { _csCalState.month++; }
+  _renderCsCalGrid();
+}
+window._csCalNext = _csCalNext;
+
+function _renderChangeScheduleModal() {
+  _closeChangeScheduleModal();
+  var isExtend = (_csCalState.mode === 'extend');
+  var b = activeBookingData || {};
+
+  var modal = document.createElement('div');
+  modal.id = 'changeScheduleModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
+  modal.onclick = function(e) { if (e.target === modal) _closeChangeScheduleModal(); };
+
+  var html =
+    '<div style="background:var(--bg-card,#fff);border-radius:20px;width:100%;max-width:500px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.35);overflow:hidden;">' +
+      // Header
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg-card,#fff);">' +
+        '<div>' +
+          '<h3 style="margin:0;font-size:1.1rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px;">' +
+            '<i class="fas fa-calendar-alt" style="color:var(--primary);"></i> Change Schedule' +
+          '</h3>' +
+          '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">Booking #' + _csCalState.bookingId + ' • ' + escapeHtml((b.brand || '') + ' ' + (b.model || '')) + '</div>' +
+        '</div>' +
+        '<button type="button" onclick="_closeChangeScheduleModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);padding:4px;"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+
+      // Body (scrollable)
+      '<div style="padding:18px 20px;overflow-y:auto;flex:1;">' +
+        // Mode badge / explanation
+        (isExtend
+          ? '<div style="margin-bottom:14px;padding:10px 12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:10px;font-size:0.8rem;color:#065f46;display:flex;align-items:center;gap:8px;">' +
+              '<i class="fas fa-car-side" style="font-size:1.1rem;color:#10b981;"></i>' +
+              '<div><strong>Rental is Ongoing:</strong> Pick-up date is locked (' + _csCalState.origStart + '). Pick a new return date on the calendar below to extend your trip.</div>' +
+            '</div>'
+          : '<div style="margin-bottom:14px;padding:10px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;font-size:0.8rem;color:#1e40af;display:flex;align-items:center;gap:8px;">' +
+              '<i class="fas fa-info-circle" style="font-size:1.1rem;color:#3b82f6;"></i>' +
+              '<div>Choose new rental dates using the calendar below. Dates highlighted in red are unavailable.</div>' +
+            '</div>'
+        ) +
+
+        // Mini Availability Calendar Card
+        '<div style="background:var(--bg-input,#f8fafc);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:16px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+            '<div style="font-size:0.8rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:6px;">' +
+              '<i class="fas fa-calendar-day" style="color:var(--primary);"></i> <span id="csCalLabel">Calendar</span>' +
+            '</div>' +
+            '<div style="display:flex;gap:4px;">' +
+              '<button type="button" onclick="_csCalPrev()" class="btn-outline" style="padding:4px 8px;font-size:0.75rem;border-radius:6px;"><i class="fas fa-chevron-left"></i></button>' +
+              '<button type="button" onclick="_csCalNext()" class="btn-outline" style="padding:4px 8px;font-size:0.75rem;border-radius:6px;"><i class="fas fa-chevron-right"></i></button>' +
+            '</div>' +
+          '</div>' +
+          // Legend
+          '<div style="display:flex;gap:12px;font-size:0.68rem;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap;">' +
+            '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--primary);"></span> Selected</span>' +
+            '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:3px;background:#fee2e2;border:1px solid #fca5a5;"></span> Booked / Unavailable</span>' +
+            '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:3px;background:rgba(0,177,79,0.15);border:1px dashed #00b14f;"></span> In Range</span>' +
+          '</div>' +
+          '<div id="csCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;"></div>' +
+        '</div>' +
+
+        // Selected Date Inputs
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+          '<div>' +
+            '<label style="display:block;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px;">Pick-up Date</label>' +
+            '<input type="date" id="csStartDate" value="' + _csCalState.selectedStart + '"' +
+              (isExtend ? ' readonly style="width:100%;padding:10px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;font-size:0.85rem;color:var(--text-muted);cursor:not-allowed;"'
+                        : ' min="' + _csCalState.minDate + '" max="' + _csCalState.maxDate + '" style="width:100%;padding:10px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;font-size:0.85rem;color:var(--text-primary);"') +
+              ' onchange="_csDateInputChange()">' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px;">Return Date</label>' +
+            '<input type="date" id="csEndDate" value="' + _csCalState.selectedEnd + '" min="' + (_csCalState.minEndDate || _csCalState.minDate) + '" max="' + _csCalState.maxDate + '" style="width:100%;padding:10px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:10px;font-size:0.85rem;color:var(--text-primary);" onchange="_csDateInputChange()">' +
+          '</div>' +
+        '</div>' +
+
+        // Dynamic Calculation & 7-Day Discount Card
+        '<div id="csCalcBox" style="margin-bottom:14px;"></div>' +
+
+        // Payment Method selection if extension / balance is required
+        '<div id="csPaymentMethodWrap" style="display:none;margin-bottom:14px;">' +
+          '<label style="display:block;font-size:0.75rem;font-weight:800;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;"><i class="fas fa-wallet" style="color:var(--primary);margin-right:4px;"></i> Payment Method</label>' +
+          '<select id="csMethod" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-weight:700;font-size:0.88rem;background:var(--bg-input);color:var(--text-primary);">' +
+            '<option value="qrph">QR Ph (Scan to Pay — GCash, Maya, All Banks)</option>' +
+            '<option value="gcash">GCash</option>' +
+            '<option value="maya">Maya</option>' +
+            '<option value="cash">Cash (Over the counter)</option>' +
+          '</select>' +
+        '</div>' +
+
+        '<span class="field-error" id="csErr" style="display:block;text-align:center;font-size:0.8rem;color:#ef4444;min-height:18px;margin-bottom:10px;"></span>' +
+      '</div>' +
+
+      // Footer Actions
+      '<div style="padding:14px 20px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg-card,#fff);">' +
+        '<button type="button" class="btn-secondary" style="margin:0;" onclick="_closeChangeScheduleModal()">Cancel</button>' +
+        '<button type="button" class="btn-primary" id="csConfirmBtn" style="margin:0;" onclick="_submitChangeSchedule()" disabled><i class="fas fa-check"></i> Confirm Schedule</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  _renderCsCalGrid();
+  _recalcCsSchedule();
+}
+
+function _renderCsCalGrid() {
+  var label = document.getElementById('csCalLabel');
+  var grid = document.getElementById('csCalGrid');
+  if (!grid) return;
+
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if (label) label.textContent = monthNames[_csCalState.month] + ' ' + _csCalState.year;
+
+  var year = _csCalState.year;
+  var month = _csCalState.month;
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var firstDay = new Date(year, month, 1).getDay();
+  var todayStr = new Date().toISOString().split('T')[0];
+
+  var html = '';
+  var dayNames = ['S','M','T','W','T','F','S'];
+  dayNames.forEach(function(d) {
+    html += '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);padding:3px 0;">' + d + '</div>';
+  });
+
+  for (var b = 0; b < firstDay; b++) html += '<div></div>';
+
+  var isExtend = (_csCalState.mode === 'extend');
+  var sVal = _csCalState.selectedStart;
+  var eVal = _csCalState.selectedEnd;
+  var minAllowed = isExtend ? (_csCalState.minEndDate || _csCalState.minDate) : _csCalState.minDate;
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var isPast = dateStr < minAllowed;
+    var isToday = (dateStr === todayStr);
+
+    var isBlocked = _csCalState.blocked.some(function(r) {
+      var s = String(r.start_date).substring(0, 10);
+      var e = String(r.end_date).substring(0, 10);
+      return dateStr >= s && dateStr <= e;
+    });
+
+    var bg = 'var(--bg-card,#fff)';
+    var color = 'var(--text-primary)';
+    var cursor = 'pointer';
+    var border = '1px solid transparent';
+    var title = 'Available';
+
+    if (isPast) {
+      bg = 'transparent'; color = 'var(--text-muted)'; cursor = 'not-allowed'; title = 'Past / Not Allowed';
+    } else if (isBlocked) {
+      bg = '#fee2e2'; color = '#ef4444'; cursor = 'not-allowed'; title = 'Booked / Unavailable'; border = '1px solid #fca5a5';
+    } else {
+      if (sVal && dateStr === sVal) {
+        bg = 'var(--primary)'; color = '#ffffff'; border = 'none';
+      } else if (eVal && dateStr === eVal) {
+        bg = 'var(--primary)'; color = '#ffffff'; border = 'none';
+      } else if (sVal && eVal && dateStr > sVal && dateStr < eVal) {
+        bg = 'rgba(0,177,79,0.15)'; color = 'var(--primary)'; border = '1px dashed rgba(0,177,79,0.4)';
+      } else if (isToday) {
+        border = '1px solid var(--primary)';
+      }
+    }
+
+    var clickable = !isPast && !isBlocked;
+    var clickAttr = clickable ? 'onclick="_csPickCalDate(\'' + dateStr + '\')"' : '';
+
+    html += '<div ' + clickAttr + ' title="' + title + '" style="' +
+      'padding:5px 1px;border-radius:6px;background:' + bg + ';color:' + color + ';' +
+      'cursor:' + cursor + ';font-size:0.75rem;font-weight:' + ((sVal && dateStr === sVal) || (eVal && dateStr === eVal) || isToday ? '800' : '600') + ';' +
+      'border:' + border + ';transition:all 0.15s;">' + d + '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function _csPickCalDate(dateStr) {
+  var isExtend = (_csCalState.mode === 'extend');
+  if (isExtend) {
+    // Only return date can be picked
+    _csCalState.selectedEnd = dateStr;
+    var eInp = document.getElementById('csEndDate');
+    if (eInp) eInp.value = dateStr;
+  } else {
+    // Modify mode: pick start, then end
+    if (!_csCalState.selectedStart || (_csCalState.selectedStart && _csCalState.selectedEnd)) {
+      _csCalState.selectedStart = dateStr;
+      _csCalState.selectedEnd = '';
+    } else {
+      if (dateStr >= _csCalState.selectedStart) {
+        _csCalState.selectedEnd = dateStr;
+      } else {
+        _csCalState.selectedStart = dateStr;
+        _csCalState.selectedEnd = '';
+      }
+    }
+    var sInp = document.getElementById('csStartDate');
+    var eInp2 = document.getElementById('csEndDate');
+    if (sInp) sInp.value = _csCalState.selectedStart;
+    if (eInp2) eInp2.value = _csCalState.selectedEnd;
+  }
+  _renderCsCalGrid();
+  _recalcCsSchedule();
+}
+window._csPickCalDate = _csPickCalDate;
+
+function _csDateInputChange() {
+  var sInp = document.getElementById('csStartDate');
+  var eInp = document.getElementById('csEndDate');
+  if (sInp) _csCalState.selectedStart = sInp.value;
+  if (eInp) _csCalState.selectedEnd = eInp.value;
+  _renderCsCalGrid();
+  _recalcCsSchedule();
+}
+window._csDateInputChange = _csDateInputChange;
+
+function _recalcCsSchedule() {
+  var calcBox = document.getElementById('csCalcBox');
+  var confirmBtn = document.getElementById('csConfirmBtn');
+  var payWrap = document.getElementById('csPaymentMethodWrap');
+  var errEl = document.getElementById('csErr');
+  if (errEl) errEl.textContent = '';
+  if (!calcBox) return;
+
+  var sStr = _csCalState.selectedStart;
+  var eStr = _csCalState.selectedEnd;
+
+  if (!sStr || !eStr) {
+    calcBox.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:10px;">Select both pick-up and return dates to see price &amp; discount preview.</div>';
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (payWrap) payWrap.style.display = 'none';
+    return;
+  }
+
+  var d1 = new Date(sStr + 'T00:00:00');
+  var d2 = new Date(eStr + 'T00:00:00');
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime()) || d2 <= d1) {
+    calcBox.innerHTML = '<div style="font-size:0.8rem;color:#ef4444;text-align:center;padding:8px;">Return date must be after pick-up date.</div>';
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (payWrap) payWrap.style.display = 'none';
+    return;
+  }
+
+  var isExtend = (_csCalState.mode === 'extend');
+  var rate = _csCalState.dailyRate || 0;
+  var ltDays = parseInt((typeof appSettings !== 'undefined' && appSettings.long_term_discount_days) || 7);
+  var ltPercent = parseInt((typeof appSettings !== 'undefined' && appSettings.long_term_discount_percent) || 10);
+
+  if (isExtend) {
+    // ── Extension Calculation with Retroactive / Forward 7-Day Discount ──
+    var origEndDt = new Date(_csCalState.origEnd + 'T00:00:00');
+    var extDays = Math.round((d2 - origEndDt) / 86400000);
+    if (extDays <= 0) {
+      calcBox.innerHTML = '<div style="font-size:0.8rem;color:#ef4444;text-align:center;padding:8px;">New return date must be after current return (' + _csCalState.origEnd + ').</div>';
+      if (confirmBtn) confirmBtn.disabled = true;
+      if (payWrap) payWrap.style.display = 'none';
+      return;
+    }
+
+    var startDt = new Date(_csCalState.origStart + 'T00:00:00');
+    var origDays = Math.max(0, Math.round((origEndDt - startDt) / 86400000));
+    var totalDays = origDays + extDays;
+
+    var extBasePrice = extDays * rate;
+    var finalPrice = extBasePrice;
+    var discountApplied = false;
+    var discountMsg = '';
+
+    if (totalDays >= ltDays) {
+      discountApplied = true;
+      if (origDays >= ltDays) {
+        // Was already discounted before; discount applies to the extension days
+        finalPrice = extBasePrice - (extBasePrice * (ltPercent / 100));
+        discountMsg = ltPercent + '% Long-term Discount applied to extension';
+      } else {
+        // Hit >= 7 days retroactively across entire trip!
+        var totalBasePrice = totalDays * rate;
+        var totalDiscount = totalBasePrice * (ltPercent / 100);
+        var origPaidBase = origDays * rate;
+        finalPrice = (totalBasePrice - totalDiscount) - origPaidBase;
+        if (finalPrice < 0) finalPrice = 0;
+        discountMsg = ltPercent + '% Long-term Discount applied retroactively to full trip!';
+      }
+    }
+
+    var discBanner = discountApplied
+      ? '<div style="margin-top:8px;padding:8px 10px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;font-size:0.75rem;font-weight:700;color:#065f46;display:flex;align-items:center;gap:6px;">' +
+          '<i class="fas fa-tag" style="color:#10b981;"></i> ' + discountMsg +
+        '</div>'
+      : (totalDays < ltDays
+          ? '<div style="margin-top:8px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.35);border-radius:8px;font-size:0.72rem;color:#b45309;">' +
+              '<i class="fas fa-info-circle"></i> Extend for ' + (ltDays - totalDays) + ' more day' + ((ltDays - totalDays) !== 1 ? 's' : '') + ' to unlock a <strong>' + ltPercent + '% Long-term Discount</strong>!' +
+            '</div>'
+          : '');
+
+    calcBox.innerHTML =
+      '<div style="background:var(--bg-card,#fff);border:1.5px solid var(--border);border-radius:12px;padding:14px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;">' +
+          '<span>Extension Duration</span>' +
+          '<strong style="color:var(--text-primary);">' + extDays + ' day' + (extDays !== 1 ? 's' : '') + ' (Total trip: ' + totalDays + ' days)</strong>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:1.1rem;font-weight:900;color:var(--primary);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">' +
+          '<span style="font-size:0.85rem;color:var(--text-primary);">Extension Fee Due</span>' +
+          '<span>' + formatPHP(finalPrice) + '</span>' +
+        '</div>' +
+        discBanner +
+      '</div>';
+
+    calcBox.dataset.extPrice = finalPrice;
+    calcBox.dataset.extDays = extDays;
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px;"></i> Request Extension (' + formatPHP(finalPrice) + ')';
+    }
+    if (payWrap) payWrap.style.display = 'block';
+
+  } else {
+    // ── Pre-Pickup Modification Calculation with 7-Day Discount ──
+    var totalDays2 = Math.round((d2 - d1) / 86400000);
+    var basePrice = totalDays2 * rate;
+    var discount2 = 0;
+    var hasDiscount = (totalDays2 >= ltDays);
+    if (hasDiscount) discount2 = basePrice * (ltPercent / 100);
+    var newTotal = basePrice - discount2;
+    var amtPaid = _csCalState.amountPaid;
+    var diff = newTotal - amtPaid;
+
+    var discBanner2 = hasDiscount
+      ? '<div style="margin-top:8px;padding:8px 10px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;font-size:0.75rem;font-weight:700;color:#065f46;display:flex;align-items:center;gap:6px;">' +
+          '<i class="fas fa-tag" style="color:#10b981;"></i> ' + ltPercent + '% Long-term Discount applied (-' + formatPHP(discount2) + ')!' +
+        '</div>'
+      : (totalDays2 < ltDays
+          ? '<div style="margin-top:8px;padding:8px 10px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.35);border-radius:8px;font-size:0.72rem;color:#b45309;">' +
+              '<i class="fas fa-info-circle"></i> Book for ' + (ltDays - totalDays2) + ' more day' + ((ltDays - totalDays2) !== 1 ? 's' : '') + ' to get a <strong>' + ltPercent + '% Long-term Discount</strong>!' +
+            '</div>'
+          : '');
+
+    var isUnchanged = (sStr === _csCalState.origStart && eStr === _csCalState.origEnd);
+    calcBox.innerHTML =
+      '<div style="background:var(--bg-card,#fff);border:1.5px solid var(--border);border-radius:12px;padding:14px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;">' +
+          '<span>New Duration</span><strong style="color:var(--text-primary);">' + totalDays2 + ' day' + (totalDays2 !== 1 ? 's' : '') + '</strong>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;">' +
+          '<span>New Total Price</span><strong style="color:var(--text-primary);">' + formatPHP(newTotal) + '</strong>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-secondary);margin-bottom:4px;">' +
+          '<span>Previously Paid</span><strong style="color:var(--text-primary);">' + formatPHP(amtPaid) + '</strong>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;font-size:1.05rem;font-weight:900;color:' + (diff > 0 ? '#ef4444' : '#10b981') + ';margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">' +
+          '<span>' + (diff > 0 ? 'Balance to Pay' : (diff < 0 ? 'Difference (Non-Refundable)' : 'No Additional Fee')) + '</span>' +
+          '<span>' + formatPHP(Math.abs(diff)) + '</span>' +
+        '</div>' +
+        discBanner2 +
+      '</div>';
+
+    calcBox.dataset.newTotal = newTotal;
+    calcBox.dataset.balanceDiff = diff;
+    if (confirmBtn) {
+      confirmBtn.disabled = isUnchanged;
+      confirmBtn.innerHTML = '<i class="fas fa-check" style="margin-right:6px;"></i> ' + (diff > 0 ? 'Confirm & Pay (' + formatPHP(diff) + ')' : 'Confirm Schedule');
+    }
+    if (payWrap) payWrap.style.display = 'none';
+  }
+}
+
+function _submitChangeSchedule() {
+  var errEl = document.getElementById('csErr');
+  if (errEl) errEl.textContent = '';
+  var isExtend = (_csCalState.mode === 'extend');
+  var bId = _csCalState.bookingId;
+  var sStr = _csCalState.selectedStart;
+  var eStr = _csCalState.selectedEnd;
+  var confirmBtn = document.getElementById('csConfirmBtn');
+
+  if (isExtend) {
+    var calcBox = document.getElementById('csCalcBox');
+    var price = parseFloat((calcBox && calcBox.dataset.extPrice) || 0);
+    var days = parseInt((calcBox && calcBox.dataset.extDays) || 0);
+    var method = (document.getElementById('csMethod') || {}).value || 'qrph';
+    var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : method === 'qrph' ? 'QR Ph' : 'Cash (Over the counter)';
+
+    if (!eStr || days <= 0) {
+      if (errEl) errEl.textContent = 'Please choose a valid new return date.';
+      return;
+    }
+
+    if (method === 'gcash' || method === 'maya' || method === 'qrph') {
+      if (typeof preOpenPaymongoWindow === 'function') preOpenPaymongoWindow();
+      showLoading(true);
+      if (confirmBtn) confirmBtn.disabled = true;
+
+      apiCall('/paymongo/create-payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          booking_id: bId,
+          amount: price,
+          method: method,
+          client: 'web',
+          description: 'Booking #' + bId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
+          customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
+          customer_email: (currentUser && currentUser.email) || '',
+          payment_type: 'Extension'
+        })
+      }).then(function(data) {
+        showLoading(false);
+        _closeChangeScheduleModal();
+        if (data.checkout_url) {
+          openPaymongoCheckout(data.checkout_url, bId, price, method);
+          _showExtPaymentWaiting(bId, eStr, price, methodLabel, days, data.link_id);
+        } else {
+          if (typeof closePaymongoWindow === 'function') closePaymongoWindow();
+          showToast(data.error || 'Failed to create payment.', 'error');
+        }
+      }).catch(function(err) {
+        showLoading(false);
+        if (confirmBtn) confirmBtn.disabled = false;
+        var msg = (err && (err.message || (err.data && err.data.error))) || 'Payment failed.';
+        if (errEl) errEl.textContent = msg;
+        showToast(msg, 'error');
+      });
+      return;
+    }
+
+    // Cash method
+    showLoading(true);
+    var fd = new FormData();
+    fd.append('new_end_date', eStr);
+    fd.append('extension_price', price);
+    fd.append('payment_method', methodLabel);
+    fd.append('reference_number', '');
+    fetch(API_BASE + '/bookings/' + bId + '/extend', { method: 'POST', body: fd })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        showLoading(false);
+        if (data.error) { if (errEl) errEl.textContent = data.error; return; }
+        _closeChangeScheduleModal();
+        showToast('Extension request submitted! Awaiting admin approval.', 'success');
+        if (typeof NotifStore !== 'undefined' && NotifStore.add) {
+          NotifStore.add('Extension request for Booking #' + bId + ' submitted.');
+        }
+        if (typeof loadBookings === 'function') loadBookings();
+        if (typeof openBookingDetail === 'function') openBookingDetail(bId);
+      })
+      .catch(function(err) {
+        showLoading(false);
+        if (errEl) errEl.textContent = err.message || 'Failed to submit extension.';
+      });
+
+  } else {
+    // ── Modify Mode (pre-pickup) ──
+    showLoading(true);
+    if (confirmBtn) confirmBtn.disabled = true;
+    apiCall('/modify-booking', {
+      method: 'POST',
+      body: JSON.stringify({ booking_id: bId, user_id: currentUser.id, start_date: sStr, end_date: eStr })
+    }).then(function(data) {
+      showLoading(false);
+      _closeChangeScheduleModal();
+      if (data.new_balance && data.new_balance > 0) {
+        showToast('Schedule updated. Please pay the remaining balance of ' + formatPHP(data.new_balance), 'info');
+        openPayBalanceScreen(bId, data.new_balance);
+      } else {
+        showToast('Booking schedule updated! New total: ' + formatPHP(data.new_total), 'success');
+        if (typeof loadBookings === 'function') loadBookings();
+        if (typeof openBookingDetail === 'function') openBookingDetail(bId);
+      }
+    }).catch(function(err) {
+      showLoading(false);
+      if (confirmBtn) confirmBtn.disabled = false;
+      if (errEl) errEl.textContent = err.message || 'Failed to update schedule.';
+    });
+  }
+}
+window._submitChangeSchedule = _submitChangeSchedule;
+
 
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
   // Set activeBookingData from bookings cache if not already set
