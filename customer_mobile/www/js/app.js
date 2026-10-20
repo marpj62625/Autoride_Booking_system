@@ -5828,9 +5828,9 @@ function showRentalAgreement(payload, result, payType) {
 
   var modal = document.createElement('div');
   modal.id = 'rentalAgreementModal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:flex-end;justify-content:center;';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(15,23,42,0.68);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99990;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
   modal.innerHTML =
-    '<div style="background:var(--bg-card);width:100%;max-width:500px;border-radius:24px 24px 0 0;padding:24px;max-height:85vh;overflow-y:auto;">' +
+    '<div style="background:var(--bg-card);width:100%;max-width:500px;border-radius:24px;padding:24px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.35);border:1px solid var(--border);box-sizing:border-box;animation:modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);">' +
     '<div style="text-align:center;margin-bottom:16px;">' +
     '<i class="fas fa-file-contract" style="font-size:2rem;color:var(--primary);"></i>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-top:8px;">Rental Agreement</h3>' +
