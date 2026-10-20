@@ -3726,6 +3726,11 @@ def admin_users_list():
                    u.profile_picture, u.auth_provider,
                    COALESCE(u.is_regular_customer, false) AS is_regular_customer,
                    COALESCE(u.regular_customer_manual, false) AS regular_customer_manual,
+                   COALESCE(u.violation_strikes, 0) AS violation_strikes,
+                   u.violation_last_at,
+                   u.booking_suspension_until,
+                   COALESCE(u.violation_commitment_fee_required, false) AS violation_commitment_fee_required,
+                   COALESCE(u.violation_permanently_restricted, false) AS violation_permanently_restricted,
                    (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_bookings,
                    (SELECT COUNT(*) FROM bookings WHERE user_id = u.id) AS total_bookings,
                    (SELECT COALESCE(SUM(total_price), 0) FROM bookings WHERE user_id = u.id AND (LOWER(status) = 'completed' OR payment_status IN ('Paid', 'Fully Paid'))) AS total_spent
@@ -3749,6 +3754,13 @@ def admin_users_list():
             is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
             d['is_regular_customer'] = is_reg
             d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+            d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+            d['violation_commitment_fee_required'] = bool(d.get('violation_commitment_fee_required'))
+            d['violation_permanently_restricted'] = bool(d.get('violation_permanently_restricted'))
+            if d.get('violation_last_at'):
+                d['violation_last_at'] = str(d['violation_last_at'])
+            if d.get('booking_suspension_until'):
+                d['booking_suspension_until'] = str(d['booking_suspension_until'])
             
             if d.get('created_at'):
                 d['created_at'] = str(d['created_at'])
@@ -3770,7 +3782,12 @@ def admin_user_detail(user_id):
                    profile_picture, auth_provider, province, municipality, barangay,
                    license_image_url, license_number, license_expiry, license_type,
                    COALESCE(is_regular_customer, false) AS is_regular_customer,
-                   COALESCE(regular_customer_manual, false) AS regular_customer_manual
+                   COALESCE(regular_customer_manual, false) AS regular_customer_manual,
+                   COALESCE(violation_strikes, 0) AS violation_strikes,
+                   violation_last_at,
+                   booking_suspension_until,
+                   COALESCE(violation_commitment_fee_required, false) AS violation_commitment_fee_required,
+                   COALESCE(violation_permanently_restricted, false) AS violation_permanently_restricted
             FROM users WHERE id = %s
         """, (user_id,))
         user = cur.fetchone()
@@ -3803,6 +3820,13 @@ def admin_user_detail(user_id):
         is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
         d['is_regular_customer'] = is_reg
         d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+        d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+        d['violation_commitment_fee_required'] = bool(d.get('violation_commitment_fee_required'))
+        d['violation_permanently_restricted'] = bool(d.get('violation_permanently_restricted'))
+        if d.get('violation_last_at'):
+            d['violation_last_at'] = str(d['violation_last_at'])
+        if d.get('booking_suspension_until'):
+            d['booking_suspension_until'] = str(d['booking_suspension_until'])
 
         return jsonify(d), 200
     except Exception as e:
@@ -15104,6 +15128,13 @@ def get_full_profile():
         is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
         d['is_regular_customer'] = is_reg
         d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+        d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+        d['violation_commitment_fee_required'] = bool(d.get('violation_commitment_fee_required'))
+        d['violation_permanently_restricted'] = bool(d.get('violation_permanently_restricted'))
+        if d.get('violation_last_at'):
+            d['violation_last_at'] = str(d['violation_last_at'])
+        if d.get('booking_suspension_until'):
+            d['booking_suspension_until'] = str(d['booking_suspension_until'])
 
         if d.get('license_expiry'):
             d['license_expiry'] = str(d['license_expiry'])
@@ -15149,6 +15180,13 @@ def get_user_by_id(user_id):
         is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
         d['is_regular_customer'] = is_reg
         d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+        d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+        d['violation_commitment_fee_required'] = bool(d.get('violation_commitment_fee_required'))
+        d['violation_permanently_restricted'] = bool(d.get('violation_permanently_restricted'))
+        if d.get('violation_last_at'):
+            d['violation_last_at'] = str(d['violation_last_at'])
+        if d.get('booking_suspension_until'):
+            d['booking_suspension_until'] = str(d['booking_suspension_until'])
 
         # Add profile_picture_url alias for consistency
         d['profile_picture_url'] = d.get('profile_picture')

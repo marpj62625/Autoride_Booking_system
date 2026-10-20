@@ -34329,21 +34329,32 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                const res = await apiFetch('admin/users/list');
-
-
-
+                const [res, violRes] = await Promise.all([
+                    apiFetch('admin/users/list'),
+                    apiFetch('admin/violations').catch(() => null)
+                ]);
+                let violMap = {};
+                if (violRes && violRes.ok) {
+                    try {
+                        const vData = await violRes.json();
+                        (vData.users || []).forEach(vu => { violMap[vu.id] = vu; });
+                    } catch (e) {}
+                }
                 const data = await res.json();
-
-
-
                 if (!res.ok) throw new Error(data.error || 'Failed to load users');
-
-
-
                 this._all = (data || []).filter(u => {
                     const r = (u.role || '').toLowerCase();
                     return !['admin', 'super_admin', 'superadmin', 'staff'].includes(r);
+                }).map(u => {
+                    if (violMap[u.id]) {
+                        const vu = violMap[u.id];
+                        u.violation_strikes = vu.violation_strikes ?? u.violation_strikes ?? 0;
+                        u.violation_last_at = vu.violation_last_at ?? u.violation_last_at;
+                        u.booking_suspension_until = vu.booking_suspension_until ?? u.booking_suspension_until;
+                        u.violation_commitment_fee_required = vu.violation_commitment_fee_required ?? u.violation_commitment_fee_required;
+                        u.violation_permanently_restricted = vu.violation_permanently_restricted ?? u.violation_permanently_restricted;
+                    }
+                    return u;
                 });
 
 
@@ -34990,27 +35001,23 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                const [res, licRes] = await Promise.all([
-
-
-
+                const [res, licRes, violRes] = await Promise.all([
                     apiFetch(`admin/users/${userId}`),
-
-
-
-                    fetch(`${API_BASE}/api/admin/users/${userId}/license-details`)
-
-
-
+                    fetch(`${API_BASE}/api/admin/users/${userId}/license-details`),
+                    apiFetch(`admin/users/${userId}/violations`).catch(() => null)
                 ]);
-
-
-
                 const u = await res.json();
-
-
-
                 if (!res.ok) throw new Error(u.error || 'Failed to load user');
+                if (violRes && violRes.ok) {
+                    try {
+                        const vInfo = await violRes.json();
+                        u.violation_strikes = vInfo.violation_strikes ?? u.violation_strikes ?? 0;
+                        u.violation_last_at = vInfo.violation_last_at ?? u.violation_last_at;
+                        u.booking_suspension_until = vInfo.booking_suspension_until ?? u.booking_suspension_until;
+                        u.violation_commitment_fee_required = vInfo.violation_commitment_fee_required ?? u.violation_commitment_fee_required;
+                        u.violation_permanently_restricted = vInfo.violation_permanently_restricted ?? u.violation_permanently_restricted;
+                    } catch (e) {}
+                }
 
 
 
@@ -35249,6 +35256,9 @@ function toggleNewsletterModal(show = true) {
                 </div>` : u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date() ? `
                 <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#f59e0b;">
                     <i class="fas fa-clock"></i> <strong>Suspended until:</strong> ${new Date(u.booking_suspension_until).toLocaleString('en-PH', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                </div>` : (u.violation_strikes > 0) ? `
+                <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#f59e0b;text-align:center;font-weight:700;">
+                    <i class="fas fa-exclamation-triangle"></i> Active Violation Record · ${u.violation_strikes} Strike${u.violation_strikes !== 1 ? 's' : ''} (Suspension expired)
                 </div>` : `
                 <div style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.15);border-radius:10px;padding:8px;margin-bottom:10px;font-size:0.78rem;color:var(--success);text-align:center;">
                     <i class="fas fa-check-circle"></i> Good Standing · No active suspension
