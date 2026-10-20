@@ -6564,45 +6564,68 @@
         <h5 style="margin-top:0;margin-bottom:8px;">Driver's License</h5>
 
 
-        <div class="form-group">
-
-
-          <label>License Number</label>
-
-
-          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789" maxlength="13" oninput="this.value = formatLicenseNumberInput(this.value)">
-
-
-        </div>
-
+        <style>
+          .dl-code-boxes-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+          }
+          .dl-code-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: 2px solid var(--border, #cbd5e1);
+            background: var(--surface-container, #f8fafc);
+            color: var(--text-main, #0f172a);
+            font-weight: 800;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            padding: 0;
+            outline: none;
+          }
+          .dl-code-box:hover {
+            border-color: var(--primary, #00B14F);
+          }
+          .dl-code-box.selected {
+            background: var(--primary, #00B14F) !important;
+            border-color: var(--primary, #00B14F) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(0, 177, 79, 0.28);
+            transform: translateY(-1px);
+          }
+        </style>
 
         <div class="license-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-
-
           <div class="form-group" style="margin-bottom:0;">
-
-
+            <label>License Number</label>
+            <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789" maxlength="13" oninput="this.value = formatLicenseNumberInput(this.value)">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
             <label>Expiry Date</label>
-
-
             <input type="date" id="editLicenseExpiry" min="2026-01-01" max="2037-12-31" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
-
-
           </div>
+        </div>
 
-
-          <div class="form-group" style="margin-bottom:0;">
-
-
-            <label>License Class / Category</label>
-
-
-            <input type="text" id="editLicenseClass" maxlength="15" placeholder="e.g. A, B, B1" oninput="this.value = this.value.toUpperCase().replace(/[^A-E1-8,\s]/g, '').slice(0, 15)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
-
-
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>License Class / Category <span style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-left:4px;">(Select all that apply)</span></label>
+          <div id="licenseClassBoxesWrap" class="dl-code-boxes-row">
+            <button type="button" class="dl-code-box" data-dl-code="A" onclick="toggleLicenseClassBox('A')">A</button>
+            <button type="button" class="dl-code-box" data-dl-code="A1" onclick="toggleLicenseClassBox('A1')">A1</button>
+            <button type="button" class="dl-code-box" data-dl-code="B" onclick="toggleLicenseClassBox('B')">B</button>
+            <button type="button" class="dl-code-box" data-dl-code="B1" onclick="toggleLicenseClassBox('B1')">B1</button>
+            <button type="button" class="dl-code-box" data-dl-code="B2" onclick="toggleLicenseClassBox('B2')">B2</button>
+            <button type="button" class="dl-code-box" data-dl-code="C" onclick="toggleLicenseClassBox('C')">C</button>
+            <button type="button" class="dl-code-box" data-dl-code="D" onclick="toggleLicenseClassBox('D')">D</button>
+            <button type="button" class="dl-code-box" data-dl-code="BE" onclick="toggleLicenseClassBox('BE')">BE</button>
+            <button type="button" class="dl-code-box" data-dl-code="CE" onclick="toggleLicenseClassBox('CE')">CE</button>
           </div>
-
-
+          <input type="hidden" id="editLicenseClass" value="">
         </div>
 
 
@@ -7968,6 +7991,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v13_account_isolation"></script>
+<script src="js/app.js?v=20261020_v14_dl_code_boxes"></script>
 </body>
 </html>

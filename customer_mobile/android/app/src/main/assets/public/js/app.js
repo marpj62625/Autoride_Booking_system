@@ -2418,6 +2418,57 @@ function clearAuthForms() {
   });
 }
 
+var LTO_DL_CODES = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'];
+
+function syncLicenseClassBoxesFromValue(valStr) {
+  var raw = String(valStr || '').toUpperCase();
+  var tokens = raw.split(/[\s,\/]+/).filter(Boolean);
+  var activeSet = {};
+  tokens.forEach(function(t) {
+    if (LTO_DL_CODES.indexOf(t) !== -1) {
+      activeSet[t] = true;
+    }
+  });
+
+  var ordered = LTO_DL_CODES.filter(function(c) { return Boolean(activeSet[c]); });
+  var hiddenEl = document.getElementById('editLicenseClass');
+  if (hiddenEl) {
+    hiddenEl.value = ordered.join(', ');
+  }
+
+  var wrap = document.getElementById('licenseClassBoxesWrap');
+  if (wrap) {
+    var boxes = wrap.querySelectorAll('.dl-code-box');
+    for (var i = 0; i < boxes.length; i++) {
+      var code = boxes[i].getAttribute('data-dl-code');
+      if (activeSet[code]) {
+        boxes[i].classList.add('selected');
+      } else {
+        boxes[i].classList.remove('selected');
+      }
+    }
+  }
+}
+
+function toggleLicenseClassBox(code) {
+  if (!code) return;
+  var hiddenEl = document.getElementById('editLicenseClass');
+  var currentVal = hiddenEl ? (hiddenEl.value || '') : '';
+  var tokens = currentVal.toUpperCase().split(/[\s,\/]+/).filter(Boolean);
+  var idx = tokens.indexOf(code);
+  if (idx !== -1) {
+    tokens.splice(idx, 1);
+  } else {
+    tokens.push(code);
+  }
+  syncLicenseClassBoxesFromValue(tokens.join(', '));
+  if (hiddenEl) clearInlineError(hiddenEl);
+  var errEl = document.getElementById('licenseEditErr');
+  if (errEl && errEl.textContent) errEl.textContent = '';
+}
+window.toggleLicenseClassBox = toggleLicenseClassBox;
+window.syncLicenseClassBoxesFromValue = syncLicenseClassBoxesFromValue;
+
 function clearLicenseEditFields() {
   _licenseFrontBlob = null;
   _licenseBackBlob = null;
@@ -2442,6 +2493,7 @@ function clearLicenseEditFields() {
       clearInlineError(el);
     }
   });
+  syncLicenseClassBoxesFromValue('');
   var countryEl = document.getElementById('editLicenseCountry');
   if (countryEl) {
     countryEl.value = 'Philippines';
@@ -9661,18 +9713,18 @@ var Profile = {
     var classEl = document.getElementById('editLicenseClass');
     var licenseClass = classEl.value.trim().toUpperCase();
     var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
-    var validDlCodes = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE', '1', '2', '3', '4', '5', '6', '7', '8'];
+    var validDlCodes = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'];
     var hasInvalidCode = classes.length === 0 || classes.some(function(c) { return validDlCodes.indexOf(c) === -1; });
     if (hasInvalidCode) {
-      var clsErr = 'Invalid License Class. Use valid LTO DL codes (e.g., B, B1, B2, C, D, or 2, 3).';
+      var clsErr = 'Please select your License Class / DL Codes (e.g., B, B1, B2).';
       if (errEl) errEl.textContent = clsErr;
       showInlineError(classEl, clsErr);
       return;
     }
-    var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
+    var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1'].indexOf(c) !== -1; });
     if (isMotorcycleOnly) {
       if (errEl) errEl.textContent = 'Please fix the errors below.';
-      showInlineError(classEl, 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.');
+      showInlineError(classEl, 'Motorcycle-only licenses (A, A1) are not allowed. Please include a 4-wheel vehicle class (e.g., B, B1, B2).');
       return;
     }
     clearInlineError(classEl);
@@ -10333,12 +10385,14 @@ function processSelectedLicenseFile(file, side) {
 
         if (dlSectionMatch && dlSectionMatch[1]) {
           var rawCodes = dlSectionMatch[1].replace(/[@©]/g, 'A').trim();
-          var matchedCodes = rawCodes.match(/\b([A-E][12]?|[1-8])\b/gi);
+          var matchedCodes = rawCodes.match(/\b(A1|B[12]|BE|CE|[A-D])\b/gi);
           if (matchedCodes && matchedCodes.length > 0) {
             var uniqueSet = [];
             matchedCodes.forEach(function(m) {
               var code = m.toUpperCase();
-              if (uniqueSet.indexOf(code) === -1) uniqueSet.push(code);
+              if (['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'].indexOf(code) !== -1 && uniqueSet.indexOf(code) === -1) {
+                uniqueSet.push(code);
+              }
             });
             classVal = uniqueSet.join(', ');
           }
@@ -10363,13 +10417,13 @@ function processSelectedLicenseFile(file, side) {
             console.log('DL combined search area:', combined);
             var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|CLASS|CATEGORY|CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
             console.log('DL stripped search:', stripped);
-            var dlCodeRegex = /(?:^|\s|\,)([A-E][12]?|[1-8]|[@©0O])(?=\s|\,|$)/gi;
+            var dlCodeRegex = /(?:^|\s|\,)(A1|B[12]|BE|CE|[A-D]|[@©0O])(?=\s|\,|$)/gi;
             var dlFound = [];
             var dlMx;
             while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
               var c = dlMx[1].toUpperCase();
               if (['@', '©', '0', 'O'].indexOf(c) !== -1) c = 'A';
-              if (dlFound.indexOf(c) === -1 && ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE', '1', '2', '3', '4', '5', '6', '7', '8'].indexOf(c) !== -1) {
+              if (dlFound.indexOf(c) === -1 && ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'].indexOf(c) !== -1) {
                 dlFound.push(c);
               }
             }
@@ -10380,7 +10434,7 @@ function processSelectedLicenseFile(file, side) {
 
         // Tier 3: Scan text for explicit Philippine DL Codes (A, A1, B, B1, B2, C, D, BE, CE)
         if (!classVal) {
-          var fullDlMatches = text.match(/\b(A1|B[12]|BE|CE|[A-E])\b/gi);
+          var fullDlMatches = text.match(/\b(A1|B[12]|BE|CE|[A-D])\b/gi);
           if (fullDlMatches && fullDlMatches.length > 0) {
             var dlFound3 = [];
             fullDlMatches.forEach(function(codeStr) {
@@ -10394,8 +10448,8 @@ function processSelectedLicenseFile(file, side) {
         }
 
         if (classVal && document.getElementById('editLicenseClass')) {
-          document.getElementById('editLicenseClass').value = classVal;
-          document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
+          syncLicenseClassBoxesFromValue(classVal);
+          clearInlineError(document.getElementById('editLicenseClass'));
         }
 
 
@@ -10487,6 +10541,7 @@ function loadLicenseDetailsForEdit() {
       if (el) {
         el.value = data.license_class || '';
       }
+      syncLicenseClassBoxesFromValue(data.license_class || '');
       
       el = document.getElementById('editLicenseName'); 
       if (el) { 
@@ -10875,6 +10930,7 @@ function loadProfile(callback) {
         var efEl = document.getElementById(efId);
         if (efEl) efEl.value = editLicMap[efId];
       }
+      syncLicenseClassBoxesFromValue(licenseData.license_class || '');
       var editCountryEl = document.getElementById('editLicenseCountry');
       if (editCountryEl) {
         editCountryEl.value = licenseData.address || licenseData.issuing_country_state || 'Philippines';
