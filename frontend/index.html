@@ -6658,19 +6658,23 @@
         <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
 
 
-        <h5 style="margin-top:0;margin-bottom:8px;">Personal Info</h5>
+        <h5 style="margin-top:0;margin-bottom:8px;">Personal Info (Name on License)</h5>
 
-
-        <div class="form-group">
-
-
-          <label>Name on License</label>
-
-
-          <input type="text" id="editLicenseName" maxlength="50" placeholder="First Name, Middle Name, Last Name" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 50)">
-
-
+        <div class="license-name-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Last Name</label>
+            <input type="text" id="editLicenseLastName" maxlength="30" placeholder="e.g. DELA CRUZ" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 30); if(typeof syncLicenseFullNameInput==='function') syncLicenseFullNameInput();">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>First Name</label>
+            <input type="text" id="editLicenseFirstName" maxlength="30" placeholder="e.g. JUAN" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 30); if(typeof syncLicenseFullNameInput==='function') syncLicenseFullNameInput();">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Middle Name <span style="font-size:0.72rem;color:var(--text-muted);font-weight:normal;">(Optional)</span></label>
+            <input type="text" id="editLicenseMiddleName" maxlength="30" placeholder="e.g. SANTOS" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 30); if(typeof syncLicenseFullNameInput==='function') syncLicenseFullNameInput();">
+          </div>
         </div>
+        <input type="hidden" id="editLicenseName" value="">
 
 
         <div class="form-group">
@@ -8000,6 +8004,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v15_dl_code_indicator"></script>
+<script src="js/app.js?v=20261020_v16_split_license_name"></script>
 </body>
 </html>

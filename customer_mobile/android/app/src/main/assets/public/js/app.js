@@ -2487,6 +2487,118 @@ function toggleLicenseClassBox(code) {
 window.toggleLicenseClassBox = toggleLicenseClassBox;
 window.syncLicenseClassBoxesFromValue = syncLicenseClassBoxesFromValue;
 
+function parseLicenseFullNameParts(rawName) {
+  var cleaned = String(rawName || '')
+    .replace(/^[a-z]\s+(?=[A-Z]{2,})/, '')
+    .replace(/[.;]/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) {
+    return { lastName: '', firstName: '', middleName: '' };
+  }
+
+  var lastName = '';
+  var firstName = '';
+  var middleName = '';
+  var prefixes = ['DE', 'DEL', 'DELA', 'DELOS', 'SAN', 'STA', 'STA.', 'SANTO'];
+
+  if (cleaned.indexOf(',') !== -1) {
+    var commaParts = cleaned.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    lastName = (commaParts[0] || '').replace(/^[a-z]\s+(?=[A-Z]{2,})/, '').trim();
+    if (commaParts.length >= 3) {
+      firstName = commaParts[1] || '';
+      middleName = commaParts.slice(2).join(' ').trim();
+    } else if (commaParts.length === 2) {
+      var givenWords = (commaParts[1] || '').split(/\s+/).filter(Boolean);
+      if (givenWords.length <= 1) {
+        firstName = givenWords[0] || '';
+        middleName = '';
+      } else if (
+        givenWords.length >= 4 &&
+        givenWords[givenWords.length - 3].toUpperCase() === 'DE' &&
+        (givenWords[givenWords.length - 2].toUpperCase() === 'LA' || givenWords[givenWords.length - 2].toUpperCase() === 'LOS')
+      ) {
+        middleName = givenWords.slice(-3).join(' ');
+        firstName = givenWords.slice(0, -3).join(' ');
+      } else if (
+        givenWords.length >= 3 &&
+        prefixes.indexOf(givenWords[givenWords.length - 2].toUpperCase()) !== -1
+      ) {
+        middleName = givenWords.slice(-2).join(' ');
+        firstName = givenWords.slice(0, -2).join(' ');
+      } else {
+        middleName = givenWords[givenWords.length - 1];
+        firstName = givenWords.slice(0, -1).join(' ');
+      }
+    }
+  } else {
+    var words = cleaned.split(/\s+/).filter(Boolean);
+    if (words.length === 1) {
+      firstName = words[0];
+    } else if (words.length === 2) {
+      firstName = words[0];
+      lastName = words[1];
+    } else {
+      firstName = words[0];
+      middleName = words.slice(1, -1).join(' ');
+      lastName = words[words.length - 1];
+    }
+  }
+
+  return {
+    lastName: lastName.slice(0, 30),
+    firstName: firstName.slice(0, 30),
+    middleName: middleName.slice(0, 30)
+  };
+}
+
+function syncLicenseFullNameInput() {
+  var lnEl = document.getElementById('editLicenseLastName');
+  var fnEl = document.getElementById('editLicenseFirstName');
+  var mnEl = document.getElementById('editLicenseMiddleName');
+  var fullEl = document.getElementById('editLicenseName');
+
+  var ln = lnEl ? lnEl.value.trim().slice(0, 30) : '';
+  var fn = fnEl ? fnEl.value.trim().slice(0, 30) : '';
+  var mn = mnEl ? mnEl.value.trim().slice(0, 30) : '';
+
+  var combined = '';
+  if (ln && fn) {
+    combined = ln + ', ' + [fn, mn].filter(Boolean).join(' ');
+  } else {
+    combined = [ln, fn, mn].filter(Boolean).join(' ');
+  }
+  if (fullEl) fullEl.value = combined;
+  return combined;
+}
+
+function populateLicenseNameFields(fullNameStr, highlightSuccess) {
+  var parts = parseLicenseFullNameParts(fullNameStr);
+  var lnEl = document.getElementById('editLicenseLastName');
+  var fnEl = document.getElementById('editLicenseFirstName');
+  var mnEl = document.getElementById('editLicenseMiddleName');
+
+  if (lnEl) {
+    lnEl.value = parts.lastName;
+    clearInlineError(lnEl);
+    if (highlightSuccess && parts.lastName) lnEl.style.borderColor = 'var(--success, #22c55e)';
+  }
+  if (fnEl) {
+    fnEl.value = parts.firstName;
+    clearInlineError(fnEl);
+    if (highlightSuccess && parts.firstName) fnEl.style.borderColor = 'var(--success, #22c55e)';
+  }
+  if (mnEl) {
+    mnEl.value = parts.middleName;
+    clearInlineError(mnEl);
+    if (highlightSuccess && parts.middleName) mnEl.style.borderColor = 'var(--success, #22c55e)';
+  }
+  syncLicenseFullNameInput();
+}
+window.parseLicenseFullNameParts = parseLicenseFullNameParts;
+window.syncLicenseFullNameInput = syncLicenseFullNameInput;
+window.populateLicenseNameFields = populateLicenseNameFields;
+
 function clearLicenseEditFields() {
   _licenseFrontBlob = null;
   _licenseBackBlob = null;
@@ -2497,6 +2609,9 @@ function clearLicenseEditFields() {
     'editLicenseExpiry',
     'editLicenseClass',
     'editLicenseAddress',
+    'editLicenseLastName',
+    'editLicenseFirstName',
+    'editLicenseMiddleName',
     'editLicenseName',
     'editLicenseDob',
     'editLicenseEmName',
@@ -9677,13 +9792,15 @@ var Profile = {
     }
 
     // Validate required fields
+    syncLicenseFullNameInput();
     var addrFieldId = document.getElementById('editLicenseAddress') ? 'editLicenseAddress' : 'editLicenseCountry';
     var reqEm = (typeof appSettings === 'undefined' || (appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false));
     var fields = {
       'editLicenseNumber': 'License Number',
       'editLicenseExpiry': 'Expiry Date',
       'editLicenseClass': 'License Class',
-      'editLicenseName': 'Full Name',
+      'editLicenseLastName': 'Last Name',
+      'editLicenseFirstName': 'First Name',
       'editLicenseDob': 'Date of Birth'
     };
     fields[addrFieldId] = 'Complete Residential Address';
@@ -9758,16 +9875,57 @@ var Profile = {
     addrInputEl.value = addrCheck.cleaned;
     clearInlineError(addrInputEl);
 
-    // 5. Name on License validation (full name, no character spam)
+    // 5. Name on License validation (Last Name, First Name, Middle Name — max 30 chars each)
+    var licLastEl = document.getElementById('editLicenseLastName');
+    var licFirstEl = document.getElementById('editLicenseFirstName');
+    var licMidEl = document.getElementById('editLicenseMiddleName');
     var licNameEl = document.getElementById('editLicenseName');
-    var licNameCheck = validatePersonName(licNameEl ? licNameEl.value : '', 'Name on License', { required: true, requireFullName: true, minLen: 5, maxLen: 70 });
-    if (!licNameCheck.valid) {
-      if (errEl) errEl.textContent = licNameCheck.error;
-      showInlineError(licNameEl, licNameCheck.error);
+
+    var licLastCheck = validatePersonName(licLastEl ? licLastEl.value : '', 'Last Name', { required: true, minLen: 2, maxLen: 30 });
+    if (!licLastCheck.valid) {
+      if (errEl) errEl.textContent = licLastCheck.error;
+      showInlineError(licLastEl, licLastCheck.error);
       return;
     }
-    licNameEl.value = licNameCheck.cleaned;
-    clearInlineError(licNameEl);
+    if (licLastEl) { licLastEl.value = licLastCheck.cleaned; clearInlineError(licLastEl); }
+
+    var licFirstCheck = validatePersonName(licFirstEl ? licFirstEl.value : '', 'First Name', { required: true, minLen: 2, maxLen: 30 });
+    if (!licFirstCheck.valid) {
+      if (errEl) errEl.textContent = licFirstCheck.error;
+      showInlineError(licFirstEl, licFirstCheck.error);
+      return;
+    }
+    if (licFirstEl) { licFirstEl.value = licFirstCheck.cleaned; clearInlineError(licFirstEl); }
+
+    var cleanedMid = '';
+    if (licMidEl && licMidEl.value.trim()) {
+      var licMidCheck = validatePersonName(licMidEl.value, 'Middle Name', { required: false, isMiddleName: true, minLen: 1, maxLen: 30 });
+      if (!licMidCheck.valid) {
+        if (errEl) errEl.textContent = licMidCheck.error;
+        showInlineError(licMidEl, licMidCheck.error);
+        return;
+      }
+      cleanedMid = licMidCheck.cleaned;
+      licMidEl.value = cleanedMid;
+      clearInlineError(licMidEl);
+    } else if (licMidEl) {
+      clearInlineError(licMidEl);
+    }
+
+    if (licFirstCheck.cleaned.toLowerCase() === licLastCheck.cleaned.toLowerCase()) {
+      var dupNameErr = 'First Name and Last Name cannot be identical.';
+      if (errEl) errEl.textContent = dupNameErr;
+      showInlineError(licLastEl, dupNameErr);
+      return;
+    }
+
+    var combinedLicName = licLastCheck.cleaned + ', ' + [licFirstCheck.cleaned, cleanedMid].filter(Boolean).join(' ');
+    if (licNameEl) {
+      licNameEl.value = combinedLicName;
+      clearInlineError(licNameEl);
+    }
+    var driverPlainName = [licFirstCheck.cleaned, cleanedMid, licLastCheck.cleaned].filter(Boolean).join(' ').toLowerCase();
+    var driverShortName = [licFirstCheck.cleaned, licLastCheck.cleaned].filter(Boolean).join(' ').toLowerCase();
 
     // 6. Date of Birth validation (18 to 75 years old)
     var dobEl = document.getElementById('editLicenseDob');
@@ -9789,7 +9947,8 @@ var Profile = {
         showInlineError(emNameEl, emNameCheck.error);
         return;
       }
-      if (emNameCheck.cleaned.toLowerCase() === licNameCheck.cleaned.toLowerCase()) {
+      var emLower = emNameCheck.cleaned.toLowerCase();
+      if (emLower === combinedLicName.toLowerCase() || emLower === driverPlainName || emLower === driverShortName) {
         var sameNameMsg = 'Emergency contact must be a different person from the driver.';
         if (errEl) errEl.textContent = sameNameMsg;
         showInlineError(emNameEl, sameNameMsg);
@@ -10388,10 +10547,9 @@ function processSelectedLicenseFile(file, side) {
           }
         }
 
-        if (nameLine && document.getElementById('editLicenseName')) {
+        if (nameLine) {
           var cleanedName = nameLine.replace(/[.;]/g, ',').replace(/\s+/g, ' ').trim();
-          document.getElementById('editLicenseName').value = cleanedName;
-          document.getElementById('editLicenseName').style.borderColor = 'var(--success, #22c55e)';
+          populateLicenseNameFields(cleanedName, true);
         }
 
         // --- 4. Find License Class (DL Codes / Restrictions / Category) ---
@@ -10566,6 +10724,7 @@ function loadLicenseDetailsForEdit() {
         el.value = data.full_name || '';
         console.log('Set name:', el.value);
       }
+      populateLicenseNameFields(data.full_name || '', false);
       
       el = document.getElementById('editLicenseDob'); 
       if (el) { 
@@ -10948,6 +11107,7 @@ function loadProfile(callback) {
         var efEl = document.getElementById(efId);
         if (efEl) efEl.value = editLicMap[efId];
       }
+      populateLicenseNameFields(licenseData.full_name || '', false);
       syncLicenseClassBoxesFromValue(licenseData.license_class || '');
       var editCountryEl = document.getElementById('editLicenseCountry');
       if (editCountryEl) {
