@@ -5646,6 +5646,7 @@
 
 
             <button class="veh-chip"                 data-filter="unavailable" onclick="Vehicles.setFilter('unavailable',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Unavailable</button>
+            <button class="veh-chip"                 data-filter="archived"    onclick="Vehicles.setFilter('archived',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-box-archive" style="margin-right:4px;font-size:0.7rem;"></i>Archived</button>
 
 
 
@@ -15040,23 +15041,21 @@ input:checked + .ctrl-slider:before {
                     `;
 
                     return `
-                    <li style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-card,var(--surface));${i === 0 ? 'border-radius:16px 16px 0 0;' : ''}${i === vehicles.length-1 ? 'border-radius:0 0 16px 16px;' : ''}border-bottom:${i < vehicles.length-1 ? '1px solid var(--border)' : 'none'};">
+                    <li onclick="Vehicles.view(${v.id})" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-card,var(--surface));cursor:pointer;${i === 0 ? 'border-radius:16px 16px 0 0;' : ''}${i === vehicles.length-1 ? 'border-radius:0 0 16px 16px;' : ''}border-bottom:${i < vehicles.length-1 ? '1px solid var(--border)' : 'none'};transition:background 0.15s,transform 0.15s;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='var(--surface-card,var(--surface))'">
                         <div style="flex-shrink:0;width:72px;height:56px;background:var(--surface-container);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
                             ${imgHtml}
                         </div>
                         <div style="flex:1;min-width:0;">
-                            <div style="display:flex;align-items:center;justify-space-between;margin-bottom:2px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
                                 <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;">₱${Number(v.daily_rate||0).toLocaleString()}</div>
                                 <div style="display:flex;align-items:center;gap:3px;">${transBadge}${fuelBadge}</div>
                             </div>
                             <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-bottom:5px;">${v.plate_number||'NO PLATE'}</div>
-                            ${statusDropdownHtml}
+                            <div onclick="event.stopPropagation();">${statusDropdownHtml}</div>
                         </div>
-                        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px;align-items:center;">
-                            <button onclick="Vehicles.view(${v.id})" style="background:none;border:none;color:var(--primary);font-size:1.05rem;padding:4px;cursor:pointer;" title="View Details"><i class="fas fa-eye"></i></button>
-                            <button onclick="Vehicles.edit(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-pen-to-square"></i></button>
-                            ${(()=>{ const _cu = adminAuth.getUser(); return _cu && _cu.role === 'super_admin' ? `<button onclick="Vehicles.delete(${v.id})" style="background:none;border:none;color:var(--danger);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-trash-can"></i></button>` : ''; })()}
+                        <div style="flex-shrink:0;display:flex;align-items:center;color:var(--text-muted);padding:4px 8px;font-size:0.85rem;">
+                            <i class="fas fa-chevron-right" style="opacity:0.45;"></i>
                         </div>
                     </li>`;
                 }).join('') + `</ul>`;
@@ -15771,10 +15770,12 @@ input:checked + .ctrl-slider:before {
             if (!v) { console.error('Vehicle not found:', id); return; }
             const statusColor = s => {
                 switch ((s||'').toLowerCase()) {
-                    case 'available': return '#10b981';
+                    case 'available': return '#00B14F';
                     case 'rented': return '#3b82f6';
                     case 'maintenance': return '#f59e0b';
-                    default: return '#64748b';
+                    case 'archived': return '#64748b';
+                    case 'unavailable': return '#ef4444';
+                    default: return '#8b5cf6';
                 }
             };
             const sc = statusColor(v.status);
@@ -15783,39 +15784,149 @@ input:checked + .ctrl-slider:before {
             const carImgSrc = (v.vehicle_image && !isDocImg) ? v.vehicle_image : '';
             
             const imgHtml = carImgSrc
-                ? `<img src="${carImgSrc}" style="width:100%;height:220px;object-fit:cover;">`
-                : `<div style="width:100%;height:180px;background:var(--surface-container,#f4f6fb);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--primary);opacity:0.3;"></i></div>`;
+                ? `<div style="position:relative;width:100%;height:240px;background:#0f172a;overflow:hidden;">
+                     <img src="${carImgSrc}" style="width:100%;height:100%;object-fit:cover;">
+                     <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15,23,42,0.75) 100%);pointer-events:none;"></div>
+                     <div style="position:absolute;bottom:16px;left:20px;right:20px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
+                         <div>
+                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                 <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:${sc};color:#fff;font-size:0.75rem;font-weight:800;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+                                     <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>${v.status || 'Unknown'}
+                                 </span>
+                                 <span style="display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);color:#fff;font-size:0.75rem;font-weight:800;letter-spacing:1px;font-family:monospace;border:1px solid rgba(255,255,255,0.25);">
+                                     ${v.plate_number || 'NO PLATE'}
+                                 </span>
+                             </div>
+                             <h3 style="margin:0;font-size:1.35rem;font-weight:900;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,0.4);letter-spacing:-0.4px;">${v.brand || ''} ${v.model || ''}</h3>
+                         </div>
+                         <div style="text-align:right;">
+                             <div style="font-size:0.7rem;font-weight:700;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:0.5px;">Daily Rate</div>
+                             <div style="font-size:1.4rem;font-weight:900;color:#10b981;text-shadow:0 2px 4px rgba(0,0,0,0.4);letter-spacing:-0.5px;">₱${Number(v.daily_rate||0).toLocaleString()}<span style="font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.8);">/day</span></div>
+                         </div>
+                     </div>
+                   </div>`
+                : `<div style="position:relative;width:100%;height:180px;background:var(--surface-container,#f1f5f9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+                     <i class="fas fa-car" style="font-size:3.5rem;color:var(--primary);opacity:0.35;"></i>
+                     <div style="font-size:0.85rem;font-weight:700;color:var(--text-muted);">${v.brand || ''} ${v.model || ''} (${v.plate_number || 'NO PLATE'})</div>
+                   </div>`;
+
             const galleryArr = Array.isArray(v.gallery) ? v.gallery : [];
             const galleryHtml = galleryArr.length > 1
-                ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 16px 0;">` +
-                  galleryArr.slice(1,7).map(g => `<img src="${g}" style="width:100%;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open('${g}','_blank')">`).join('') +
-                  `</div>` : '';
-            const fields = [
-                ['Brand', v.brand || '-'], ['Model', v.model || '-'],
-                ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
-                ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
-                ['Seats', v.seats || '-'], ['Daily Rate', '₱' + Number(v.daily_rate||0).toLocaleString()],
-                ['Location', v.location || '-'], ['Status', v.status || '-'],
-                ['Color', v.color || v.color_display || '-'], ['Year Model', v.year_model || v.year || '-'],
-                ['Odometer', v.odometer ? (Number(v.odometer).toLocaleString() + ' km') : '0 km'],
-                ['Fuel Level', v.fuel_level || '-'],
-                ['Next Service Date', v.next_service_schedule || '-'],
-                ['LTO Expiry Date', v.lto_expiry_date || '-'],
+                ? `<div style="padding:16px 20px 0;">
+                     <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                         <i class="fas fa-images"></i> Vehicle Gallery (${galleryArr.length} Photos)
+                     </div>
+                     <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));gap:8px;">` +
+                     galleryArr.slice(1,7).map(g => `<img src="${g}" style="width:100%;height:68px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid var(--border);transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="window.open('${g}','_blank')">`).join('') +
+                     `</div>
+                   </div>` : '';
+
+            const specs = [
+                { icon: 'fa-tag', label: 'Vehicle Type', val: v.vehicle_type || '-' },
+                { icon: 'fa-gears', label: 'Transmission', val: v.transmission || '-' },
+                { icon: 'fa-gas-pump', label: 'Fuel Type', val: v.fuel_type || '-' },
+                { icon: 'fa-users', label: 'Seating Capacity', val: v.seats ? `${v.seats} Seats` : '-' },
+                { icon: 'fa-palette', label: 'Color', val: v.color || v.color_display || '-' },
+                { icon: 'fa-calendar-alt', label: 'Year Model', val: v.year_model || v.year || '-' },
+                { icon: 'fa-gauge-high', label: 'Odometer', val: v.odometer ? (Number(v.odometer).toLocaleString() + ' km') : '0 km' },
+                { icon: 'fa-oil-can', label: 'Fuel Level', val: v.fuel_level || '-' },
+                { icon: 'fa-map-marker-alt', label: 'Location / Depot', val: v.location || '-' },
+                { icon: 'fa-shield-halved', label: 'Status', val: v.status || '-' },
+                { icon: 'fa-wrench', label: 'Next Service', val: v.next_service_schedule || '-' },
+                { icon: 'fa-id-card', label: 'LTO Expiry', val: v.lto_expiry_date || '-' }
             ];
-            const fieldsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:16px;">`
-                + fields.map(([label,val]) => `<div><div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div><div style="font-size:0.88rem;font-weight:600;color:var(--text-main);">${val}</div></div>`).join('')
-                + `</div>`;
+
+            const specsGridHtml = `
+                <div style="padding:18px 20px;">
+                    <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-sliders"></i> Specifications & Details
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:10px;">
+                        ${specs.map(s => `
+                            <div style="background:var(--surface-container);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,0.08);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;">
+                                    <i class="fas ${s.icon}" style="font-size:0.85rem;"></i>
+                                </div>
+                                <div style="min-width:0;flex:1;">
+                                    <div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;">${s.label}</div>
+                                    <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.val}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            const isArchived = (v.status || '').toLowerCase() === 'archived';
+            const actionButtonsHtml = `
+                <div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--surface-solid,var(--surface));display:flex;gap:12px;justify-content:flex-end;align-items:center;border-radius:0 0 24px 24px;">
+                    <button onclick="Vehicles.archiveVehicle(${v.id}, ${isArchived ? "'Available'" : "'Archived'"})" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:12px;border:1px solid ${isArchived ? '#00B14F' : 'rgba(239,68,68,0.35)'};background:${isArchived ? 'rgba(0,177,79,0.08)' : 'rgba(239,68,68,0.08)'};color:${isArchived ? '#00B14F' : '#ef4444'};font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                        <i class="fas ${isArchived ? 'fa-box-open' : 'fa-box-archive'}"></i>
+                        <span>${isArchived ? 'Unarchive Vehicle' : 'Archive Vehicle'}</span>
+                    </button>
+                    <button onclick="document.getElementById('vehicleDetailModal').style.display='none'; Vehicles.edit(${v.id});" style="display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:12px;border:none;background:var(--primary);color:#ffffff;font-size:0.85rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,0.35);transition:all 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span>Edit Vehicle</span>
+                    </button>
+                </div>
+            `;
+
             document.getElementById('vdModalTitle').textContent = (v.brand||'') + ' ' + (v.model||'');
             document.getElementById('vehicleDetailContent').innerHTML =
-                imgHtml + galleryHtml +
-                `<div style="margin:12px 16px 0;"><span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${sc};color:#fff;font-size:0.72rem;font-weight:800;">${v.status||'Unknown'}</span></div>` +
-                fieldsHtml +
-                (v.description ? `<div style="padding:0 16px 16px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border);padding-top:12px;">${v.description}</div>` : '');
+                imgHtml +
+                galleryHtml +
+                specsGridHtml +
+                (v.description ? `<div style="padding:0 20px 16px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">
+                    <div style="font-size:0.72rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Description</div>
+                    <div style="background:var(--surface-container);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">${v.description}</div>
+                </div>` : '') +
+                actionButtonsHtml;
+
             const modal = document.getElementById('vehicleDetailModal');
             if (modal) { modal.style.display = 'flex'; }
         },
 
-async edit(id) { this.openModal(id); }
+        async archiveVehicle(id, targetStatus = 'Archived') {
+            const v = this.data.find(x => x.id == id);
+            const carName = v ? `${v.brand} ${v.model} (${v.plate_number})` : `Vehicle #${id}`;
+            const isToArchive = targetStatus === 'Archived';
+            const actionVerb = isToArchive ? 'Archive' : 'Unarchive';
+            
+            const msg = isToArchive
+                ? `Are you sure you want to ARCHIVE "${carName}"?\n\nThis will remove it from active listings, but all past booking records and financial profit history will be preserved safely.`
+                : `Restore "${carName}" back to active Available fleet?`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/vehicles/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: targetStatus })
+                });
+
+                if (res.ok) {
+                    if (typeof showNotification === 'function') {
+                        showNotification(`${carName} has been ${isToArchive ? 'archived' : 'restored'} successfully`, 'success');
+                    }
+                    const modal = document.getElementById('vehicleDetailModal');
+                    if (modal) modal.style.display = 'none';
+                    await this.refresh();
+                } else {
+                    let errMsg = `Failed to ${actionVerb.toLowerCase()} vehicle`;
+                    try {
+                        const d = await res.json();
+                        if (d && d.error) errMsg = d.error;
+                    } catch(e) {}
+                    if (typeof showNotification === 'function') showNotification(errMsg, 'error');
+                }
+            } catch (err) {
+                console.error('archiveVehicle error:', err);
+                if (typeof showNotification === 'function') showNotification('Network error while updating status', 'error');
+            }
+        },
+
+        async edit(id) { this.openModal(id); }
 
 
 
@@ -38996,11 +39107,19 @@ function toggleNewsletterModal(show = true) {
 
 
 <!-- Vehicle Detail Modal -->
-<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.85);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target === this) this.style.display='none'">
-  <div class="modal-content" style="background:var(--surface,#fff);color:var(--text-main,#0f1117);padding:0;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.3);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
-    <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
-      <h2 id="vdModalTitle" style="font-size:1.05rem;font-weight:700;margin:0;">Vehicle Details</h2>
-      <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="position:absolute;right:16px;background:rgba(0,0,0,0.06);border:none;color:#374151;font-size:1rem;padding:7px 9px;border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i></button>
+<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.8);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;z-index:9999;" onclick="if(event.target === this) this.style.display='none'">
+  <div class="modal-content" style="background:var(--surface,#fff);color:var(--text-main,#0f1117);padding:0;border-radius:24px;box-shadow:0 25px 60px rgba(0,0,0,0.35);max-width:680px;width:100%;max-height:92vh;overflow-y:auto;border:1px solid var(--border);position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border);background:var(--surface-solid,var(--surface));position:sticky;top:0;z-index:10;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,177,79,0.12);display:flex;align-items:center;justify-content:center;color:#00B14F;">
+          <i class="fas fa-car" style="font-size:1.05rem;"></i>
+        </div>
+        <div>
+          <h2 id="vdModalTitle" style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-main);letter-spacing:-0.3px;">Vehicle Details</h2>
+          <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Fleet Profile & Specifications</span>
+        </div>
+      </div>
+      <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="background:var(--surface-container);border:1px solid var(--border);color:var(--text-muted);font-size:0.95rem;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text-main)';this.style.background='var(--border)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='var(--surface-container)'"><i class="fas fa-times"></i></button>
     </div>
     <div id="vehicleDetailContent" style="padding:0;"></div>
   </div>

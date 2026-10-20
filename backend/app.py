@@ -13804,7 +13804,7 @@ def update_vehicle_status(vehicle_id):
     new_status = str(data.get('status', '') or '').strip()
     if not new_status:
         return jsonify({"error": "Status is required"}), 400
-    allowed_veh_statuses = ['Available', 'Rented', 'Maintenance', 'Unavailable']
+    allowed_veh_statuses = ['Available', 'Booked', 'Rented', 'Maintenance', 'Repair', 'Unavailable', 'Archived']
     if new_status not in allowed_veh_statuses:
         return jsonify({"error": f"Invalid vehicle status. Allowed: {', '.join(allowed_veh_statuses)}"}), 400
     try:

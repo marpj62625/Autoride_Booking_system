@@ -241,21 +241,15 @@
     li.veh-card-desktop > div:nth-child(2) > div:first-child { font-size: 1.1rem !important; margin-bottom: 4px !important; }
     li.veh-card-desktop > div:nth-child(2) > div:nth-child(2) { font-size: 0.92rem !important; margin-bottom: 3px !important; white-space: normal !important; }
     li.veh-card-desktop > div:nth-child(2) > div:nth-child(3) { font-size: 0.75rem !important; margin-bottom: 8px !important; }
-    li.veh-card-desktop > div:last-child {
-        flex-direction: row !important; justify-content: flex-end !important;
-        gap: 6px !important; padding: 10px 14px !important;
-        border-top: 1px solid var(--border) !important;
-        background: var(--surface-container) !important;
+    li.veh-card-desktop { cursor: pointer !important; }
+    li.veh-card-desktop:hover {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
+        transform: translateY(-3px) !important;
+        border-color: var(--primary) !important;
     }
-    li.veh-card-desktop > div:last-child button {
-        width: 34px !important; height: 34px !important; border-radius: 8px !important;
-        background: var(--surface) !important; border: 1px solid var(--border) !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        font-size: 0.88rem !important; color: var(--text-secondary) !important;
-        cursor: pointer !important; transition: all 0.15s !important;
-    }
-    li.veh-card-desktop > div:last-child button:first-child:hover { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
-    li.veh-card-desktop > div:last-child button:last-child:hover { background: #dc2626 !important; border-color: #dc2626 !important; color: white !important; }
+    li.veh-card-desktop > div:first-child img { transition: transform 0.3s ease !important; }
+    li.veh-card-desktop:hover > div:first-child img { transform: scale(1.04) !important; }
+    li.veh-card-desktop > div:last-child { display: none !important; }
 }
 @media (min-width: 1100px) { ul.veh-desktop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
 @media (min-width: 1400px) { ul.veh-desktop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
