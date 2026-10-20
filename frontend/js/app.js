@@ -8570,6 +8570,7 @@ function openChangeSchedule(bookingId) {
           var s = String(r.start_date).substring(0, 10);
           var e = String(r.end_date).substring(0, 10);
           // if it exactly matches current booking start & end, don't block
+          if (r.id && String(r.id) === String(bookingId)) return false;
           if (s === origS && e === origE) return false;
           return true;
         });
@@ -8913,7 +8914,7 @@ function _recalcCsSchedule() {
 
   } else {
     // ── Pre-Pickup Modification Calculation with 7-Day Discount ──
-    var totalDays2 = Math.round((d2 - d1) / 86400000);
+    var totalDays2 = Math.max(1, Math.round((d2 - d1) / 86400000));
     var basePrice = totalDays2 * rate;
     var discount2 = 0;
     var hasDiscount = (totalDays2 >= ltDays);
@@ -9054,6 +9055,8 @@ function _submitChangeSchedule() {
     }).then(function(data) {
       showLoading(false);
       _closeChangeScheduleModal();
+      if (typeof loadBookings === 'function') loadBookings();
+      if (typeof openBookingDetail === 'function') openBookingDetail(bId);
       if (data.new_balance && data.new_balance > 0) {
         showToast('Schedule updated. Please pay the remaining balance of ' + formatPHP(data.new_balance), 'info');
         openPayBalanceScreen(bId, data.new_balance);

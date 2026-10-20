@@ -7556,7 +7556,7 @@ def modify_booking():
             d2 = datetime.strptime(str(new_end)[:10], "%Y-%m-%d")
         except (ValueError, TypeError):
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-        new_days = (d2 - d1).days + 1
+        new_days = max(1, (d2 - d1).days)
 
         if new_days <= 0:
             return jsonify({"error": "Invalid dates"}), 400
@@ -7564,7 +7564,7 @@ def modify_booking():
         # Calculate old days to find out daily rate of addons and insurance
         od1 = datetime.strptime(str(bk['old_start']).split(' ')[0], "%Y-%m-%d")
         od2 = datetime.strptime(str(bk['old_end']).split(' ')[0], "%Y-%m-%d")
-        old_days = (od2 - od1).days + 1
+        old_days = max(1, (od2 - od1).days)
 
         daily_addon = float(bk['addon_price'] or 0) / old_days if old_days > 0 else 0
         daily_insurance = float(bk['insurance_price'] or 0) / old_days if old_days > 0 else 0
@@ -18002,7 +18002,7 @@ def get_blocked_dates(vehicle_id):
         cur = get_cursor()
         # Active bookings for this vehicle
         cur.execute("""
-            SELECT start_date, end_date FROM bookings
+            SELECT id, start_date, end_date FROM bookings
             WHERE vehicle_id = %s AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
         """, (vehicle_id,))
         bookings = cur.fetchall()
@@ -18027,7 +18027,7 @@ def get_blocked_dates(vehicle_id):
         
         result = []
         for b in bookings:
-            result.append({'start_date': str(b['start_date']), 'end_date': str(b['end_date']), 'type': 'booking'})
+            result.append({'id': b['id'], 'start_date': str(b['start_date']), 'end_date': str(b['end_date']), 'type': 'booking'})
         for b in blackouts:
             result.append({'start_date': str(b['start_date']), 'end_date': str(b['end_date']), 'type': 'blackout'})
             
