@@ -7744,7 +7744,7 @@ function renderBookingDetail(b) {
         var remMins = Math.floor(remMs / 60000);
 
         var extendQuickBtn = canExtend
-          ? '<button type="button" class="bkd-extend-btn" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Need More Time? Extend Rental</button>'
+          ? '<button type="button" class="bkd-extend-btn" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Need More Time? Change Schedule</button>'
           : '';
 
         if (remMs <= 0) {
@@ -7922,20 +7922,19 @@ function renderBookingDetail(b) {
     var vNameEsc = escapeHtml(vehicleName).replace(/'/g, "\\'");
     primaryAction = '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' }, false)"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
   }
-  if (canExtend) {
-    primaryAction += '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
-      '<i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Extend Booking Schedule</button>';
+  var canChangeSched = (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up' || b.status === 'Ongoing');
+  if (canChangeSched) {
+    primaryAction += '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openChangeSchedule(' + b.id + ')">' +
+      '<i class="fas fa-calendar-alt" style="margin-right:6px;"></i> Change Schedule</button>';
   }
 
   // Secondary Action Buttons
-  var secondaryActions = '<div style="display:grid;grid-template-columns:' + (canCancel || (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') ? '1fr 1fr' : '1fr') + ';gap:10px;margin-bottom:12px;">';
-  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') {
-    secondaryActions += '<button class="btn-secondary" style="width:100%;padding:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit" style="margin-right:5px;"></i> Modify Dates</button>';
-  }
+  var secondaryActions = '';
   if (canCancel) {
-    secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);width:100%;padding:12px;" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times-circle" style="margin-right:5px;"></i> Cancel Booking</button>';
+    secondaryActions = '<div style="margin-bottom:12px;">' +
+      '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);width:100%;padding:12px;" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times-circle" style="margin-right:5px;"></i> Cancel Booking</button>' +
+      '</div>';
   }
-  secondaryActions += '</div>';
 
   if (b.status === 'Completed') {
     secondaryActions += '<button class="btn-outline" style="width:100%;margin-bottom:12px;padding:12px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openCompanyReviews()"><i class="fas fa-star" style="color:#f59e0b;"></i> View All Company Reviews</button>';
@@ -8471,6 +8470,30 @@ function handleExtendBack(bookingId) {
 }
 window.handleExtendBack = handleExtendBack;
 
+function openChangeSchedule(bookingId) {
+  var b = null;
+  if (activeBookingData && activeBookingData.id == bookingId) {
+    b = activeBookingData;
+  } else if (typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData)) {
+    b = _allBookingsData.find(function(x) { return x.id == bookingId; });
+  }
+  var isPickedUpOrOngoing = b && (b.status === 'Picked Up' || b.status === 'Ongoing');
+  if (isPickedUpOrOngoing) {
+    // Car already in renter's possession: route to extend flow (new return date + admin approval)
+    window._openedExtendFromDetail = true;
+    var endDateStr = (b && b.end_date ? String(b.end_date).split('T')[0] : '');
+    var rateVal = (b && b.daily_rate ? b.daily_rate : 0);
+    openExtendBooking(bookingId, endDateStr, rateVal);
+  } else {
+    // Prior to vehicle handover: renter can modify dates/reschedule
+    var sDate = (b && b.start_date ? String(b.start_date).split('T')[0] : '');
+    var eDate = (b && b.end_date ? String(b.end_date).split('T')[0] : '');
+    var amtPaid = (b && b.amount_paid ? b.amount_paid : 0);
+    openModifyBooking(bookingId, sDate, eDate, amtPaid);
+  }
+}
+window.openChangeSchedule = openChangeSchedule;
+
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
   // Set activeBookingData from bookings cache if not already set
   if ((!activeBookingData || activeBookingData.id != bookingId) && typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData)) {
@@ -8560,7 +8583,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   var parts = [];
   parts.push('<div class="page-header">');
   parts.push('<button class="back-btn" onclick="handleExtendBack(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>');
-  parts.push('<h2 style="text-align:center;flex:1;">Extend Booking #' + bookingId + '</h2>');
+  parts.push('<h2 style="text-align:center;flex:1;">Change Schedule #' + bookingId + '</h2>');
   parts.push('</div>');
   parts.push('<div class="scroll-content" style="padding:20px;padding-bottom:60px;">');
 
@@ -9199,7 +9222,7 @@ function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
   var formHtml =
     '<div class="page-header">' +
       '<button class="back-btn" onclick="openBookingDetail(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>' +
-      '<h2>Modify Dates</h2>' +
+      '<h2>Change Schedule</h2>' +
     '</div>' +
     '<div class="scroll-content">' +
       '<div class="card">' +
