@@ -6248,7 +6248,15 @@ function preOpenPaymongoWindow() {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) return;
   try {
     if (!_paymongoWindow || _paymongoWindow.closed) {
-      _paymongoWindow = window.open('about:blank', 'PayMongoCheckout');
+      var _pw = 520, _ph = 740;
+      var _sLeft = (window.screenLeft !== undefined ? window.screenLeft : window.screenX) || 0;
+      var _sTop = (window.screenTop !== undefined ? window.screenTop : window.screenY) || 0;
+      var _sW = window.innerWidth || document.documentElement.clientWidth || screen.width;
+      var _sH = window.innerHeight || document.documentElement.clientHeight || screen.height;
+      var _pLeft = Math.max(0, Math.round((_sW / 2) - (_pw / 2) + _sLeft));
+      var _pTop = Math.max(0, Math.round((_sH / 2) - (_ph / 2) + _sTop));
+      var _pFeat = 'popup=yes,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=' + _pw + ',height=' + _ph + ',top=' + _pTop + ',left=' + _pLeft;
+      _paymongoWindow = window.open('about:blank', 'PayMongoCheckout', _pFeat);
     }
     if (_paymongoWindow && !_paymongoWindow.closed && _paymongoWindow.document) {
       _paymongoWindow.document.open();
@@ -6690,7 +6698,49 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
 
 // Auto-check payment status when the customer switches back to this tab/window or receives postMessage
 if (typeof window !== 'undefined') {
+  function _handleExternalPaymentSignal(data) {
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'AUTORIDE_PAYMENT_SUCCESS') {
+      closePaymongoWindow();
+      try { window.focus(); } catch (e) {}
+      if (window._pendingExtPayment && window._pendingExtPayment.bookingId) {
+        var ep = window._pendingExtPayment;
+        _checkExtPayment(ep.bookingId, ep.newEnd, ep.price, ep.methodLabel, ep.days, ep.linkId, true);
+        return;
+      }
+      var bId = parseInt(data.booking_id) || window._pendingPaymentBookingId;
+      if (bId) {
+        autoCheckPaymentStatus(bId, window._pendingPaymentAmount || 0, window._pendingPaymentMethod || 'gcash');
+      }
+    } else if (data.type === 'AUTORIDE_PAYMENT_CANCELLED') {
+      closePaymongoWindow();
+      try { window.focus(); } catch (e) {}
+      if (window._pendingExtPayment && window._pendingExtPayment.bookingId) {
+        var epc = window._pendingExtPayment;
+        if (window._extPollInterval) { clearInterval(window._extPollInterval); window._extPollInterval = null; }
+        window._pendingExtPayment = null;
+        if (typeof openExtendBooking === 'function') openExtendBooking(epc.bookingId);
+        return;
+      }
+      var cId = parseInt(data.booking_id) || window._pendingPaymentBookingId;
+      if (cId && typeof changePaymentMethod === 'function') {
+        changePaymentMethod(cId, window._pendingPaymentAmount || 0);
+      }
+    }
+  }
+  window.addEventListener('storage', function(ev) {
+    if (ev && ev.key === 'autoride_payment_event' && ev.newValue) {
+      try { _handleExternalPaymentSignal(JSON.parse(ev.newValue)); } catch (e) {}
+    }
+  });
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      var _payBc = new BroadcastChannel('autoride_payment_channel');
+      _payBc.onmessage = function(ev) { if (ev && ev.data) _handleExternalPaymentSignal(ev.data); };
+    }
+  } catch (e) {}
   window.addEventListener('message', function(ev) {
+    if (ev && ev.data && typeof ev.data === 'object') { _handleExternalPaymentSignal(ev.data); return; }
     if (!ev || !ev.data || typeof ev.data !== 'object') return;
     if (ev.data.type === 'AUTORIDE_PAYMENT_SUCCESS') {
       closePaymongoWindow();
@@ -6788,6 +6838,7 @@ function showPaymentFailed(bookingId, amount, method, message) {
 }
 
 function retryPayment(bookingId, amount, method) {
+  preOpenPaymongoWindow();
   var bId = parseInt(bookingId);
   var amt = parseFloat(parseFloat(amount).toFixed(2));
   showLoading(true);
@@ -8325,17 +8376,32 @@ function _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days) {
   var linkIdArg = arguments.length > 5 ? arguments[5] : '';
   
   parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ',\'' + linkIdArg + '\')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
+  parts.push('<button class="btn-secondary" onclick="if(window._extPollInterval){clearInterval(window._extPollInterval);window._extPollInterval=null;}window._pendingExtPayment=null;closePaymongoWindow();openExtendBooking(' + bookingId + ')" style="width:100%;margin-bottom:10px;border:1.5px solid var(--primary);color:var(--primary);background:rgba(0,177,79,0.06);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-exchange-alt"></i> Change Payment Method</button>');
+  parts.push('<button class="btn-secondary" onclick="if(window._extPollInterval){clearInterval(window._extPollInterval);window._extPollInterval=null;}window._pendingExtPayment=null;closePaymongoWindow();closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
+  parts.push('</div>');
+  container.innerHTML = parts.join('');
+  if (window._extPollInterval) { clearInterval(window._extPollInterval); window._extPollInterval = null; }
+  window._pendingExtPayment = { bookingId: bookingId, newEnd: newEnd, price: price, methodLabel: methodLabel, days: days, linkId: linkIdArg };
+  window._extPollInterval = setInterval(function() {
+    _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkIdArg, true);
+  }, 1500);
+}
+if (false) {
   parts.push('<button class="btn-secondary" onclick="openExtendBooking(' + bookingId + ')" style="width:100%;margin-bottom:10px;border:1.5px solid var(--primary);color:var(--primary);background:rgba(0,177,79,0.06);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-exchange-alt"></i> Change Payment Method</button>');
   parts.push('<button class="btn-secondary" onclick="closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
   parts.push('</div>');
   container.innerHTML = parts.join('');
 }
 
-function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
+function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId, isSilent) {
+  if (window._extSubmitting) return;
+  if (!isSilent) showLoading(true);
+  if (false) showLoading(true);
   showLoading(true);
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
   }
+  if (isSilent) showLoading(false);
   var url = '/paymongo/status/' + bookingId;
   if (linkId) url += '?link_id=' + linkId;
   
@@ -8344,6 +8410,11 @@ function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
       showLoading(false);
       if (data.paid) {
         // Payment confirmed - now submit extension request
+        if (window._extSubmitting) return;
+        window._extSubmitting = true;
+        if (window._extPollInterval) { clearInterval(window._extPollInterval); window._extPollInterval = null; }
+        window._pendingExtPayment = null;
+        closePaymongoWindow();
         var fd = new FormData();
         fd.append('new_end_date', newEnd);
         fd.append('extension_price', price);
@@ -8352,6 +8423,7 @@ function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
         fetch(API_BASE + '/bookings/' + bookingId + '/extend', { method: 'POST', body: fd })
           .then(function(r) { return r.json(); })
           .then(function(extData) {
+            window._extSubmitting = false;
             if (extData.error) { showToast(extData.error, 'error'); return; }
             closeOverlay('page-booking-detail');
             showToast('Extension request submitted! Awaiting admin approval.', 'success');
@@ -8359,11 +8431,11 @@ function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
             loadBookings();
           }).catch(function() { showToast('Payment confirmed but extension submission failed. Please contact support.', 'error'); });
       } else {
-        showToast('Payment not yet confirmed. Please wait and try again.', 'info');
+        if (!isSilent) showToast('Payment not yet confirmed. Please wait and try again.', 'info');
       }
     }).catch(function() {
       showLoading(false);
-      showToast('Could not verify payment. Please check your bookings.', 'error');
+      if (!isSilent) showToast('Could not verify payment. Please check your bookings.', 'error');
     });
 }
 

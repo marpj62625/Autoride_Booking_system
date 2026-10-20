@@ -294,58 +294,86 @@ def create_payment():
         link_id = None
         checkout_url = None
         reference_number = None
+        qr_image_url = None
+        from urllib.parse import quote as _url_quote
+        _enc_orig = _url_quote(return_origin, safe='') if return_origin else ''
 
-        # In TEST mode for GCash / Maya: Create a Direct Payment Intent + Payment Method + Attach first
-        # so the user goes straight to the single-tab GCash/Maya authorization page (no 2nd tab, no qr_... hang)
-        # In LIVE mode (or when QR Ph is selected), use Checkout Sessions so QR Ph / Live Checkout displays properly!
-        if active_mode != 'live' and pm_type in ('gcash', 'paymaya'):
-            try:
-                pi_payload = {
-                    'data': {
-                        'attributes': {
-                            'amount': amount_centavos,
-                            'payment_method_allowed': ['gcash', 'paymaya', 'card'],
-                            'currency': 'PHP',
-                            'capture_type': 'automatic',
-                            'description': description,
-                            'statement_descriptor': 'AUTORIDE RENTAL',
-                            'metadata': {
-                                'booking_id': str(booking_id),
-                                'method': method,
-                                'payment_type': payment_type,
-                                'client': client
-                            }
-                        }
-                    }
-                }
-                pi_res = requests.post(f'{PAYMONGO_API}/payment_intents', headers=get_auth_header(), json=pi_payload, timeout=12)
-                if pi_res.status_code in (200, 201):
-                    pi_id = pi_res.json()['data']['id']
-                    pm_payload = {'data': {'attributes': {'type': pm_type}}}
-                    if billing:
-                        pm_payload['data']['attributes']['billing'] = billing
-                    pm_res = requests.post(f'{PAYMONGO_API}/payment_methods', headers=get_auth_header(), json=pm_payload, timeout=12)
-                    if pm_res.status_code in (200, 201):
-                        pm_id = pm_res.json()['data']['id']
-                        att_payload = {
-                            'data': {
-                                'attributes': {
-                                    'payment_method': pm_id,
-                                    'return_url': success_url
+        # Direct PaymentIntent + PaymentMethod attach for BOTH Test and Live mode (qrph, gcash, paymaya)
+        # Avoids checkout.paymongo.com intermediate "Continue" screen and prevents 2nd tab spawning
+        if pm_type in ('qrph', 'gcash', 'paymaya'):
+            pi_candidates = ['qrph'] if pm_type == 'qrph' else ([pm_type, 'qrph'] if active_mode == 'live' else [pm_type])
+            pm_billing = {
+                'name': (billing.get('name') or 'Autoride Customer').strip(),
+                'email': (billing.get('email') or 'customer@autoride.com').strip()
+            }
+            if billing.get('phone'):
+                pm_billing['phone'] = billing['phone']
+
+            for cand_type in pi_candidates:
+                if checkout_url:
+                    break
+                try:
+                    pi_payload = {
+                        'data': {
+                            'attributes': {
+                                'amount': amount_centavos,
+                                'payment_method_allowed': [cand_type],
+                                'currency': 'PHP',
+                                'capture_type': 'automatic',
+                                'description': description,
+                                'statement_descriptor': 'AUTORIDE RENTAL',
+                                'metadata': {
+                                    'booking_id': str(booking_id),
+                                    'method': method,
+                                    'payment_type': payment_type,
+                                    'client': client
                                 }
                             }
                         }
-                        att_res = requests.post(f'{PAYMONGO_API}/payment_intents/{pi_id}/attach', headers=get_auth_header(), json=att_payload, timeout=12)
-                        if att_res.status_code in (200, 201):
-                            att_attrs = att_res.json()['data']['attributes']
-                            next_act = att_attrs.get('next_action') or {}
-                            redir_url = (next_act.get('redirect') or {}).get('url')
-                            if redir_url:
-                                link_id = pi_id
-                                checkout_url = redir_url
-                                reference_number = pi_id
-            except Exception as _pi_err:
-                print(f"[PayMongo] Direct PaymentIntent attach fallback to CheckoutSession: {_pi_err}")
+                    }
+                    pi_res = requests.post(f'{PAYMONGO_API}/payment_intents', headers=get_auth_header(), json=pi_payload, timeout=12)
+                    if pi_res.status_code in (200, 201):
+                        pi_id = pi_res.json()['data']['id']
+                        pm_payload = {'data': {'attributes': {'type': cand_type, 'billing': pm_billing}}}
+                        pm_res = requests.post(f'{PAYMONGO_API}/payment_methods', headers=get_auth_header(), json=pm_payload, timeout=12)
+                        if pm_res.status_code in (200, 201):
+                            pm_id = pm_res.json()['data']['id']
+                            att_payload = {
+                                'data': {
+                                    'attributes': {
+                                        'payment_method': pm_id,
+                                        'return_url': success_url
+                                    }
+                                }
+                            }
+                            att_res = requests.post(f'{PAYMONGO_API}/payment_intents/{pi_id}/attach', headers=get_auth_header(), json=att_payload, timeout=12)
+                            if att_res.status_code in (200, 201):
+                                att_attrs = att_res.json()['data']['attributes']
+                                next_act = att_attrs.get('next_action') or {}
+                                redir_url = (next_act.get('redirect') or {}).get('url')
+                                code_obj = next_act.get('code') or {}
+                                img_url = code_obj.get('image_url')
+                                if img_url:
+                                    qr_image_url = img_url
+                                    _save_qrph_image(pi_id, img_url)
+                                    link_id = pi_id
+                                    reference_number = pi_id
+                                    checkout_url = f'{APP_BASE_URL}/api/paymongo/qrph-checkout?booking_id={booking_id}&pi_id={pi_id}&amount={amount}&payment_type={payment_type}&client={client}&origin={_enc_orig}'
+                                elif redir_url:
+                                    link_id = pi_id
+                                    checkout_url = redir_url
+                                    reference_number = pi_id
+                except Exception as _pi_err:
+                    print(f"[PayMongo] Direct PaymentIntent ({cand_type}) attach error: {_pi_err}")
+
+            # If in TEST mode and QR Ph was requested but test key didn't return a consume_qr image,
+            # serve the QR Ph popup directly in Test Mode with an Authorize Test Payment button
+            if not checkout_url and active_mode != 'live' and pm_type == 'qrph':
+                import time as _t
+                sim_pi_id = f'pi_test_qrph_{booking_id}_{int(_t.time())}'
+                link_id = sim_pi_id
+                reference_number = sim_pi_id
+                checkout_url = f'{APP_BASE_URL}/api/paymongo/qrph-checkout?booking_id={booking_id}&pi_id={sim_pi_id}&amount={amount}&payment_type={payment_type}&client={client}&origin={_enc_orig}'
 
         if not checkout_url:
             # Try Checkout Sessions (for Card or fallback)
@@ -390,6 +418,8 @@ def create_payment():
             'checkout_url': checkout_url,
             'link_id': link_id,
             'reference_number': reference_number,
+            'qr_image_url': qr_image_url,
+            'mode': active_mode,
             'amount': amount,
             'method': method
         }), 200
@@ -398,6 +428,306 @@ def create_payment():
         return jsonify({'error': 'PayMongo request timed out. Please try again.'}), 504
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ??? QR PH CACHE & POPUP CHECKOUT ????????????????????????????????????????????
+
+_QRPH_CACHE = {}
+_SIMULATED_PAID_LINKS = set()
+
+def _save_qrph_image(pi_id, img_url):
+    if not pi_id or not img_url:
+        return
+    _QRPH_CACHE[pi_id] = img_url
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            INSERT INTO settings (key, value) VALUES (%s, %s)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+        """, (f'qrph_img_{pi_id}', img_url))
+        commit_db()
+        cur.close()
+    except Exception:
+        pass
+
+def _get_qrph_image(pi_id):
+    if not pi_id:
+        return None
+    if pi_id in _QRPH_CACHE:
+        return _QRPH_CACHE[pi_id]
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT value FROM settings WHERE key = %s", (f'qrph_img_{pi_id}',))
+        row = cur.fetchone()
+        cur.close()
+        if row and row.get('value'):
+            _QRPH_CACHE[pi_id] = row['value']
+            return row['value']
+    except Exception:
+        pass
+    if pi_id.startswith('pi_') and not pi_id.startswith('pi_test_qrph_'):
+        try:
+            res = requests.get(f'{PAYMONGO_API}/payment_intents/{pi_id}', headers=get_auth_header(), timeout=8)
+            if res.status_code == 200:
+                attrs = res.json().get('data', {}).get('attributes', {})
+                img = ((attrs.get('next_action') or {}).get('code') or {}).get('image_url')
+                if img:
+                    _QRPH_CACHE[pi_id] = img
+                    return img
+        except Exception:
+            pass
+    return None
+
+
+@paymongo_bp.route('/paymongo/qrph-checkout', methods=['GET'])
+@paymongo_bp.route('/api/paymongo/qrph-checkout', methods=['GET'])
+def qrph_checkout():
+    """
+    Renders a clean, direct QR Ph (Scan to Pay) popup window without any intermediate
+    'Continue' screen or 2nd tab, and auto-closes immediately once paid (Live & Test mode).
+    """
+    booking_id = request.args.get('booking_id', '')
+    pi_id = request.args.get('pi_id', '')
+    amount = request.args.get('amount', '0')
+    payment_type = request.args.get('payment_type', 'Full')
+    client = request.args.get('client', 'web')
+    origin = (request.args.get('origin') or APP_BASE_URL or '').rstrip('/')
+    try:
+        amt_float = float(amount)
+    except Exception:
+        amt_float = 0.0
+    amt_formatted = f"{amt_float:,.2f}"
+
+    cfg = get_paymongo_config()
+    mode = cfg.get('mode', 'test')
+    qr_img = _get_qrph_image(pi_id)
+    if not qr_img:
+        # Clean inline SVG fallback QR code for Test Mode if PayMongo test key didn't return a PNG
+        qr_img = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" + f"AUTORIDE-QRPH-BOOKING-{booking_id}-PHP-{amt_formatted}"
+
+    fallback_url = f"{origin}/?payment=success&booking_id={booking_id}"
+    cancel_fallback_url = f"{origin}/?payment=cancelled&booking_id={booking_id}"
+
+    test_controls_html = ''
+    if mode != 'live':
+        test_controls_html = f'''
+        <div style="margin-top:16px;padding:12px;background:rgba(245,158,11,0.12);border:1px dashed rgba(245,158,11,0.45);border-radius:12px;">
+            <div style="font-size:0.72rem;font-weight:800;color:#fbbf24;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">
+                PayMongo Test Mode Simulator
+            </div>
+            <button id="simPayBtn" onclick="simulateTestPay()" style="width:100%;background:#10b981;color:#fff;border:none;padding:11px 16px;border-radius:10px;font-weight:800;font-size:0.88rem;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 12px rgba(16,185,129,0.25);">
+                &#10003; Authorize Test Payment
+            </button>
+            <button onclick="cancelQrPay()" style="width:100%;background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.35);padding:9px 16px;border-radius:10px;font-weight:700;font-size:0.82rem;cursor:pointer;">
+                &#10005; Fail / Cancel Test Payment
+            </button>
+        </div>
+        '''
+
+    return f'''<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Scan QR Ph to Pay — Autoride Booking #{booking_id}</title>
+        <style>
+            * {{ box-sizing: border-box; }}
+            body {{
+                margin: 0; padding: 20px 16px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0f172a; color: #f8fafc;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                min-height: 100vh; text-align: center;
+            }}
+            .card {{
+                background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 20px; padding: 22px 20px; width: 100%; max-width: 400px;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            }}
+            .badge {{
+                display: inline-flex; align-items: center; gap: 6px;
+                background: rgba(16,185,129,0.14); color: #34d399;
+                border: 1px solid rgba(16,185,129,0.3);
+                padding: 4px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 800;
+                margin-bottom: 10px;
+            }}
+            .amt {{ font-size: 1.85rem; font-weight: 900; color: #10b981; margin: 4px 0 2px; }}
+            .sub {{ font-size: 0.8rem; color: #94a3b8; margin-bottom: 14px; }}
+            .qr-box {{
+                background: #ffffff; border-radius: 16px; padding: 16px;
+                display: inline-block; margin: 0 auto 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            }}
+            .qr-box img {{ width: 230px; height: 230px; object-fit: contain; display: block; }}
+            .qrph-header {{
+                display: flex; align-items: center; justify-content: center; gap: 6px;
+                margin-bottom: 8px; color: #0f172a; font-weight: 900; font-size: 0.9rem;
+            }}
+            .banks {{ font-size: 0.75rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 14px; }}
+            .dl-btn {{
+                display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+                width: 100%; background: rgba(255,255,255,0.08); color: #e2e8f0;
+                border: 1px solid rgba(255,255,255,0.15); padding: 10px 14px;
+                border-radius: 10px; font-weight: 700; font-size: 0.82rem;
+                text-decoration: none; cursor: pointer; margin-bottom: 8px;
+            }}
+            .dl-btn:hover {{ background: rgba(255,255,255,0.14); }}
+            .status-bar {{
+                display: flex; align-items: center; justify-content: center; gap: 8px;
+                font-size: 0.78rem; color: #94a3b8; margin-top: 8px;
+            }}
+            .dot {{
+                width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+                animation: pulse 1.2s infinite ease-in-out;
+            }}
+            @keyframes pulse {{ 0%, 100% {{ opacity: 0.3; transform: scale(0.9); }} 50% {{ opacity: 1; transform: scale(1.2); }} }}
+        </style>
+    </head>
+    <body>
+        <div class="card" id="qrCard">
+            <div class="badge">&#128274; PAYMONGO SECURE QR PH</div>
+            <div style="font-size:0.9rem;font-weight:700;color:#e2e8f0;">Autoride Booking #{booking_id}</div>
+            <div class="amt">&#8369;{amt_formatted}</div>
+            <div class="sub">Scan using GCash, Maya, BDO, BPI, UnionBank, GoTyme, or any QR Ph app</div>
+            <div class="qr-box">
+                <div class="qrph-header">
+                    <span style="color:#dc2626;">QR</span><span style="color:#2563eb;">Ph</span>
+                    <span style="font-weight:600;color:#64748b;font-size:0.75rem;">• Scan to Pay</span>
+                </div>
+                <img src="{qr_img}" alt="QR Ph Code" />
+            </div>
+            <a href="{qr_img}" download="Autoride-Booking-{booking_id}-QRPh.png" class="dl-btn">
+                &#11015; Download / Save QR Code
+            </a>
+            {test_controls_html}
+            <div class="status-bar">
+                <div class="dot"></div>
+                <span id="statusTxt">Waiting for payment... Window will auto-close once paid.</span>
+            </div>
+            <button onclick="cancelQrPay()" style="margin-top:12px;background:transparent;border:none;color:#64748b;font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:underline;">
+                Cancel &amp; Change Payment Method
+            </button>
+        </div>
+        <script>
+            var bookingId = "{booking_id}";
+            var piId = "{pi_id}";
+            var amountVal = "{amount}";
+            var payType = "{payment_type}";
+            var isClosing = false;
+
+            function notifyAndClose(msgType, fallback) {{
+                if (isClosing) return;
+                isClosing = true;
+                var payload = {{ type: msgType, booking_id: bookingId, link_id: piId, ts: Date.now() }};
+                try {{
+                    localStorage.setItem('autoride_payment_event', JSON.stringify(payload));
+                }} catch (e) {{}}
+                try {{
+                    if (typeof BroadcastChannel !== 'undefined') {{
+                        var bc = new BroadcastChannel('autoride_payment_channel');
+                        bc.postMessage(payload);
+                        bc.close();
+                    }}
+                }} catch (e) {{}}
+                try {{
+                    if (window.opener && !window.opener.closed) {{
+                        window.opener.postMessage(payload, '*');
+                        window.opener.focus();
+                    }}
+                }} catch (e) {{}}
+                try {{ window.open('', '_self', ''); }} catch (e) {{}}
+                try {{ window.close(); }} catch (e) {{}}
+                setTimeout(function() {{
+                    try {{ window.close(); }} catch (e) {{}}
+                    if (!window.opener || window.opener.closed) {{
+                        window.location.replace(fallback);
+                    }}
+                }}, 350);
+            }}
+
+            function checkStatus() {{
+                if (isClosing) return;
+                fetch('/api/paymongo/status/' + bookingId + '?link_id=' + encodeURIComponent(piId))
+                    .then(function(r) {{ return r.json(); }})
+                    .then(function(d) {{
+                        if (d && d.paid) {{
+                            document.getElementById('statusTxt').textContent = 'Payment confirmed! Returning to Autoride...';
+                            notifyAndClose('AUTORIDE_PAYMENT_SUCCESS', '{fallback_url}');
+                        }}
+                    }})
+                    .catch(function() {{}});
+            }}
+
+            setInterval(checkStatus, 1500);
+
+            function simulateTestPay() {{
+                var btn = document.getElementById('simPayBtn');
+                if (btn) {{ btn.disabled = true; btn.textContent = 'Confirming Test Payment...'; }}
+                fetch('/api/paymongo/simulate-test-payment', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        booking_id: bookingId,
+                        link_id: piId,
+                        amount: amountVal,
+                        payment_type: payType,
+                        method: 'qrph'
+                    }})
+                }})
+                .then(function(r) {{ return r.json(); }})
+                .then(function(d) {{
+                    if (d && d.paid) {{
+                        notifyAndClose('AUTORIDE_PAYMENT_SUCCESS', '{fallback_url}');
+                    }} else {{
+                        if (btn) {{ btn.disabled = false; btn.textContent = 'Authorize Test Payment'; }}
+                    }}
+                }})
+                .catch(function() {{
+                    if (btn) {{ btn.disabled = false; btn.textContent = 'Authorize Test Payment'; }}
+                }});
+            }}
+
+            function cancelQrPay() {{
+                notifyAndClose('AUTORIDE_PAYMENT_CANCELLED', '{cancel_fallback_url}');
+            }}
+        </script>
+    </body>
+    </html>''', 200
+
+
+@paymongo_bp.route('/paymongo/simulate-test-payment', methods=['POST'])
+@paymongo_bp.route('/api/paymongo/simulate-test-payment', methods=['POST'])
+def simulate_test_payment():
+    """
+    Confirms a test payment when PayMongo is in TEST mode.
+    """
+    cfg = get_paymongo_config()
+    if cfg.get('mode') == 'live':
+        return jsonify({'error': 'Test simulation is disabled in Live mode'}), 403
+
+    data = request.get_json(silent=True) or {}
+    booking_id = data.get('booking_id')
+    link_id = data.get('link_id') or f'sim_{booking_id}'
+    amount = float(data.get('amount') or 0)
+    payment_type = data.get('payment_type') or 'Full'
+    method = data.get('method') or 'qrph'
+
+    _SIMULATED_PAID_LINKS.add(str(link_id))
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            INSERT INTO settings (key, value) VALUES (%s, 'paid')
+            ON CONFLICT (key) DO UPDATE SET value = 'paid'
+        """, (f'sim_paid_{link_id}',))
+        commit_db()
+        cur.close()
+    except Exception:
+        pass
+
+    if payment_type != 'Extension' and booking_id:
+        _confirm_payment(booking_id, amount, method, link_id, payment_type)
+
+    return jsonify({'paid': True, 'booking_id': booking_id, 'link_id': link_id}), 200
 
 
 # ??? PAYMENT SUCCESS REDIRECT ????????????????????????????????????????????????
@@ -508,9 +838,18 @@ def payment_success():
                 <a href="{fallback_url}" class="btn" onclick="tryClose()">Return to Autoride</a>
                 <script>
                     function tryClose() {{
+                        var payload = {{ type: 'AUTORIDE_PAYMENT_SUCCESS', booking_id: '{booking_id}', ts: Date.now() }};
+                        try {{ localStorage.setItem('autoride_payment_event', JSON.stringify(payload)); }} catch (e) {{}}
+                        try {{
+                            if (typeof BroadcastChannel !== 'undefined') {{
+                                var bc = new BroadcastChannel('autoride_payment_channel');
+                                bc.postMessage(payload);
+                                bc.close();
+                            }}
+                        }} catch (e) {{}}
                         try {{
                             if (window.opener && !window.opener.closed) {{
-                                window.opener.postMessage({{ type: 'AUTORIDE_PAYMENT_SUCCESS', booking_id: '{booking_id}' }}, '*');
+                                window.opener.postMessage(payload, '*');
                                 window.opener.focus();
                             }}
                         }} catch (e) {{}}
@@ -523,7 +862,7 @@ def payment_success():
                         if (!window.opener || window.opener.closed) {{
                             window.location.replace('{fallback_url}');
                         }}
-                    }}, 400);
+                    }}, 350);
                 </script>
             </body>
             </html>''', 200
@@ -608,9 +947,18 @@ def payment_cancel():
             <h2>Payment Cancelled</h2>
             <p>Closing this window and returning to Autoride...</p>
             <script>
+                var cPayload = {{ type: 'AUTORIDE_PAYMENT_CANCELLED', booking_id: '{booking_id or ""}', ts: Date.now() }};
+                try {{ localStorage.setItem('autoride_payment_event', JSON.stringify(cPayload)); }} catch (e) {{}}
+                try {{
+                    if (typeof BroadcastChannel !== 'undefined') {{
+                        var bc = new BroadcastChannel('autoride_payment_channel');
+                        bc.postMessage(cPayload);
+                        bc.close();
+                    }}
+                }} catch (e) {{}}
                 try {{
                     if (window.opener && !window.opener.closed) {{
-                        window.opener.postMessage({{ type: 'AUTORIDE_PAYMENT_CANCELLED', booking_id: '{booking_id or ""}' }}, '*');
+                        window.opener.postMessage(cPayload, '*');
                         window.opener.focus();
                     }}
                 }} catch (e) {{}}
@@ -620,7 +968,7 @@ def payment_cancel():
                     if (!window.opener || window.opener.closed) {{
                         window.location.replace('{fallback_url}');
                     }}
-                }}, 400);
+                }}, 350);
             </script>
         </body>
         </html>''', 200
@@ -827,8 +1175,30 @@ def check_payment_status(booking_id):
                 'paid': True
             }), 200
 
-        # Not yet confirmed - actively check PayMongo API
+        # Not yet confirmed - actively check PayMongo API or Test Simulator
         link_id = query_link_id or booking['paymongo_link_id']
+        if link_id:
+            is_sim_paid = str(link_id) in _SIMULATED_PAID_LINKS
+            if not is_sim_paid:
+                try:
+                    cur.execute("SELECT value FROM settings WHERE key = %s", (f'sim_paid_{link_id}',))
+                    srow = cur.fetchone()
+                    if srow and srow.get('value') == 'paid':
+                        is_sim_paid = True
+                        _SIMULATED_PAID_LINKS.add(str(link_id))
+                except Exception:
+                    pass
+            if is_sim_paid:
+                is_extension = bool(query_link_id and query_link_id != booking['paymongo_link_id'])
+                if is_extension:
+                    return jsonify({'booking_id': booking_id, 'paid': True, 'is_extension': True}), 200
+                return jsonify({
+                    'booking_id': booking_id,
+                    'status': booking['status'],
+                    'payment_status': booking['payment_status'],
+                    'paid': True
+                }), 200
+
         cfg = get_paymongo_config()
         secret_key = cfg.get('secret_key')
         debug_info = {'link_id': link_id, 'has_key': bool(secret_key)}
