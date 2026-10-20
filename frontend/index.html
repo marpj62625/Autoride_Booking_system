@@ -4017,6 +4017,11 @@
           .active-rental-countdown { font-size: 2.7rem; }
           #activeBookingMonitor { margin: 0 28px 24px !important; }
           #activeBookingMonitor > div:first-child { padding: 0 4px 12px !important; }
+          .pending-pay-inner { padding: 20px 24px !important; }
+          .pending-pay-body-row { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 18px !important; }
+          .pending-pay-due-box { flex: 1 !important; margin-bottom: 0 !important; }
+          .pending-pay-note { max-width: 340px !important; }
+          .pending-pay-actions { min-width: 280px !important; flex-shrink: 0 !important; }
         }
 
         /* Vehicle detail: modern desktop layout */
@@ -6031,7 +6036,7 @@
           </h3>
           <span style="font-size:0.65rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;">30-MIN LIMIT</span>
         </div>
-        <div id="pendingPaymentCard" class="active-rental-card" style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,0.4);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(245,158,11,0.12);">
+        <div id="pendingPaymentCard" class="pending-payment-card" style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,0.4);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(245,158,11,0.12);">
           <!-- filled by JS -->
         </div>
       </div>
@@ -8038,6 +8043,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v18_center_rental_agreement"></script>
+<script src="js/app.js?v=20261020_v19_pending_payment_ui"></script>
 </body>
 </html>

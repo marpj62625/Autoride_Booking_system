@@ -3693,7 +3693,7 @@ function refreshActiveBookingMonitor() {
       var pColor = pendingRemainingMs <= 5 * 60 * 1000 ? '#dc2626' : '#d97706';
 
       payCard.innerHTML =
-        '<div style="padding:16px;">' +
+        '<div class="pending-pay-inner" style="padding:16px;">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">' +
             '<div style="flex:1;min-width:0;">' +
               '<div style="font-size:0.68rem;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:5px;margin-bottom:4px;">' +
@@ -3711,22 +3711,24 @@ function refreshActiveBookingMonitor() {
               '<div id="homePayCountdownLabel" style="font-size:0.6rem;font-weight:700;color:#b45309;text-transform:uppercase;margin-top:2px;">Time Left</div>' +
             '</div>' +
           '</div>' +
-          '<div style="background:var(--bg-card2);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+          '<div class="pending-pay-body-row">' +
+          '<div class="pending-pay-due-box" style="background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
             '<div>' +
               '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">' + pDueLabel + '</div>' +
               '<div style="font-size:1.15rem;font-weight:900;color:var(--primary);">' + formatPHP(pNowDue) + '</div>' +
             '</div>' +
-            '<div style="font-size:0.72rem;color:var(--text-secondary);text-align:right;max-width:185px;">' +
+            '<div class="pending-pay-note" style="font-size:0.74rem;line-height:1.35;color:var(--text-secondary);text-align:right;max-width:195px;">' +
               'Pay within 30 mins to lock vehicle dates & prevent auto-cancellation.' +
             '</div>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          '<div class="pending-pay-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
             '<button onclick="event.stopPropagation();openPayNowFromDetail(' + pendingPayBooking.id + ')" style="padding:11px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:12px;font-size:0.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(245,158,11,0.25);">' +
               '<i class="fas fa-credit-card"></i> Pay Now' +
             '</button>' +
             '<button onclick="event.stopPropagation();openBookingDetail(' + pendingPayBooking.id + ')" style="padding:11px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
               '<i class="fas fa-file-invoice"></i> Details' +
             '</button>' +
+          '</div>' +
           '</div>' +
         '</div>';
 
