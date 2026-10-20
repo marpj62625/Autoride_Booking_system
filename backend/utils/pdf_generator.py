@@ -234,3 +234,79 @@ def generate_booking_pdf(booking, user, vehicle, payment=None):
         pdf.cell(0, 5, f'* You earned {earned} loyalty points with this booking!', 0, 1, 'R')
 
     return bytes(pdf.output())
+
+
+
+def generate_extension_pdf(booking, user, vehicle, ext, payment=None, ext_index=1):
+    """Generates a separate official receipt for an approved booking extension."""
+    issued_raw = (payment and payment.get('created_at')) or ext.get('approved_at') or ext.get('created_at')
+    issued_str = _format_receipt_date(issued_raw)
+    pdf = ReceiptGenerator(issued_str=issued_str)
+    pdf.add_page()
+
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(30, 41, 59)
+    pdf.cell(110, 8, f'RECEIPT #{int(booking["id"]):06d}-E{ext_index}', 0, 0, 'L')
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.set_text_color(22, 163, 74)
+    pdf.cell(80, 8, f'EXTENSION #{ext_index}: APPROVED', 0, 1, 'R')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(100, 6, f'Date Issued: {issued_str}', 0, 1, 'L')
+    pdf.set_text_color(30, 41, 59)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 10)
+    pdf.cell(95, 7, 'BILLED TO:', 0, 0)
+    pdf.cell(95, 7, 'EXTENDED RENTAL PERIOD:', 0, 1)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(95, 6, str(user.get('full_name') or 'Valued Customer'), 0, 0)
+    pdf.cell(95, 6, f'Previous Return: {ext.get("original_end_date")}', 0, 1)
+    pdf.cell(95, 6, str(user.get('email') or 'N/A'), 0, 0)
+    pdf.cell(95, 6, f'New Return:      {ext.get("new_end_date")}', 0, 1)
+    if user.get('phone'):
+        pdf.cell(95, 6, f'Phone: {user["phone"]}', 0, 1)
+    pdf.ln(6)
+
+    pdf.set_fill_color(241, 245, 249)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 8, ' VEHICLE DETAILS', 0, 1, 'L', fill=True)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(40, 7, ' Booking No.:', 0, 0)
+    pdf.cell(0, 7, f'#{booking["id"]}', 0, 1)
+    pdf.cell(40, 7, ' Brand/Model:', 0, 0)
+    pdf.cell(0, 7, f'{vehicle.get("brand", "")} {vehicle.get("model", "")}', 0, 1)
+    pdf.cell(40, 7, ' Plate Number:', 0, 0)
+    pdf.cell(0, 7, f'{vehicle.get("plate_number", "N/A")}', 0, 1)
+    pdf.ln(6)
+
+    def add_row(label, value=0, is_bold=False, custom_val_str=None):
+        pdf.set_font('Helvetica', 'B' if is_bold else '', 10)
+        pdf.cell(120, 7, f' {label}', 0, 0)
+        pdf.cell(70, 7, custom_val_str if custom_val_str else f'PHP {float(value):,.2f}', 0, 1, 'R')
+
+    price = float(ext.get('extension_price') or 0)
+    days = int(ext.get('extension_days') or 0)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 8, ' COST BREAKDOWN', 0, 1, 'L', fill=True)
+    add_row(f'Rental Extension ({days} day{"s" if days != 1 else ""})', price)
+    pdf.ln(2)
+    pdf.set_draw_color(30, 41, 59)
+    pdf.line(130, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(2)
+    add_row('Extension Total', price, is_bold=True)
+    pdf.ln(6)
+
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 8, ' PAYMENT DETAILS', 0, 1, 'L', fill=True)
+    method = (payment and payment.get('method')) or ext.get('payment_method') or 'N/A'
+    ref = (payment and payment.get('reference_number')) or ext.get('reference_number') or f'EXT-{ext.get("id")}'
+    add_row('Payment Status', custom_val_str='PAID')
+    add_row('Payment Method', custom_val_str=str(method))
+    add_row('Transaction Date', custom_val_str=f'{issued_str} (PHT)')
+    add_row('Reference / Trans No.', custom_val_str=str(ref))
+    pdf.set_text_color(22, 163, 74)
+    add_row('Amount Paid', price, is_bold=True)
+    pdf.set_text_color(0, 0, 0)
+
+    return bytes(pdf.output())

@@ -6972,10 +6972,10 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
   }
 }
 
-function viewBookingReceipt(bookingId) {
+function _viewBookingReceiptLegacy(bookingId) {
   var b = (_allBookingsData || []).find(function(x) { return x.id === bookingId; });
   if (!b) {
-    downloadReceipt(bookingId);
+    window.open(API_BASE + '/bookings/' + bookingId + '/receipt', '_blank');
     return;
   }
   showReceipt(
@@ -7000,6 +7000,262 @@ function viewBookingReceipt(bookingId) {
   );
 }
 
+// ─── MULTI-RECEIPT VIEWER & DOWNLOADER (Original booking + each Extension) ───
+var _receiptDataCache = {};
+
+function _fetchBookingReceipts(bookingId) {
+  return apiCall('/bookings/' + bookingId + '/receipts').then(function(d) {
+    if (!d || !d.receipts || !d.receipts.length) throw new Error('No receipts found');
+    _receiptDataCache[bookingId] = d;
+    return d;
+  });
+}
+
+function _receiptPdfUrl(bookingId, r) {
+  return API_BASE + '/bookings/' + bookingId + '/receipt' + (r && r.extension_id ? ('?extension_id=' + r.extension_id) : '');
+}
+
+function _receiptFileName(bookingId, r) {
+  if (r && r.type === 'extension') return 'Autoride_Receipt_' + bookingId + '_' + String(r.label || 'Extension').split(' Receipt')[0].replace(/[^A-Za-z0-9]+/g, '_') + '.pdf';
+  return 'Autoride_Receipt_' + bookingId + '.pdf';
+}
+
+function _fmtReceiptAddons(raw) {
+  if (!raw) return 'None';
+  if (Array.isArray(raw)) return raw.length ? raw.join(', ') : 'None';
+  var s = String(raw).trim();
+  if (!s || s === '[]' || s === 'null' || s === 'None') return 'None';
+  try {
+    var parsed = JSON.parse(s);
+    if (Array.isArray(parsed)) return parsed.length ? parsed.map(function(a) { return (a && a.name) ? a.name : String(a); }).join(', ') : 'None';
+  } catch (e) {}
+  return s;
+}
+
+function _fmtReceiptDate(raw) {
+  if (!raw) return '';
+  var dt = new Date(String(raw).replace(' ', 'T'));
+  if (isNaN(dt.getTime())) return String(raw);
+  return dt.toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'long', day: 'numeric' }) + ', ' +
+    dt.toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit' });
+}
+
+function _isNativeApp() {
+  return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+}
+
+function _downloadReceiptFile(bookingId, r) {
+  var url = _receiptPdfUrl(bookingId, r);
+  if (_isNativeApp()) {
+    try {
+      if (window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+        return window.Capacitor.Plugins.Browser.open({ url: url }).catch(function() { window.open(url, '_blank'); });
+      }
+    } catch (e) {}
+    window.open(url, '_blank');
+    return Promise.resolve();
+  }
+  return fetch(url)
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); })
+    .then(function(blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = _receiptFileName(bookingId, r);
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { try { URL.revokeObjectURL(a.href); a.remove(); } catch (e) {} }, 2000);
+    })
+    .catch(function() { window.open(url, '_blank'); });
+}
+
+function _downloadReceiptsSequential(bookingId, list) {
+  var i = 0;
+  function next() {
+    if (i >= list.length) {
+      showToast(list.length > 1 ? (list.length + ' receipts downloaded.') : 'Receipt downloaded.', 'success');
+      return;
+    }
+    var r = list[i++];
+    Promise.resolve(_downloadReceiptFile(bookingId, r)).then(function() { setTimeout(next, 450); });
+  }
+  showToast('Downloading ' + list.length + ' receipt' + (list.length > 1 ? 's' : '') + '...', 'info');
+  next();
+}
+
+function _closeReceiptModal(id) {
+  var m = document.getElementById(id);
+  if (m) m.remove();
+}
+
+function _renderReceiptCardHtml(data, r) {
+  var isExt = r.type === 'extension';
+  var vehicle = ((data.brand || '') + ' ' + (data.model || '')).trim() + (data.plate_number ? ' (' + data.plate_number + ')' : '');
+  var isWithDriver = data.rental_type === 'With Driver';
+  var rows = '';
+  function row(lbl, val, mono) {
+    return '<div class="receipt-row"><span>' + lbl + '</span><strong' + (mono ? ' style="font-family:monospace;word-break:break-all;text-align:right;"' : ' style="text-align:right;"') + '>' + escapeHtml(String(val == null ? '' : val)) + '</strong></div>';
+  }
+  rows += row('Booking ID', '#' + data.booking_id);
+  rows += row('Vehicle', vehicle || '—');
+  if (isExt) {
+    rows += row('Previous Return', formatBookingDate(r.start_date));
+    rows += row('New Return', formatBookingDate(r.end_date));
+    rows += row('Extension', '+' + (r.extension_days || 0) + ' day' + (parseInt(r.extension_days) === 1 ? '' : 's'));
+  } else {
+    if (r.start_date) rows += row('Rental Period', formatBookingDate(r.start_date) + ' – ' + formatBookingDate(r.end_date));
+    rows += row('Rental Type', isWithDriver ? 'With Professional Driver' : 'Self-Drive');
+    rows += row('Insurance', data.insurance_type || 'Basic Protection');
+    rows += row('Add-ons', _fmtReceiptAddons(data.addons));
+  }
+  rows += row('Payment Method', r.method || 'N/A');
+  if (r.reference_number) rows += row('Reference No.', r.reference_number, true);
+  if (r.date) rows += row('Date & Time', _fmtReceiptDate(r.date));
+
+  return '<div class="receipt-card" style="margin:0;box-shadow:none;">' +
+    '<div class="receipt-header">' +
+      '<img src="Autoride-logo-nobg.png" alt="Autoride" style="width:72px;height:72px;object-fit:contain;margin-bottom:6px;">' +
+      '<i class="fas fa-check-circle" style="font-size:2.2rem;color:var(--success);"></i>' +
+      '<h2>' + (isExt ? 'Extension Receipt' : 'Official Electronic Receipt') + '</h2>' +
+      '<p style="color:var(--text-secondary);font-size:0.875rem;">Receipt #' + escapeHtml(r.receipt_no || String(data.booking_id).padStart(6, '0')) + '</p>' +
+    '</div>' +
+    '<div style="border-top:2px dashed var(--border);padding-top:14px;margin-top:8px;">' + rows + '</div>' +
+    '<div style="background:var(--primary);border-radius:var(--radius-sm);padding:14px;text-align:center;margin:16px 0 12px;">' +
+      '<div style="color:rgba(255,255,255,0.85);font-size:0.8rem;">' + (isExt ? 'Extension Amount Paid' : 'Amount Paid') + '</div>' +
+      '<div style="color:#fff;font-size:1.6rem;font-weight:800;">' + formatPHP(r.amount || 0) + '</div>' +
+    '</div>' +
+    '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:0.8rem;color:#084298;">' +
+      '<i class="fas fa-envelope"></i> Official copy issued to <strong>' + escapeHtml((currentUser && currentUser.email) || 'your email') + '</strong>' +
+    '</div>' +
+  '</div>';
+}
+
+function _openReceiptViewerModal(bookingId, data, selectedKey) {
+  _closeReceiptModal('receiptViewerModal');
+  var receipts = data.receipts || [];
+  var sel = receipts.find(function(r) { return r.key === selectedKey; }) || receipts[receipts.length - 1];
+  var hasMulti = receipts.length > 1;
+  var modal = document.createElement('div');
+  modal.id = 'receiptViewerModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);';
+  modal.onclick = function(e) { if (e.target === modal) _closeReceiptModal('receiptViewerModal'); };
+  var selectHtml = hasMulti
+    ? '<div class="rv-no-print" style="margin-bottom:12px;">' +
+        '<label style="display:block;font-size:0.72rem;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;"><i class="fas fa-layer-group" style="color:var(--primary);margin-right:4px;"></i> Select Receipt (' + receipts.length + ')</label>' +
+        '<select id="rvReceiptSelect" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-weight:700;font-size:0.88rem;background:var(--bg-input,#fff);color:var(--text-primary,#0f172a);">' +
+          receipts.map(function(r) {
+            return '<option value="' + r.key + '"' + (r.key === sel.key ? ' selected' : '') + '>' + escapeHtml(r.label) + ' — ' + formatPHP(r.amount || 0) + '</option>';
+          }).join('') +
+        '</select>' +
+      '</div>'
+    : '';
+  modal.innerHTML =
+    '<div style="background:var(--bg-card,#fff);border-radius:20px;width:100%;max-width:440px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.35);overflow:hidden;">' +
+      '<div class="rv-no-print" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);">' +
+        '<h3 style="margin:0;font-size:1rem;font-weight:800;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:6px;"></i>Digital Receipt</h3>' +
+        '<button type="button" onclick="_closeReceiptModal(\'receiptViewerModal\')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-secondary);"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+      '<div style="padding:16px 18px;overflow-y:auto;flex:1;">' +
+        selectHtml +
+        '<div id="rvReceiptBody">' + _renderReceiptCardHtml(data, sel) + '</div>' +
+      '</div>' +
+      '<div class="rv-no-print" style="padding:12px 18px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<button type="button" class="btn-secondary" style="margin:0;" onclick="_closeReceiptModal(\'receiptViewerModal\')">Close</button>' +
+        '<button type="button" class="btn-primary" style="margin:0;" id="rvDownloadBtn"><i class="fas fa-download"></i> Download PDF</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  var current = sel;
+  var selEl = document.getElementById('rvReceiptSelect');
+  if (selEl) {
+    selEl.onchange = function() {
+      current = receipts.find(function(r) { return r.key === selEl.value; }) || current;
+      var body = document.getElementById('rvReceiptBody');
+      if (body) body.innerHTML = _renderReceiptCardHtml(data, current);
+    };
+  }
+  var dlBtn = document.getElementById('rvDownloadBtn');
+  if (dlBtn) dlBtn.onclick = function() { _downloadReceiptsSequential(bookingId, [current]); };
+}
+
+function _openReceiptDownloadPicker(bookingId, data) {
+  _closeReceiptModal('receiptDownloadModal');
+  var receipts = data.receipts || [];
+  var modal = document.createElement('div');
+  modal.id = 'receiptDownloadModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);';
+  modal.onclick = function(e) { if (e.target === modal) _closeReceiptModal('receiptDownloadModal'); };
+  modal.innerHTML =
+    '<div style="background:var(--bg-card,#fff);border-radius:20px;width:100%;max-width:420px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.35);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+        '<h3 style="margin:0;font-size:1rem;font-weight:800;"><i class="fas fa-file-pdf" style="color:#ef4444;margin-right:6px;"></i>Download Receipts</h3>' +
+        '<button type="button" onclick="_closeReceiptModal(\'receiptDownloadModal\')" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-secondary);"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+      '<p style="margin:0 0 14px;font-size:0.8rem;color:var(--text-secondary);">This booking has ' + receipts.length + ' receipts. Choose which ones to download.</p>' +
+      '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,177,79,0.06);border:1px solid rgba(0,177,79,0.25);margin-bottom:8px;cursor:pointer;font-weight:800;font-size:0.85rem;">' +
+        '<input type="checkbox" id="rdSelectAll" checked style="width:18px;height:18px;accent-color:var(--primary);"> Select All' +
+      '</label>' +
+      '<div style="max-height:45vh;overflow-y:auto;">' +
+      receipts.map(function(r, i) {
+        return '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;cursor:pointer;">' +
+          '<input type="checkbox" class="rd-item" data-idx="' + i + '" checked style="width:18px;height:18px;accent-color:var(--primary);">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:800;font-size:0.85rem;">' + escapeHtml(r.label) + '</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-secondary);">Receipt #' + escapeHtml(r.receipt_no || '') + (r.date ? ' • ' + escapeHtml(_fmtReceiptDate(r.date)) : '') + '</div>' +
+          '</div>' +
+          '<div style="font-weight:800;color:var(--primary);font-size:0.85rem;white-space:nowrap;">' + formatPHP(r.amount || 0) + '</div>' +
+        '</label>';
+      }).join('') +
+      '</div>' +
+      '<span id="rdErr" style="display:block;color:#ef4444;font-size:0.78rem;text-align:center;min-height:16px;margin:4px 0;"></span>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<button type="button" class="btn-secondary" style="margin:0;" onclick="_closeReceiptModal(\'receiptDownloadModal\')">Cancel</button>' +
+        '<button type="button" class="btn-primary" style="margin:0;" id="rdDownloadBtn"><i class="fas fa-download"></i> Download (<span id="rdCount">' + receipts.length + '</span>)</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  var allEl = document.getElementById('rdSelectAll');
+  var items = modal.querySelectorAll('.rd-item');
+  function refresh() {
+    var n = 0;
+    for (var i = 0; i < items.length; i++) if (items[i].checked) n++;
+    var c = document.getElementById('rdCount');
+    if (c) c.textContent = n;
+    if (allEl) allEl.checked = (n === items.length);
+  }
+  if (allEl) allEl.onchange = function() {
+    for (var i = 0; i < items.length; i++) items[i].checked = allEl.checked;
+    refresh();
+  };
+  for (var k = 0; k < items.length; k++) items[k].onchange = refresh;
+  document.getElementById('rdDownloadBtn').onclick = function() {
+    var chosen = [];
+    for (var i = 0; i < items.length; i++) if (items[i].checked) chosen.push(receipts[parseInt(items[i].getAttribute('data-idx'))]);
+    if (!chosen.length) {
+      var er = document.getElementById('rdErr');
+      if (er) er.textContent = 'Please select at least one receipt.';
+      return;
+    }
+    _closeReceiptModal('receiptDownloadModal');
+    _downloadReceiptsSequential(bookingId, chosen);
+  };
+}
+
+function viewBookingReceipt(bookingId) {
+  showLoading(true);
+  _fetchBookingReceipts(bookingId)
+    .then(function(data) {
+      showLoading(false);
+      _openReceiptViewerModal(bookingId, data);
+    })
+    .catch(function() {
+      showLoading(false);
+      _viewBookingReceiptLegacy(bookingId);
+    });
+}
+
 function downloadReceipt(bookingId, btnEl) {
   var btn = btnEl || (window.event && (window.event.currentTarget || window.event.target));
   if (typeof anime !== 'undefined' && btn) {
@@ -7011,8 +7267,21 @@ function downloadReceipt(bookingId, btnEl) {
       easing: 'easeOutBack'
     });
   }
-  showToast('Downloading receipt...', 'info');
-  window.open(API_BASE + '/bookings/' + bookingId + '/receipt', '_blank');
+  showLoading(true);
+  _fetchBookingReceipts(bookingId)
+    .then(function(data) {
+      showLoading(false);
+      if (data.receipts.length > 1) {
+        _openReceiptDownloadPicker(bookingId, data);
+      } else {
+        _downloadReceiptsSequential(bookingId, [data.receipts[0]]);
+      }
+    })
+    .catch(function() {
+      showLoading(false);
+      showToast('Downloading receipt...', 'info');
+      window.open(API_BASE + '/bookings/' + bookingId + '/receipt', '_blank');
+    });
 }
 
 // BOOKINGS

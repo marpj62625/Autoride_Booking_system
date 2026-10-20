@@ -19,6 +19,243 @@ except Exception as _nse:
 ext_bp = Blueprint('extensions', __name__)
 
 
+# ─── EXTENSION PAYMENT RECORDING & RECEIPTS ──────────────────────────────────
+
+def _ensure_payment_ext_columns(cur):
+    """Idempotently add extension tracking columns to payments table."""
+    cur.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS extension_id INTEGER")
+    cur.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()")
+
+
+def _record_extension_payment(cur, ext):
+    """
+    Records the extension fee as a payment and adds it to the booking's amount_paid.
+    Idempotent: does nothing if this extension already has a payment row.
+    Returns True if a new payment was recorded.
+    """
+    ext_id = ext['id']
+    cur.execute("SELECT id FROM payments WHERE extension_id = %s LIMIT 1", (ext_id,))
+    if cur.fetchone():
+        return False
+    price = float(ext.get('extension_price') or 0)
+    ref = ext.get('reference_number') or f"EXT-{ext_id}"
+    cur.execute("""
+        INSERT INTO payments (booking_id, amount, method, reference_number, payment_proof, status, extension_id, created_at)
+        VALUES (%s, %s, %s, %s, %s, 'Completed', %s, COALESCE(%s, NOW()))
+    """, (ext['booking_id'], price, ext.get('payment_method') or 'Online', str(ref),
+          ext.get('payment_proof_url'), ext_id, ext.get('approved_at') or ext.get('created_at')))
+    cur.execute("""
+        UPDATE bookings
+        SET amount_paid = COALESCE(amount_paid, 0) + %s
+        WHERE id = %s
+    """, (price, ext['booking_id']))
+    return True
+
+
+def _backfill_extension_payments(cur, booking_id=None):
+    """Records missing payments for already-approved extensions (fixes amount_paid mismatch)."""
+    _ensure_payment_ext_columns(cur)
+    q = """
+        SELECT e.* FROM booking_extensions e
+        WHERE e.status = 'approved'
+          AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.extension_id = e.id)
+    """
+    params = ()
+    if booking_id:
+        q += " AND e.booking_id = %s"
+        params = (booking_id,)
+    cur.execute(q, params)
+    rows = cur.fetchall() or []
+    count = 0
+    for r in rows:
+        if _record_extension_payment(cur, dict(r)):
+            count += 1
+    return count
+
+
+_GLOBAL_EXT_BACKFILL_DONE = {'done': False}
+
+@ext_bp.before_app_request
+def _run_global_extension_backfill_once():
+    if _GLOBAL_EXT_BACKFILL_DONE['done']:
+        return
+    _GLOBAL_EXT_BACKFILL_DONE['done'] = True
+    try:
+        cur = get_cursor()
+        _ensure_extensions_table(cur)
+        n = _backfill_extension_payments(cur)
+        commit_db()
+        if n:
+            print(f"[Extensions] Backfilled {n} missing extension payment(s)")
+    except Exception as _bf_err:
+        print(f"[Extensions] Global backfill skipped: {_bf_err}")
+        try:
+            from database import get_db
+            get_db().rollback()
+        except Exception:
+            pass
+
+
+def _send_extension_receipt_email(ext_id):
+    """Sends a separate extension receipt email to the renter."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT e.id AS ext_id, e.booking_id, e.extension_days, e.extension_price, e.payment_method,
+                   e.reference_number, e.original_end_date, e.new_end_date, e.approved_at, e.created_at,
+                   b.total_price, b.amount_paid, b.balance_amount, b.start_date,
+                   u.full_name, u.email, v.brand, v.model, v.plate_number
+            FROM booking_extensions e
+            JOIN bookings b ON b.id = e.booking_id
+            JOIN users u ON u.id = b.user_id
+            LEFT JOIN vehicles v ON v.id = b.vehicle_id
+            WHERE e.id = %s
+        """, (ext_id,))
+        d = cur.fetchone()
+        if not d or not d.get('email'):
+            return
+        from app import send_email_notifications
+        bid = str(d['booking_id'])
+        price = float(d.get('extension_price') or 0)
+        receipt_url = f"https://autoride-booking-system.vercel.app/api/bookings/{bid}/receipt?extension_id={d['ext_id']}"
+        from datetime import datetime as _d2
+        now_str = _d2.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        def row(label, val):
+            return f"<tr><td style='padding:3px 0;'>{label}</td><td style='text-align:right;padding:3px 0;'>{val}</td></tr>"
+
+        html = (
+            "<body style='margin:0;padding:20px;background:#f0f0f0;font-family:Arial,sans-serif;'>"
+            "<div style='max-width:380px;margin:0 auto;background:#fff;padding:20px;color:#000;box-shadow:0 2px 10px rgba(0,0,0,0.1);'>"
+            "<div style='text-align:center;margin-bottom:15px;'>"
+            "<h2 style='margin:0;font-size:22px;letter-spacing:1px;text-transform:uppercase;'>AUTORIDE</h2>"
+            "<p style='margin:2px 0 0;font-size:12px;'>Your ride, your way</p></div>"
+            "<div style='text-align:center;font-weight:bold;font-size:16px;margin:15px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:8px 0;letter-spacing:2px;'>EXTENSION RECEIPT</div>"
+            "<table width='100%' style='font-size:13px;margin-bottom:15px;line-height:1.4;'>"
+            + row('Booking No', bid)
+            + row('Extension No', f"EXT-{d['ext_id']}")
+            + row('Date', now_str)
+            + row('Customer', str(d.get('full_name') or 'Customer'))
+            + row('Vehicle', f"{d.get('brand') or ''} {d.get('model') or ''}")
+            + row('Previous Return', str(d.get('original_end_date')))
+            + row('New Return', str(d.get('new_end_date')))
+            + "</table><div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+            "<table width='100%' style='font-size:13px;margin-bottom:10px;'>"
+            + row(f"Rental Extension ({d.get('extension_days')} day{'s' if int(d.get('extension_days') or 0) != 1 else ''})", '{:,.2f}'.format(price))
+            + "</table><div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+            "<table width='100%' style='font-size:14px;margin-bottom:15px;'>"
+            f"<tr><td><strong>AMOUNT PAID (PHP)</strong></td><td style='text-align:right;'><strong>{'{:,.2f}'.format(price)}</strong></td></tr>"
+            + row('Updated Contract Total', '{:,.2f}'.format(float(d.get('total_price') or 0)))
+            + row('Total Paid to Date', '{:,.2f}'.format(float(d.get('amount_paid') or 0)))
+            + "</table><div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+            "<table width='100%' style='font-size:13px;margin-bottom:20px;'>"
+            + row('Payment Method', str(d.get('payment_method') or 'N/A'))
+            + row('Reference No', str(d.get('reference_number') or f"EXT-{d['ext_id']}"))
+            + "</table>"
+            "<div style='text-align:center;margin-top:20px;'>"
+            f"<a href='{receipt_url}' style='display:inline-block;border:1px solid #000;color:#000;text-decoration:none;padding:8px 15px;font-size:12px;text-transform:uppercase;'>Download PDF</a>"
+            "</div></div></body>"
+        )
+        send_email_notifications(d['email'], f"Autoride Extension Receipt - Booking #{bid}", html, is_html=True)
+        print(f"[Extensions] Extension receipt email sent to {d['email']} for EXT-{d['ext_id']}")
+    except Exception as _em_err:
+        print(f"[Extensions] Extension receipt email error: {_em_err}")
+
+
+@ext_bp.route('/bookings/<int:booking_id>/receipts', methods=['GET'])
+@ext_bp.route('/api/bookings/<int:booking_id>/receipts', methods=['GET'])
+def list_booking_receipts(booking_id):
+    """Returns all separate receipts of a booking: original booking + each approved extension."""
+    try:
+        cur = get_cursor()
+        _ensure_extensions_table(cur)
+        if _backfill_extension_payments(cur, booking_id):
+            commit_db()
+        cur.execute("""
+            SELECT b.*, v.brand, v.model, v.plate_number
+            FROM bookings b LEFT JOIN vehicles v ON v.id = b.vehicle_id
+            WHERE b.id = %s
+        """, (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": "Booking not found"}), 404
+        b = dict(b)
+
+        cur.execute("""
+            SELECT e.*, p.id AS payment_id, p.method AS pay_method, p.reference_number AS pay_ref
+            FROM booking_extensions e
+            LEFT JOIN payments p ON p.extension_id = e.id
+            WHERE e.booking_id = %s AND e.status = 'approved'
+            ORDER BY e.created_at ASC, e.id ASC
+        """, (booking_id,))
+        exts = [dict(r) for r in (cur.fetchall() or [])]
+
+        cur.execute("""
+            SELECT method, reference_number, created_at FROM payments
+            WHERE booking_id = %s AND extension_id IS NULL
+            ORDER BY id DESC LIMIT 1
+        """, (booking_id,))
+        main_pay = cur.fetchone()
+        main_pay = dict(main_pay) if main_pay else {}
+
+        ext_total = sum(float(e.get('extension_price') or 0) for e in exts)
+        orig_total = max(0.0, float(b.get('total_price') or 0) - ext_total)
+        orig_paid = max(0.0, float(b.get('amount_paid') or 0) - ext_total)
+        orig_end = exts[0]['original_end_date'] if exts else b.get('end_date')
+
+        def s(v):
+            return str(v) if v is not None else ''
+
+        receipts = [{
+            'key': 'booking',
+            'type': 'booking',
+            'extension_id': None,
+            'label': 'Original Booking Receipt',
+            'receipt_no': str(booking_id).zfill(6),
+            'amount': round(orig_paid, 2),
+            'total': round(orig_total, 2),
+            'method': main_pay.get('method') or b.get('payment_method') or b.get('payment_type') or 'N/A',
+            'reference_number': main_pay.get('reference_number') or b.get('reference_number') or '',
+            'date': s(main_pay.get('created_at') or b.get('created_at')),
+            'start_date': s(b.get('start_date')),
+            'end_date': s(orig_end),
+        }]
+        for idx, e in enumerate(exts, start=1):
+            receipts.append({
+                'key': f"ext-{e['id']}",
+                'type': 'extension',
+                'extension_id': e['id'],
+                'label': f"Extension #{idx} Receipt (+{e.get('extension_days')} day{'s' if int(e.get('extension_days') or 0) != 1 else ''})",
+                'receipt_no': f"{str(booking_id).zfill(6)}-E{idx}",
+                'amount': float(e.get('extension_price') or 0),
+                'total': float(e.get('extension_price') or 0),
+                'extension_days': e.get('extension_days'),
+                'method': e.get('pay_method') or e.get('payment_method') or 'N/A',
+                'reference_number': e.get('pay_ref') or e.get('reference_number') or f"EXT-{e['id']}",
+                'date': s(e.get('approved_at') or e.get('created_at')),
+                'start_date': s(e.get('original_end_date')),
+                'end_date': s(e.get('new_end_date')),
+            })
+        return jsonify({
+            'booking_id': booking_id,
+            'brand': b.get('brand'), 'model': b.get('model'), 'plate_number': b.get('plate_number'),
+            'rental_type': b.get('rental_type'), 'insurance_type': b.get('insurance_type'),
+            'addons': b.get('addons'),
+            'total_price': float(b.get('total_price') or 0),
+            'amount_paid': float(b.get('amount_paid') or 0),
+            'balance_amount': float(b.get('balance_amount') or 0),
+            'receipts': receipts
+        }), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        try:
+            from database import get_db
+            get_db().rollback()
+        except Exception:
+            pass
+        return jsonify({"error": str(e)}), 500
+
+
 def _ensure_extensions_table(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS booking_extensions (
@@ -273,6 +510,13 @@ def approve_extension(ext_id):
             SET end_date = %s, total_price = total_price + %s, has_active_extension = TRUE, extension_count = COALESCE(extension_count, 0) + 1 
             WHERE id = %s
         """, (ext['new_end_date'], ext['extension_price'], ext['booking_id']))
+
+        # Record the extension fee as a separate payment and update amount_paid
+        try:
+            _ensure_payment_ext_columns(cur)
+            _record_extension_payment(cur, dict(ext))
+        except Exception as _rp_err:
+            print(f"DEBUG approve_extension: record payment error: {_rp_err}")
         
         # Get dynamic deadline hours setting
         cur.execute("SELECT value FROM settings WHERE key = 'extension_conflict_deadline_hours'")
@@ -311,6 +555,7 @@ def approve_extension(ext_id):
                 print(f"DEBUG approve_extension: Notification failed (non-fatal): {notify_err}")
                 
         commit_db()
+        _send_extension_receipt_email(ext_id)
         try:
             from notifications import notification_service
             cur.execute("SELECT user_id FROM bookings WHERE id = %s", (ext['booking_id'],))

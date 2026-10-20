@@ -11226,14 +11226,66 @@ def download_receipt(booking_id):
         vehicle_dict = dict(vehicle) if vehicle else {"brand": "Unknown", "model": "Vehicle", "plate_number": "N/A"}
 
         # 3b. Fetch Payment Details
+        extension_id = request.args.get('extension_id', type=int)
+        try:
+            cur.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS extension_id INTEGER")
+            cur.execute("ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()")
+            get_db().commit()
+        except Exception:
+            try: get_db().rollback()
+            except Exception: pass
+        cur = get_cursor()
+
+        # Approved extensions (each one gets its own separate receipt)
+        approved_exts = []
+        try:
+            cur.execute("""
+                SELECT * FROM booking_extensions
+                WHERE booking_id = %s AND status = 'approved'
+                ORDER BY created_at ASC, id ASC
+            """, (booking_id,))
+            approved_exts = [dict(r) for r in (cur.fetchall() or [])]
+        except Exception:
+            try: get_db().rollback()
+            except Exception: pass
+            cur = get_cursor()
+
+        if extension_id:
+            ext = next((e for e in approved_exts if int(e['id']) == int(extension_id)), None)
+            if not ext:
+                return jsonify({"error": "Extension receipt not found"}), 404
+            ext_idx = approved_exts.index(ext) + 1
+            cur.execute("SELECT method, reference_number, amount, status, created_at FROM payments WHERE extension_id = %s ORDER BY id DESC LIMIT 1", (extension_id,))
+            p_row = cur.fetchone()
+            ext_payment = dict(p_row) if p_row else {
+                'method': ext.get('payment_method'),
+                'reference_number': ext.get('reference_number') or f"EXT-{extension_id}",
+                'amount': ext.get('extension_price'), 'status': 'Completed'
+            }
+            from utils.pdf_generator import generate_extension_pdf
+            ext_pdf = generate_extension_pdf(booking_dict, user_dict, vehicle_dict, ext, ext_payment, ext_idx)
+            return send_file(
+                io.BytesIO(ext_pdf),
+                mimetype='application/pdf',
+                as_attachment=False,
+                download_name=f'Autoride_Receipt_{booking_id}_Extension_{ext_idx}.pdf'
+            )
+
         cur.execute("""
             SELECT method, reference_number, amount, status 
             FROM payments 
-            WHERE booking_id = %s 
+            WHERE booking_id = %s AND extension_id IS NULL
             ORDER BY id DESC LIMIT 1
         """, (booking_id,))
         payment = cur.fetchone()
         payment_dict = dict(payment) if payment else None
+
+        # Original booking receipt excludes extension charges (each extension has its own receipt)
+        if approved_exts:
+            ext_total = sum(float(e.get('extension_price') or 0) for e in approved_exts)
+            booking_dict['total_price'] = max(0.0, float(booking_dict.get('total_price') or 0) - ext_total)
+            booking_dict['amount_paid'] = max(0.0, float(booking_dict.get('amount_paid') or 0) - ext_total)
+            booking_dict['end_date'] = approved_exts[0].get('original_end_date') or booking_dict.get('end_date')
 
         # 4. Generate PDF
         pdf_content = generate_booking_pdf(booking_dict, user_dict, vehicle_dict, payment_dict)
