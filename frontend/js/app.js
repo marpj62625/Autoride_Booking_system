@@ -7478,6 +7478,126 @@ function filterBookingsList(filter, btn) {
   renderBookingsList(filtered);
 }
 
+function _renderSingleBookingHeroHtml(b, sConf, payBg, payColor, payBorder, payIcon, rentalDays, startFmt, endFmt, vehicleName) {
+  var imgSrc = b.vehicle_image ? buildImgUrl(b.vehicle_image) : null;
+  var isPickedUp = (b.status === 'Picked Up' || b.status === 'Ongoing');
+  var canChangeSched = (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up' || b.status === 'Ongoing');
+  var isCancelledOrRefund = (b.status === 'Cancelled' || b.status === 'Rejected' || b.payment_status === 'Refund Pending' || b.payment_status === 'Refunded');
+  var balAmt = parseFloat(b.balance_amount || 0);
+
+  // Big car image presentation with ambient glow
+  var carVisual = imgSrc
+    ? '<img src="' + imgSrc + '" alt="' + vehicleName + '" class="bk-active-hero-car-img" onerror="this.onerror=null;this.src=\'' + DEFAULT_CAR_SVG + '\';">'
+    : '<div style="width:100%;height:220px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.25);font-size:5rem;"><i class="fas fa-car-side"></i></div>';
+
+  return '<div class="bk-active-hero-card" onclick="openBookingDetail(' + b.id + ')">' +
+    '<div class="bk-active-hero-inner">' +
+      // Visual Column
+      '<div class="bk-active-hero-visual">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:3;">' +
+          '<span style="font-size:0.72rem;font-weight:800;color:#fff;background:rgba(255,255,255,0.12);padding:4px 12px;border-radius:20px;letter-spacing:0.5px;backdrop-filter:blur(6px);">' +
+            '<i class="fas fa-hashtag" style="font-size:0.65rem;margin-right:2px;"></i> BOOKING #' + b.id +
+          '</span>' +
+          '<span style="font-size:0.75rem;font-weight:800;background:' + sConf.bg + ';color:' + sConf.color + ';border:1px solid ' + sConf.border + ';padding:5px 14px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(8px);">' +
+            '<i class="fas ' + sConf.icon + '"></i> ' + b.status +
+          '</span>' +
+        '</div>' +
+        '<div style="text-align:center;position:relative;z-index:2;padding:10px 0;">' + carVisual + '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:3;color:rgba(255,255,255,0.85);font-size:0.8rem;background:rgba(0,0,0,0.25);padding:10px 14px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            (b.color ? '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:' + b.color.toLowerCase() + ';border:1px solid rgba(255,255,255,0.4);"></span>' + escapeHtml(b.color) + '</span>' : '') +
+            (b.plate_number ? '<span style="font-family:monospace;font-weight:800;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:6px;color:#fff;">' + b.plate_number + '</span>' : '') +
+          '</div>' +
+          '<div style="font-weight:700;color:#10b981;">' + (b.rental_type || 'Self-Drive') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Details & Actions Column
+      '<div class="bk-active-hero-body">' +
+        '<div>' +
+          // Header info
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">' +
+            '<div>' +
+              '<div style="font-size:0.75rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">RESERVED VEHICLE</div>' +
+              '<h2 style="margin:0;font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;line-height:1.2;">' + vehicleName + '</h2>' +
+            '</div>' +
+            '<div style="text-align:right;">' +
+              '<div style="font-size:0.68rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">TOTAL AMOUNT</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);line-height:1.1;">' + formatPHP(b.total_price) + '</div>' +
+            '</div>' +
+          '</div>' +
+
+          // Vehicle Key Specs Bar
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;">' +
+            (parseFloat(b.daily_rate || 0) > 0 ? '<span style="font-size:0.76rem;background:var(--bg-input);padding:5px 12px;border-radius:10px;border:1px solid var(--border);color:var(--text-secondary);"><i class="fas fa-tag" style="color:var(--primary);margin-right:5px;"></i><strong>' + formatPHP(b.daily_rate) + '</strong>/day</span>' : '') +
+            (b.transmission ? '<span style="font-size:0.76rem;background:var(--bg-input);padding:5px 12px;border-radius:10px;border:1px solid var(--border);color:var(--text-secondary);"><i class="fas fa-gear" style="color:var(--primary);margin-right:5px;"></i>' + escapeHtml(b.transmission) + '</span>' : '') +
+            (b.fuel_type ? '<span style="font-size:0.76rem;background:var(--bg-input);padding:5px 12px;border-radius:10px;border:1px solid var(--border);color:var(--text-secondary);"><i class="fas fa-gas-pump" style="color:var(--primary);margin-right:5px;"></i>' + escapeHtml(b.fuel_type) + '</span>' : '') +
+            (b.seats ? '<span style="font-size:0.76rem;background:var(--bg-input);padding:5px 12px;border-radius:10px;border:1px solid var(--border);color:var(--text-secondary);"><i class="fas fa-users" style="color:var(--primary);margin-right:5px;"></i>' + escapeHtml(b.seats) + ' Seats</span>' : '') +
+            (b.insurance_type ? '<span style="font-size:0.76rem;background:var(--bg-input);padding:5px 12px;border-radius:10px;border:1px solid var(--border);color:var(--text-secondary);"><i class="fas fa-shield-halved" style="color:var(--primary);margin-right:5px;"></i>' + escapeHtml(b.insurance_type) + '</span>' : '') +
+          '</div>' +
+
+          // Itinerary timeline card
+          '<div style="background:var(--bg-card2, #f8fafc);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:18px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:5px;"></i> Pick-up Handover</div>' +
+                '<div style="font-size:0.95rem;font-weight:900;color:var(--text-primary);">' + startFmt + '</div>' +
+                '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-clock" style="font-size:0.7rem;margin-right:4px;"></i>' + (b.start_time ? String(b.start_time).substring(0,5) : '06:00') + '</div>' +
+              '</div>' +
+              '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px;">' +
+                '<span style="font-size:0.74rem;font-weight:900;color:var(--primary);background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);padding:4px 12px;border-radius:20px;white-space:nowrap;">' + rentalDays + ' Day' + (rentalDays > 1 ? 's' : '') + '</span>' +
+                '<i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:0.85rem;margin-top:6px;"></i>' +
+              '</div>' +
+              '<div style="flex:1;text-align:right;">' +
+                '<div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-undo-alt" style="color:#3b82f6;margin-right:5px;"></i> Scheduled Return</div>' +
+                '<div style="font-size:0.95rem;font-weight:900;color:var(--text-primary);">' + endFmt + '</div>' +
+                '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-clock" style="font-size:0.7rem;margin-right:4px;"></i>' + (b.end_time ? String(b.end_time).substring(0,5) : '18:00') + '</div>' +
+              '</div>' +
+            '</div>' +
+            (b.pickup_location ?
+              '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
+                '<i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> Pickup: <strong style="color:var(--text-primary);">' + escapeHtml(b.pickup_location) + '</strong>' +
+              '</div>' : '') +
+            (b.destination ?
+              '<div style="margin-top:6px;font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
+                '<i class="fas fa-compass" style="color:var(--primary);"></i> Destination: <strong style="color:var(--text-primary);">' + escapeHtml(b.destination) + '</strong>' +
+              '</div>' : '') +
+          '</div>' +
+
+          // Payment Status & Settlement Strip
+          '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:14px;margin-bottom:18px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<span style="padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:800;background:' + payBg + ';color:' + payColor + ';border:1px solid ' + payBorder + ';display:inline-flex;align-items:center;gap:5px;">' +
+                '<i class="fas ' + payIcon + '"></i> ' + (b.payment_status || 'Unpaid') +
+              '</span>' +
+              (!isCancelledOrRefund && balAmt > 0
+                ? '<span style="padding:5px 10px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-exclamation-circle"></i> Balance Due: ' + formatPHP(balAmt) + '</span>'
+                : '<span style="font-size:0.76rem;color:#10b981;font-weight:800;"><i class="fas fa-circle-check" style="margin-right:4px;"></i> Fully Settled</span>') +
+            '</div>' +
+            '<div style="font-size:0.76rem;color:var(--text-muted);">' +
+              'Method: <strong style="color:var(--text-primary);">' + escapeHtml(b.payment_method || b.payment_type || 'GCash') + '</strong>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Action Buttons Row
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;margin-top:auto;" onclick="event.stopPropagation();">' +
+          '<button type="button" class="btn-primary" style="padding:12px;font-size:0.86rem;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openBookingDetail(' + b.id + ')">' +
+            '<i class="fas fa-circle-info"></i> View Details' +
+          '</button>' +
+          (canChangeSched ?
+            '<button type="button" class="btn-primary" style="padding:12px;font-size:0.86rem;font-weight:800;background:linear-gradient(135deg,#00b14f,#059669);display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openChangeSchedule(' + b.id + ')">' +
+              '<i class="fas fa-calendar-alt"></i> Change Schedule' +
+            '</button>' : '') +
+          '<button type="button" class="btn-outline" style="padding:12px;font-size:0.86rem;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="viewBookingReceipt(' + b.id + ')">' +
+            '<i class="fas fa-receipt" style="color:var(--primary);"></i> Digital Receipt' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderBookingsList(data) {
   var el = document.getElementById('bookingsList');
   if (!el) return;
@@ -7509,6 +7629,30 @@ function renderBookingsList(data) {
     'Cancelled': { bg: 'rgba(239,68,68,0.12)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: 'fa-times-circle' },
     'Rejected': { bg: 'rgba(239,68,68,0.12)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: 'fa-times-circle' }
   };
+
+  // If there is only 1 booking being viewed (e.g. Active tab where 1 booking per account is typical),
+  // render it as a full-width panoramic executive hero card that maximizes screen real-estate!
+  if (data.length === 1) {
+    var singleB = data[0];
+    var sConfHero = statusConfig[singleB.status] || { bg: 'rgba(107,114,128,0.12)', color: '#4b5563', border: 'rgba(107,114,128,0.25)', icon: 'fa-circle-info' };
+    var isPaidHero = singleB.payment_status === 'Paid';
+    var payColorHero = isPaidHero ? '#10b981' : (singleB.payment_status === 'Downpayment Paid' ? '#f59e0b' : '#ef4444');
+    var payBgHero = isPaidHero ? 'rgba(16,185,129,0.12)' : (singleB.payment_status === 'Downpayment Paid' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)');
+    var payBorderHero = isPaidHero ? 'rgba(16,185,129,0.25)' : (singleB.payment_status === 'Downpayment Paid' ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)');
+    var payIconHero = isPaidHero ? 'fa-check' : (singleB.payment_status === 'Downpayment Paid' ? 'fa-coins' : 'fa-clock');
+    var vehicleNameHero = ((singleB.brand || '') + ' ' + (singleB.model || '')).trim() || 'Rental Vehicle';
+    var startFmtHero = formatBookingDate(singleB.start_date);
+    var endFmtHero = formatBookingDate(singleB.end_date);
+    var rentalDaysHero = 1;
+    try {
+      if (singleB.start_date && singleB.end_date) {
+        var msDiffHero = new Date(singleB.end_date.split('T')[0]).getTime() - new Date(singleB.start_date.split('T')[0]).getTime();
+        rentalDaysHero = Math.max(1, Math.round(msDiffHero / 86400000));
+      }
+    } catch(e) {}
+    el.innerHTML = _renderSingleBookingHeroHtml(singleB, sConfHero, payBgHero, payColorHero, payBorderHero, payIconHero, rentalDaysHero, startFmtHero, endFmtHero, vehicleNameHero);
+    return;
+  }
 
   el.innerHTML = data.map(function(b) {
     var sConf = statusConfig[b.status] || { bg: 'rgba(107,114,128,0.12)', color: '#4b5563', border: 'rgba(107,114,128,0.25)', icon: 'fa-circle-info' };

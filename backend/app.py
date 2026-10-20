@@ -6776,7 +6776,7 @@ def user_bookings():
                    EXISTS (SELECT 1 FROM reviews r WHERE r.booking_id = b.id) AS is_reviewed,
                    b.paymongo_link_id,
                    TO_CHAR(b.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at,
-                   v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
+                   v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color, v.transmission, v.fuel_type, v.seats,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,
                    COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,

@@ -1642,6 +1642,94 @@
           box-shadow: 0 2px 8px rgba(0, 177, 79, 0.25);
         }
 
+
+        /* ========================================================
+           EXECUTIVE ACTIVE RENTAL HERO CARD FOR SINGLE BOOKING
+           ======================================================== */
+        .bk-active-hero-card {
+          grid-column: 1 / -1;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border);
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.05);
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+          position: relative;
+        }
+        .bk-active-hero-card:hover {
+          border-color: rgba(0, 177, 79, 0.45);
+          box-shadow: 0 16px 45px rgba(0, 177, 79, 0.12);
+        }
+        .bk-active-hero-inner {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 900px) {
+          .bk-active-hero-inner {
+            grid-template-columns: 460px 1fr;
+            min-height: 400px;
+          }
+        }
+        @media (min-width: 1200px) {
+          .bk-active-hero-inner {
+            grid-template-columns: 520px 1fr;
+            min-height: 420px;
+          }
+        }
+        .bk-active-hero-visual {
+          position: relative;
+          background: linear-gradient(145deg, #0f172a 0%, #1e293b 60%, #0f231c 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 24px 28px;
+          overflow: hidden;
+        }
+        .bk-active-hero-visual::before {
+          content: '';
+          position: absolute;
+          width: 320px;
+          height: 320px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(0, 177, 79, 0.22) 0%, transparent 70%);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+        }
+        .bk-active-hero-car-img {
+          width: 100%;
+          max-height: 250px;
+          object-fit: contain;
+          margin: 16px 0;
+          position: relative;
+          z-index: 2;
+          filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.65));
+          transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bk-active-hero-card:hover .bk-active-hero-car-img {
+          transform: scale(1.04) translateY(-4px);
+        }
+        .bk-active-hero-body {
+          padding: 28px 32px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          background: var(--bg-card);
+          box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+          .bk-active-hero-visual {
+            padding: 20px;
+          }
+          .bk-active-hero-car-img {
+            max-height: 180px;
+          }
+          .bk-active-hero-body {
+            padding: 20px 18px;
+          }
+        }
+
         .bookings-list-grid {
           display: flex;
           flex-direction: column;
@@ -8043,6 +8131,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v31_receipt_price_breakdown"></script>
+<script src="js/app.js?v=20261020_v32_bookings_active_hero_view"></script>
 </body>
 </html>
