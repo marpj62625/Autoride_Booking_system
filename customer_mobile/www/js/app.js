@@ -5995,6 +5995,7 @@ function _proceedWithBookingSubmission() {
 
 // PAYMENT - PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
+  window._lastPaymentScreenState = { type: 'booking', bookingId: bookingId, priceResult: priceResult, payType: payType, isExistingBooking: !!isExistingBooking };
   if (payType === 'Pay on Pickup') {
     var el = document.getElementById('paymentContent');
     if (!el) return;
@@ -6397,7 +6398,7 @@ function showPaymentWaiting(bookingId, amount, method) {
       '</div>';
   el.innerHTML =
     '<div class="page-header">' +
-    '<button class="back-btn" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="changePaymentMethod(' + bookingId + ',' + amount + ')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Waiting for Payment</h2></div>' +
     '<div class="scroll-content" style="padding-bottom:100px;text-align:center;padding-top:40px;">' +
     '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
@@ -6411,6 +6412,7 @@ function showPaymentWaiting(bookingId, amount, method) {
     '</div>' +
     '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\', false)">' +
     '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
+    '<button class="btn-secondary" onclick="changePaymentMethod(' + bookingId + ',' + amount + ')" style="width:100%;margin-bottom:10px;border:1.5px solid var(--primary);color:var(--primary);background:rgba(0,177,79,0.06);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-exchange-alt"></i> Change Payment Method</button>' +
     '<button class="btn-secondary" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
     '</div>';
 
@@ -6511,6 +6513,37 @@ function showPaymentWaiting(bookingId, amount, method) {
     }, 1000);
   }
 }
+
+function changePaymentMethod(bookingId, amount) {
+  stopPaymentPolling();
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser && typeof window.Capacitor.Plugins.Browser.close === 'function') {
+    window.Capacitor.Plugins.Browser.close().catch(function() {});
+  }
+  var st = window._lastPaymentScreenState;
+  if (st && String(st.bookingId) === String(bookingId)) {
+    if (st.type === 'balance') {
+      openPayBalanceScreen(bookingId, st.balance || amount);
+      return;
+    }
+    if (st.type === 'booking' && st.priceResult) {
+      openPaymentScreen(bookingId, st.priceResult, st.payType || 'Full', st.isExistingBooking);
+      return;
+    }
+  }
+  var isBal = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' || (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.payment_status === 'Partially Paid'));
+  if (isBal && typeof openPayBalanceScreen === 'function') {
+    openPayBalanceScreen(bookingId, amount);
+    return;
+  }
+  if (typeof _pendingPriceResult !== 'undefined' && _pendingPriceResult) {
+    openPaymentScreen(bookingId, _pendingPriceResult, _pendingPayType || 'Full', true);
+    return;
+  }
+  if (typeof openPayNowFromDetail === 'function') {
+    openPayNowFromDetail(bookingId);
+  }
+}
+window.changePaymentMethod = changePaymentMethod;
 
 function stopPaymentPolling() {
   if (_paymentPollInterval) {
@@ -8222,6 +8255,7 @@ function _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days) {
   var linkIdArg = arguments.length > 5 ? arguments[5] : '';
   
   parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ',\'' + linkIdArg + '\')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
+  parts.push('<button class="btn-secondary" onclick="openExtendBooking(' + bookingId + ')" style="width:100%;margin-bottom:10px;border:1.5px solid var(--primary);color:var(--primary);background:rgba(0,177,79,0.06);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-exchange-alt"></i> Change Payment Method</button>');
   parts.push('<button class="btn-secondary" onclick="closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
   parts.push('</div>');
   container.innerHTML = parts.join('');
@@ -8838,6 +8872,7 @@ function submitModifyBooking(bookingId) {
 
 
 function openPayBalanceScreen(bookingId, balance) {
+  window._lastPaymentScreenState = { type: 'balance', bookingId: bookingId, balance: balance };
   var el = document.getElementById('paymentContent');
   if (!el) return;
   balance = parseFloat(balance || 0);
