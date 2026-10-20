@@ -9073,6 +9073,11 @@ window._submitChangeSchedule = _submitChangeSchedule;
 
 
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
+  // Use popup modal with mini availability calendar and locked start date for ongoing rentals
+  if (typeof openChangeSchedule === 'function') {
+    openChangeSchedule(bookingId);
+    return;
+  }
   // Set activeBookingData from bookings cache if not already set
   if ((!activeBookingData || activeBookingData.id != bookingId) && typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData)) {
     for (var i = 0; i < _allBookingsData.length; i++) {
