@@ -211,16 +211,16 @@ def create_payment():
     if customer_phone and customer_phone.strip():
         billing['phone'] = customer_phone.strip()
 
-    # Map method names for Checkout Sessions (supports native auto-redirect and card fallback)
+    # Map method names for Checkout Sessions (exclude 'qrph' because qrph spawns a 2nd tab with code_id=qr_... that hangs on 'processing status')
     cs_method_map = {
-        'gcash': ['gcash', 'qrph'],
-        'maya': ['paymaya', 'qrph'],
-        'paymaya': ['paymaya', 'qrph'],
-        'card': ['card', 'paymaya', 'qrph'],
-        'credit_card': ['card', 'paymaya', 'qrph'],
-        'debit_card': ['card', 'paymaya', 'qrph'],
+        'gcash': ['gcash'],
+        'maya': ['paymaya'],
+        'paymaya': ['paymaya'],
+        'card': ['card'],
+        'credit_card': ['card'],
+        'debit_card': ['card'],
     }
-    cs_pm_types = cs_method_map.get(method.lower(), [pm_type, 'qrph'])
+    cs_pm_types = cs_method_map.get(method.lower(), [pm_type])
 
     cs_payload = {
         'data': {
@@ -275,34 +275,91 @@ def create_payment():
         link_payload['data']['attributes']['billing'] = billing
 
     try:
-        # Try Checkout Sessions first (PayMongo's modern hosted checkout with automatic success redirect)
-        res = requests.post(
-            f'{PAYMONGO_API}/checkout_sessions',
-            headers=get_auth_header(),
-            json=cs_payload,
-            timeout=15
-        )
-        result = res.json()
+        link_id = None
+        checkout_url = None
+        reference_number = None
 
-        # If checkout session creation fails, fallback to legacy links
-        if res.status_code not in (200, 201):
-            print(f"[PayMongo] Checkout session failed ({res.status_code}), falling back to links: {res.text}")
+        # For GCash / Maya: Create a Direct Payment Intent + Payment Method + Attach first
+        # so the user goes straight to the single-tab GCash/Maya authorization page (no 2nd tab, no qr_... hang)
+        # and auto-redirects to success_url -> window.close() immediately upon clicking Authorize/Fail!
+        if pm_type in ('gcash', 'paymaya'):
+            try:
+                pi_payload = {
+                    'data': {
+                        'attributes': {
+                            'amount': amount_centavos,
+                            'payment_method_allowed': ['gcash', 'paymaya', 'card'],
+                            'currency': 'PHP',
+                            'capture_type': 'automatic',
+                            'description': description,
+                            'statement_descriptor': 'AUTORIDE RENTAL',
+                            'metadata': {
+                                'booking_id': str(booking_id),
+                                'method': method,
+                                'payment_type': payment_type,
+                                'client': client
+                            }
+                        }
+                    }
+                }
+                pi_res = requests.post(f'{PAYMONGO_API}/payment_intents', headers=get_auth_header(), json=pi_payload, timeout=12)
+                if pi_res.status_code in (200, 201):
+                    pi_id = pi_res.json()['data']['id']
+                    pm_payload = {'data': {'attributes': {'type': pm_type}}}
+                    if billing:
+                        pm_payload['data']['attributes']['billing'] = billing
+                    pm_res = requests.post(f'{PAYMONGO_API}/payment_methods', headers=get_auth_header(), json=pm_payload, timeout=12)
+                    if pm_res.status_code in (200, 201):
+                        pm_id = pm_res.json()['data']['id']
+                        att_payload = {
+                            'data': {
+                                'attributes': {
+                                    'payment_method': pm_id,
+                                    'return_url': success_url
+                                }
+                            }
+                        }
+                        att_res = requests.post(f'{PAYMONGO_API}/payment_intents/{pi_id}/attach', headers=get_auth_header(), json=att_payload, timeout=12)
+                        if att_res.status_code in (200, 201):
+                            att_attrs = att_res.json()['data']['attributes']
+                            next_act = att_attrs.get('next_action') or {}
+                            redir_url = (next_act.get('redirect') or {}).get('url')
+                            if redir_url:
+                                link_id = pi_id
+                                checkout_url = redir_url
+                                reference_number = pi_id
+            except Exception as _pi_err:
+                print(f"[PayMongo] Direct PaymentIntent attach fallback to CheckoutSession: {_pi_err}")
+
+        if not checkout_url:
+            # Try Checkout Sessions (for Card or fallback)
             res = requests.post(
-                f'{PAYMONGO_API}/links',
+                f'{PAYMONGO_API}/checkout_sessions',
                 headers=get_auth_header(),
-                json=link_payload,
+                json=cs_payload,
                 timeout=15
             )
             result = res.json()
 
-        if res.status_code not in (200, 201):
-            error_msg = result.get('errors', [{}])[0].get('detail', 'PayMongo error')
-            return jsonify({'error': error_msg}), res.status_code
+            # If checkout session creation fails, fallback to legacy links
+            if res.status_code not in (200, 201):
+                print(f"[PayMongo] Checkout session failed ({res.status_code}), falling back to links: {res.text}")
+                res = requests.post(
+                    f'{PAYMONGO_API}/links',
+                    headers=get_auth_header(),
+                    json=link_payload,
+                    timeout=15
+                )
+                result = res.json()
 
-        res_data = result['data']
-        link_id = res_data['id']
-        checkout_url = res_data['attributes']['checkout_url']
-        reference_number = res_data['attributes'].get('reference_number') or link_id
+            if res.status_code not in (200, 201):
+                error_msg = result.get('errors', [{}])[0].get('detail', 'PayMongo error')
+                return jsonify({'error': error_msg}), res.status_code
+
+            res_data = result['data']
+            link_id = res_data['id']
+            checkout_url = res_data['attributes']['checkout_url']
+            reference_number = res_data['attributes'].get('reference_number') or link_id
 
         # Store the PayMongo session/link ID in the booking for webhook matching (only for non-extensions)
         if payment_type != 'Extension':
@@ -350,7 +407,7 @@ def payment_success():
 
         if booking and booking['paymongo_link_id']:
             link_id = booking['paymongo_link_id']
-            endpoint = f"{PAYMONGO_API}/checkout_sessions/{link_id}" if link_id.startswith('cs_') else f"{PAYMONGO_API}/links/{link_id}"
+            endpoint = f"{PAYMONGO_API}/payment_intents/{link_id}" if link_id.startswith('pi_') else (f"{PAYMONGO_API}/checkout_sessions/{link_id}" if link_id.startswith('cs_') else f"{PAYMONGO_API}/links/{link_id}")
             res = requests.get(
                 endpoint,
                 headers=get_auth_header(),
@@ -372,7 +429,7 @@ def payment_success():
                 pi_status = payment_intent.get('attributes', {}).get('status') or payment_intent.get('status')
                 payments = link_attrs.get('payments', [])
 
-                is_paid = (status == 'paid') or (pi_status == 'succeeded')
+                is_paid = (status in ('paid', 'succeeded')) or (pi_status == 'succeeded')
                 if not is_paid and payments:
                     for p in payments:
                         p_attrs = p.get('data', p).get('attributes', p)
@@ -400,6 +457,8 @@ def payment_success():
                     pay_type = link_metadata.get('payment_type') or booking['payment_type'] or 'Full'
                     
                     _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
+                elif client == 'web':
+                    return payment_cancel()
 
         # If web client, auto-close the PayMongo popup/tab and notify/focus the original Autoride tab
         if client == 'web':
@@ -759,7 +818,7 @@ def check_payment_status(booking_id):
         debug_info = {'link_id': link_id, 'has_key': bool(secret_key)}
         if link_id and secret_key:
             try:
-                endpoint = f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}'
+                endpoint = f'{PAYMONGO_API}/payment_intents/{link_id}' if link_id.startswith('pi_') else (f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}')
                 res = requests.get(
                     endpoint,
                     headers=get_auth_header(),
@@ -784,7 +843,7 @@ def check_payment_status(booking_id):
                     debug_info['payments_count'] = len(payments)
 
                     # Determine if paid
-                    is_paid = (link_status == 'paid') or (pi_status == 'succeeded')
+                    is_paid = (link_status in ('paid', 'succeeded')) or (pi_status == 'succeeded')
                     if not is_paid and payments:
                         for p in payments:
                             p_attrs = p.get('data', p).get('attributes', p)
@@ -931,7 +990,7 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                 continue
                 
             try:
-                endpoint = f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}'
+                endpoint = f'{PAYMONGO_API}/payment_intents/{link_id}' if link_id.startswith('pi_') else (f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}')
                 res = requests.get(
                     endpoint,
                     headers=get_auth_header(),
@@ -945,7 +1004,7 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                     pi_status = payment_intent.get('attributes', {}).get('status') or payment_intent.get('status')
                     payments = link_attrs.get('payments', [])
 
-                    is_paid = (link_status == 'paid') or (pi_status == 'succeeded')
+                    is_paid = (link_status in ('paid', 'succeeded')) or (pi_status == 'succeeded')
                     if not is_paid and payments:
                         for p in payments:
                             p_attrs = p.get('data', p).get('attributes', p)
