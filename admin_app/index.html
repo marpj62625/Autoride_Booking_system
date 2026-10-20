@@ -8076,7 +8076,7 @@
 
 
 
-        <div class="modal-content" style="background: white; color: #0f172a; padding: 28px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 680px; width: 100%;">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 22px 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 680px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;">
 
 
 
@@ -8433,6 +8433,51 @@ input:checked + .ctrl-slider:before {
         </div>
     </div>
 </div>
+
+    <!-- Archive Reason Modal -->
+    <div id="archiveReasonModal" class="premium-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); display: none; position: fixed; inset: 0; z-index: 10050; align-items: center; justify-content: center; padding: 16px;" onclick="if(event.target === this) ArchivedBookings.closeReasonModal();">
+        <div class="modal-content" style="background: #ffffff; color: #0f172a; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); max-width: 480px; width: 100%; padding: 26px; border: 1px solid rgba(0,0,0,0.08); animation: modalFadeIn 0.2s ease-out;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(139,92,246,0.12); display: flex; align-items: center; justify-content: center; color: #8b5cf6; font-size: 1.1rem;">
+                        <i class="fas fa-archive"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;" id="archiveReasonTitle">Archive Booking</h3>
+                        <p style="font-size: 0.75rem; color: #64748b; margin: 2px 0 0 0;">Provide a retention reason to move to archives</p>
+                    </div>
+                </div>
+                <button type="button" onclick="ArchivedBookings.closeReasonModal()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <input type="hidden" id="archiveTargetBookingId" value="">
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Quick Reason Presets</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                    <button type="button" class="archive-preset-pill" onclick="ArchivedBookings.setReasonPreset('Completed Rental Retention')" style="padding: 5px 11px; font-size: 0.72rem; font-weight: 600; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer;">✓ Completed Rental</button>
+                    <button type="button" class="archive-preset-pill" onclick="ArchivedBookings.setReasonPreset('Cancelled & Settled')" style="padding: 5px 11px; font-size: 0.72rem; font-weight: 600; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer;">✕ Cancelled / Settled</button>
+                    <button type="button" class="archive-preset-pill" onclick="ArchivedBookings.setReasonPreset('No Show (Past Schedule)')" style="padding: 5px 11px; font-size: 0.72rem; font-weight: 600; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer;">⚠ No Show Closed</button>
+                    <button type="button" class="archive-preset-pill" onclick="ArchivedBookings.setReasonPreset('Historical Audit Cleanup')" style="padding: 5px 11px; font-size: 0.72rem; font-weight: 600; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; cursor: pointer;">📋 Audit Cleanup</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 22px;">
+                <label for="archiveReasonInput" style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Archive Reason Note</label>
+                <textarea id="archiveReasonInput" rows="3" placeholder="Enter specific reason or notes for archiving..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.85rem; color: #0f172a; outline: none; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="ArchivedBookings.closeReasonModal()" style="padding: 9px 18px; border-radius: 10px; background: #f1f5f9; color: #475569; font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer;">Cancel</button>
+                <button type="button" id="archiveSubmitBtn" onclick="ArchivedBookings.submitArchiveModal()" style="padding: 9px 20px; border-radius: 10px; background: #8b5cf6; color: white; font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(139,92,246,0.35);">
+                    <i class="fas fa-check"></i> Confirm Archive
+                </button>
+            </div>
+        </div>
+    </div>
+
 
 <!-- ===================== ADD / EDIT FAQ SUB-MODAL ===================== -->
 <div id="adminFaqFormModal" class="premium-modal" style="display:none; z-index:10001;" onclick="AdminChatControls.handleFaqBackdropClick(event)">
@@ -19152,19 +19197,59 @@ They will be safely secluded from operational queues to keep query latency fast.
             this.load();
         },
 
+        openReasonModal(id) {
+            const modal = document.getElementById('archiveReasonModal');
+            const idInput = document.getElementById('archiveTargetBookingId');
+            const reasonInput = document.getElementById('archiveReasonInput');
+            const title = document.getElementById('archiveReasonTitle');
+            if (!modal) {
+                const reason = prompt(`Archive Booking #${id}?\n\nEnter reason for archiving:`, 'Completed Rental Retention');
+                if (reason !== null) this.executeArchive(id, reason);
+                return;
+            }
+            if (idInput) idInput.value = id;
+            if (reasonInput) reasonInput.value = 'Completed Rental Retention';
+            if (title) title.textContent = `Archive Booking #${id}`;
+            modal.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
+            setTimeout(() => { if (reasonInput) { reasonInput.focus(); reasonInput.select(); } }, 100);
+        },
+
+        closeReasonModal() {
+            const modal = document.getElementById('archiveReasonModal');
+            if (modal) modal.style.display = 'none';
+            if (typeof modalClose === 'function') modalClose();
+        },
+
+        setReasonPreset(preset) {
+            const reasonInput = document.getElementById('archiveReasonInput');
+            if (reasonInput) {
+                reasonInput.value = preset;
+                reasonInput.focus();
+            }
+        },
+
+        async submitArchiveModal() {
+            const idInput = document.getElementById('archiveTargetBookingId');
+            const reasonInput = document.getElementById('archiveReasonInput');
+            const id = idInput ? idInput.value : null;
+            const reason = reasonInput ? reasonInput.value.trim() : '';
+            if (!id) return;
+            this.closeReasonModal();
+            await this.executeArchive(id, reason || 'Manual Admin Archive');
+        },
+
         async archiveSingle(id) {
-            const reason = prompt(`Archive Booking #${id}?
+            this.openReasonModal(id);
+        },
 
-Enter reason for archiving:`, 'Completed Rental Retention');
-            if (reason === null) return;
-
-            
+        async executeArchive(id, reason) {
             if (typeof anime !== 'undefined') {
                 const btn = (window.event && (window.event.currentTarget || window.event.target));
                 const row = btn && btn.closest ? btn.closest('tr') : null;
                 if (row) anime({ targets: row, translateX: [0, 60], opacity: [1, 0], duration: 320, easing: 'easeInQuad' });
             }
-try {
+            try {
                 const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/archive`, {
                     method: 'POST',
@@ -19172,10 +19257,12 @@ try {
                     body: JSON.stringify({ reason: reason || 'Manual Admin Archive', archived_by: user.name || user.username || 'Admin' })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to archive booking');
+                if (!res.ok) throw new Error(data.error || data.detail || 'Failed to archive booking');
 
                 if (typeof showNotification === 'function') {
                     showNotification(`Booking #${id} successfully archived!`, 'success');
+                } else if (typeof Toast !== 'undefined' && Toast.show) {
+                    Toast.show(`Booking #${id} successfully archived!`, 'success');
                 } else {
                     alert(`Booking #${id} successfully archived!`);
                 }
@@ -19184,11 +19271,13 @@ try {
                 const modal = document.getElementById('bookingDetailsModal');
                 if (modal) modal.style.display = 'none';
 
+                if (typeof Bookings !== 'undefined' && typeof Bookings.load === 'function') Bookings.load();
                 if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
                 if (typeof PastBookings !== 'undefined' && typeof PastBookings.load === 'function') PastBookings.load();
                 this.load();
             } catch (err) {
                 if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else if (typeof Toast !== 'undefined' && Toast.show) Toast.show(err.message, 'error');
                 else alert(err.message);
             }
         },
@@ -19902,13 +19991,13 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
-        _renderActionButtons(b) {
+                _renderActionButtons(b) {
             const st = (b.status || '').toLowerCase();
             let buttons = [];
 
             // Details Button (always available)
             buttons.push(`
-                <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;">
+                <button onclick="Bookings.view(${b.id})" class="booking-action-btn" style="background: var(--primary); color: white;">
                     <i class="fas fa-eye"></i> View
                 </button>
             `);
@@ -19916,10 +20005,10 @@ function toggleNewsletterModal(show = true) {
             // Pending cash received / reject
             if (b.payment_status === 'Pending Payment' && st === 'pending') {
                 buttons.push(`
-                    <button onclick="Bookings.markCashReceived(${b.id})" style="padding: 6px 10px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                    <button onclick="Bookings.markCashReceived(${b.id})" class="booking-action-btn" style="background: var(--primary); color: white;">
                         <i class="fas fa-money-bill-wave"></i> Cash
                     </button>
-                    <button onclick="Bookings.reject(${b.id})" style="padding: 6px 10px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                    <button onclick="Bookings.reject(${b.id})" class="booking-action-btn" style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">
                         <i class="fas fa-times"></i> Reject
                     </button>
                 `);
@@ -19929,13 +20018,13 @@ function toggleNewsletterModal(show = true) {
             if (st === 'confirmed' || st === 'approved') {
                 const act = Bookings.getPickupInspectAction(b);
                 buttons.push(`
-                    <button onclick="${act.onClick}" style="padding: 6px 10px; background: ${act.active ? 'var(--amber, #f59e0b)' : '#94a3b8'}; color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: ${act.active ? 'pointer' : 'not-allowed'}; opacity: ${act.active ? '1' : '0.6'}; display: inline-flex; align-items: center; gap: 4px;">
+                    <button onclick="${act.onClick}" class="booking-action-btn" style="background: ${act.active ? 'var(--amber, #f59e0b)' : '#94a3b8'}; color: white; cursor: ${act.active ? 'pointer' : 'not-allowed'}; opacity: ${act.active ? '1' : '0.6'};">
                         <i class="fas fa-search-plus"></i> Pickup Inspect
                     </button>
                 `);
                 if (Bookings.isPickupPast(b)) {
                     buttons.push(`
-                        <button onclick="Bookings.markNoShow(${b.id})" style="padding: 6px 10px; background: #ef4444; color: #fff; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <button onclick="Bookings.markNoShow(${b.id})" class="booking-action-btn" style="background: #ef4444; color: #fff;">
                             <i class="fas fa-user-slash"></i> No Show
                         </button>
                     `);
@@ -19945,22 +20034,23 @@ function toggleNewsletterModal(show = true) {
             // Picked Up / Ongoing: Return Inspect
             if (st === 'picked up' || st === 'ongoing') {
                 buttons.push(`
-                    <button onclick="Inspections.openModal(${b.id}, 'return')" style="padding: 6px 10px; background: var(--amber, #f59e0b); color: white; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <button onclick="Inspections.openModal(${b.id}, 'return')" class="booking-action-btn" style="background: var(--amber, #f59e0b); color: white;">
                         <i class="fas fa-clipboard-check"></i> Return Inspect
                     </button>
                 `);
             }
 
-            // Archive for finished/cancelled bookings
-            if (['completed', 'cancelled', 'rejected', 'no show', 'no-show'].includes(st) && !b.is_archived) {
+            // Archive Button for Completed/Cancelled/Rejected/No Show/Overdue
+            const archivableStatuses = ['completed', 'cancelled', 'rejected', 'no show', 'overdue'];
+            if (archivableStatuses.includes(st)) {
                 buttons.push(`
-                    <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="padding: 6px 10px; background: rgba(139,92,246,0.12); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    <button onclick="ArchivedBookings.archiveSingle(${b.id})" class="booking-action-btn" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #8b5cf6;" title="Archive Booking">
                         <i class="fas fa-archive"></i> Archive
                     </button>
                 `);
             }
 
-            return `<div style="display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap;">${buttons.join('')}</div>`;
+            return `<div class="booking-actions-cell">${buttons.join('')}</div>`;
         },
 
         renderNew() {
@@ -26562,24 +26652,14 @@ function toggleNewsletterModal(show = true) {
 
 
                         <td style="padding: 12px 10px; text-align: center;">
-
-
-
-                            <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-
-
-
-                                <i class="fas fa-eye" style="margin-right: 4px;"></i> View
-
-
-
-                            </button>
-                                <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="padding: 6px 10px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #8b5cf6; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-left: 6px;" title="Archive Booking">
+                            <div class="booking-actions-cell">
+                                <button onclick="Bookings.view(${b.id})" class="booking-action-btn" style="background: var(--primary); color: white;">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="ArchivedBookings.archiveSingle(${b.id})" class="booking-action-btn" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #8b5cf6;" title="Archive Booking">
                                     <i class="fas fa-archive"></i> Archive
                                 </button>
-
-
-
+                            </div>
                         </td>
 
 
