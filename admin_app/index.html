@@ -10239,8 +10239,8 @@ input:checked + .ctrl-slider:before {
                     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:12px;">
                         <!-- Year Model -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Year Model</label>
-                            <input type="text" id="vYear" placeholder="e.g. 2023" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Year Model (1990 - Present)</label>
+                            <input type="number" id="vYear" placeholder="e.g. 2023" min="1990" max="2026" inputmode="numeric" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Daily Rate -->
@@ -10314,13 +10314,13 @@ input:checked + .ctrl-slider:before {
                         <!-- Next Service -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Next Service / PMS Date</label>
-                            <input type="date" id="vNextService" min="2020-01-01" max="2099-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vNextService" min="2024-01-01" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- LTO Expiry -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">LTO Expiry Date</label>
-                            <input type="date" id="vLtoExpiry" min="2020-01-01" max="2099-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vLtoExpiry" min="2024-01-01" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
@@ -15097,6 +15097,25 @@ input:checked + .ctrl-slider:before {
             const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
             if (addAnotherBtn) addAnotherBtn.style.display = id ? 'none' : 'inline-flex';
 
+            const curYear = new Date().getFullYear();
+            const yearInput = document.getElementById('vYear');
+            if (yearInput) {
+                yearInput.min = '1990';
+                yearInput.max = String(curYear);
+            }
+            const minDate = `${curYear - 2}-01-01`;
+            const maxDate = `${curYear + 5}-12-31`;
+            const nextSvcInput = document.getElementById('vNextService');
+            if (nextSvcInput) {
+                nextSvcInput.min = minDate;
+                nextSvcInput.max = maxDate;
+            }
+            const ltoExpInput = document.getElementById('vLtoExpiry');
+            if (ltoExpInput) {
+                ltoExpInput.min = minDate;
+                ltoExpInput.max = maxDate;
+            }
+
             if (id) {
                 const v = this.data.find(x => x.id == id);
                 if (!v) return;
@@ -15473,9 +15492,32 @@ input:checked + .ctrl-slider:before {
             const rateEl = document.getElementById('vRate');
             if (!rateEl.value || parseFloat(rateEl.value) <= 0) { showInlineError(rateEl, 'Valid daily rate is required'); hasError = true; }
 
+            const currentYear = new Date().getFullYear();
             const yearEl = document.getElementById('vYear');
-            if (yearEl.value && (yearEl.value.length !== 4 || isNaN(yearEl.value) || parseInt(yearEl.value) < 1990 || parseInt(yearEl.value) > 2030)) {
-                showInlineError(yearEl, 'Must be a valid 4-digit year (1990-2030)'); hasError = true;
+            if (yearEl.value) {
+                const yr = parseInt(yearEl.value, 10);
+                if (isNaN(yr) || yr < 1990 || yr > currentYear) {
+                    showInlineError(yearEl, `Year Model must be between 1990 and ${currentYear}`);
+                    hasError = true;
+                }
+            }
+
+            const nextServiceEl = document.getElementById('vNextService');
+            if (nextServiceEl && nextServiceEl.value) {
+                const nsYear = parseInt(nextServiceEl.value.split('-')[0], 10);
+                if (nsYear < currentYear - 2 || nsYear > currentYear + 5) {
+                    showInlineError(nextServiceEl, `Year must be between ${currentYear - 2} and ${currentYear + 5}`);
+                    hasError = true;
+                }
+            }
+
+            const ltoExpiryEl = document.getElementById('vLtoExpiry');
+            if (ltoExpiryEl && ltoExpiryEl.value) {
+                const ltoYear = parseInt(ltoExpiryEl.value.split('-')[0], 10);
+                if (ltoYear < currentYear - 2 || ltoYear > currentYear + 5) {
+                    showInlineError(ltoExpiryEl, `Year must be between ${currentYear - 2} and ${currentYear + 5}`);
+                    hasError = true;
+                }
             }
 
             const mileageTypeEl = document.getElementById('vMileageType');
@@ -15784,28 +15826,29 @@ input:checked + .ctrl-slider:before {
             const carImgSrc = (v.vehicle_image && !isDocImg) ? v.vehicle_image : '';
             
             const imgHtml = carImgSrc
-                ? `<div style="position:relative;width:100%;height:240px;background:#0f172a;overflow:hidden;">
-                     <img src="${carImgSrc}" style="width:100%;height:100%;object-fit:cover;">
-                     <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15,23,42,0.75) 100%);pointer-events:none;"></div>
-                     <div style="position:absolute;bottom:16px;left:20px;right:20px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
+                ? `<div>
+                     <div style="position:relative;width:100%;height:320px;background:#0b0f19;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                         <img src="${carImgSrc}" style="width:100%;height:100%;object-fit:contain;background:#0b0f19;">
+                     </div>
+                     <div style="padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
                          <div>
-                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                                 <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:${sc};color:#fff;font-size:0.75rem;font-weight:800;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                 <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:${sc};color:#fff;font-size:0.75rem;font-weight:800;letter-spacing:0.3px;">
                                      <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>${v.status || 'Unknown'}
                                  </span>
-                                 <span style="display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);color:#fff;font-size:0.75rem;font-weight:800;letter-spacing:1px;font-family:monospace;border:1px solid rgba(255,255,255,0.25);">
+                                 <span style="display:inline-block;padding:4px 10px;border-radius:6px;background:var(--surface-container);color:var(--text-main);font-size:0.78rem;font-weight:800;letter-spacing:1px;font-family:monospace;border:1px solid var(--border);">
                                      ${v.plate_number || 'NO PLATE'}
                                  </span>
                              </div>
-                             <h3 style="margin:0;font-size:1.35rem;font-weight:900;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,0.4);letter-spacing:-0.4px;">${v.brand || ''} ${v.model || ''}</h3>
+                             <h3 style="margin:0;font-size:1.35rem;font-weight:900;color:var(--text-main);letter-spacing:-0.4px;">${v.brand || ''} ${v.model || ''}</h3>
                          </div>
                          <div style="text-align:right;">
-                             <div style="font-size:0.7rem;font-weight:700;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:0.5px;">Daily Rate</div>
-                             <div style="font-size:1.4rem;font-weight:900;color:#10b981;text-shadow:0 2px 4px rgba(0,0,0,0.4);letter-spacing:-0.5px;">₱${Number(v.daily_rate||0).toLocaleString()}<span style="font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.8);">/day</span></div>
+                             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Daily Rate</div>
+                             <div style="font-size:1.45rem;font-weight:900;color:#00B14F;letter-spacing:-0.5px;">₱${Number(v.daily_rate||0).toLocaleString()}<span style="font-size:0.78rem;font-weight:600;color:var(--text-muted);">/day</span></div>
                          </div>
                      </div>
                    </div>`
-                : `<div style="position:relative;width:100%;height:180px;background:var(--surface-container,#f1f5f9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+                : `<div style="position:relative;width:100%;height:200px;background:var(--surface-container,#f1f5f9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-bottom:1px solid var(--border);">
                      <i class="fas fa-car" style="font-size:3.5rem;color:var(--primary);opacity:0.35;"></i>
                      <div style="font-size:0.85rem;font-weight:700;color:var(--text-muted);">${v.brand || ''} ${v.model || ''} (${v.plate_number || 'NO PLATE'})</div>
                    </div>`;
