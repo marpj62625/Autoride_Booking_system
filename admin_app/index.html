@@ -10171,7 +10171,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Color -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Color</label>
-                            <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList" maxlength="30" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '').slice(0, 30)" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="text" id="vColor" placeholder="e.g. Red, Pearl White" list="vColorList" maxlength="30" oninput="this.value = this.value.replace(/[^A-Za-z\s-]/g, '').replace(/(^|[\s-])([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase()).slice(0, 30);" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;text-transform:capitalize;">
                             <datalist id="vColorList">
                                 <option value="White"><option value="Black"><option value="Silver">
                                 <option value="Gray"><option value="Red"><option value="Blue">
@@ -10314,13 +10314,13 @@ input:checked + .ctrl-slider:before {
                         <!-- Next Service -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Next Service / PMS Date</label>
-                            <input type="date" id="vNextService" min="2024-01-01" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vNextService" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- LTO Expiry -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">LTO Expiry Date</label>
-                            <input type="date" id="vLtoExpiry" min="2024-01-01" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vLtoExpiry" max="2031-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
@@ -15097,22 +15097,24 @@ input:checked + .ctrl-slider:before {
             const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
             if (addAnotherBtn) addAnotherBtn.style.display = id ? 'none' : 'inline-flex';
 
-            const curYear = new Date().getFullYear();
+            const now = new Date();
+            const curYear = now.getFullYear();
             const yearInput = document.getElementById('vYear');
             if (yearInput) {
                 yearInput.min = '1990';
                 yearInput.max = String(curYear);
             }
-            const minDate = `${curYear - 2}-01-01`;
+            // Disallow past dates: min is today
+            const todayStr = `${curYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             const maxDate = `${curYear + 5}-12-31`;
             const nextSvcInput = document.getElementById('vNextService');
             if (nextSvcInput) {
-                nextSvcInput.min = minDate;
+                nextSvcInput.min = todayStr;
                 nextSvcInput.max = maxDate;
             }
             const ltoExpInput = document.getElementById('vLtoExpiry');
             if (ltoExpInput) {
-                ltoExpInput.min = minDate;
+                ltoExpInput.min = todayStr;
                 ltoExpInput.max = maxDate;
             }
 
@@ -15502,11 +15504,15 @@ input:checked + .ctrl-slider:before {
                 }
             }
 
+            const todayStr = new Date().toISOString().split('T')[0];
             const nextServiceEl = document.getElementById('vNextService');
             if (nextServiceEl && nextServiceEl.value) {
                 const nsYear = parseInt(nextServiceEl.value.split('-')[0], 10);
-                if (nsYear < currentYear - 2 || nsYear > currentYear + 5) {
-                    showInlineError(nextServiceEl, `Year must be between ${currentYear - 2} and ${currentYear + 5}`);
+                if (nextServiceEl.value < todayStr) {
+                    showInlineError(nextServiceEl, 'Next Service date cannot be in the past');
+                    hasError = true;
+                } else if (nsYear > currentYear + 5) {
+                    showInlineError(nextServiceEl, `Year must not exceed ${currentYear + 5}`);
                     hasError = true;
                 }
             }
@@ -15514,8 +15520,11 @@ input:checked + .ctrl-slider:before {
             const ltoExpiryEl = document.getElementById('vLtoExpiry');
             if (ltoExpiryEl && ltoExpiryEl.value) {
                 const ltoYear = parseInt(ltoExpiryEl.value.split('-')[0], 10);
-                if (ltoYear < currentYear - 2 || ltoYear > currentYear + 5) {
-                    showInlineError(ltoExpiryEl, `Year must be between ${currentYear - 2} and ${currentYear + 5}`);
+                if (ltoExpiryEl.value < todayStr) {
+                    showInlineError(ltoExpiryEl, 'LTO Expiry date cannot be in the past');
+                    hasError = true;
+                } else if (ltoYear > currentYear + 5) {
+                    showInlineError(ltoExpiryEl, `Year must not exceed ${currentYear + 5}`);
                     hasError = true;
                 }
             }
@@ -15554,7 +15563,9 @@ input:checked + .ctrl-slider:before {
 
 
 
-            formData.append('color', document.getElementById('vColor').value || '');
+            const rawColor = (document.getElementById('vColor').value || '').trim();
+            const formattedColor = rawColor.replace(/(^|[\s-])([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+            formData.append('color', formattedColor);
 
 
 
