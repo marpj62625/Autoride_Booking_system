@@ -1,0 +1,39 @@
+Total form elements: 173
+
+[NUMBER INPUTS MISSING MIN/MAX]: 5
+  ID: quickTotalPrice              Bounds: min=0 max=None       PH: 
+  ID: quickAmountPaid              Bounds: min=0 max=None       PH: 
+  ID: addonPriceInput              Bounds: min=None max=None    PH: e.g. 150
+  ID: insurancePriceInput          Bounds: min=None max=None    PH: e.g. 500
+  ID: locationFeeInput             Bounds: min=None max=None    PH: 0
+
+[TEXT/TEXTAREA MISSING MAXLENGTH]: 29
+  ID: vehicleSearch                Type: text       Tag: input    PH: Search brand, model or plate...
+  ID: nlSubSearchInput             Type: text       Tag: input    PH: Search by email, name, or status...
+  ID: quickBalanceAmount           Type: text       Tag: input    PH: 
+  ID: chatCtrlAiGreeting           Type: textarea   Tag: textarea PH: 
+  ID: chatCtrlAiFallback           Type: textarea   Tag: textarea PH: 
+  ID: faqFormChipLabel             Type: text       Tag: input    PH: e.g. 💳 20% DP & Balance
+  ID: faqFormCategory              Type: text       Tag: input    PH: e.g. payment, general, fuel
+  ID: faqFormQuestion              Type: text       Tag: input    PH: e.g. How does the 20% downpayment and balance payment work?
+  ID: faqFormKeywords              Type: text       Tag: input    PH: e.g. 20%, downpayment, dp, balance, upon pickup
+  ID: faqFormAnswer                Type: textarea   Tag: textarea PH: Enter clear policy explanation or instructions...
+  ID: settingsSearchInput          Type: text       Tag: input    PH: Search settings (e.g. strike, suspension, mileage, chat, discount)...
+  ID: addonNameInput               Type: text       Tag: input    PH: e.g. GPS Navigator
+  ID: addonDescInput               Type: textarea   Tag: textarea PH: Briefly describe this add-on...
+  ID: insuranceNameInput           Type: text       Tag: input    PH: e.g. Standard Protection
+  ID: insuranceDescInput           Type: textarea   Tag: textarea PH: Briefly describe what this insurance covers...
+  ID: locationNameInput            Type: text       Tag: input    PH: e.g. San Pablo City, Laguna
+  ID: locationProvinceInput        Type: text       Tag: input    PH: Laguna
+  ID: locationMuniInput            Type: text       Tag: input    PH: San Pablo City
+  ID: locationBrgyInput            Type: text       Tag: input    PH: Leave empty for all
+  ID: newInstructionInput          Type: text       Tag: input    PH: e.g. Bring 2 valid IDs upon pickup.
+  ID: newMobilePassword            Type: password   Tag: input    PH: ********
+  ID: confirmMobilePassword        Type: password   Tag: input    PH: ********
+  ID: inspectDriverOTAmount        Type: text       Tag: input    PH: 
+  ID: pushNotifTitle               Type: text       Tag: input    PH: e.g. System Update
+  ID: pushNotifBody                Type: textarea   Tag: textarea PH: Type your message here...
+  ID: staffReqPermReason           Type: textarea   Tag: textarea PH: e.g. Need access to manage incoming holiday blackout dates for customers...
+  ID: gpsConfigDeviceName          Type: text       Tag: input    PH: e.g. Tracker Unit 1 (ESP32)
+  ID: gpsConfigToken               Type: password   Tag: input    PH: Paste Blynk Auth Token from hardware / console
+  ID: gpsConfigServer              Type: text       Tag: input    PH: sgp1.blynk.cloud

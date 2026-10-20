@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
+<style>
+:root {
+  --primary: #00b14f;
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --text-dark: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; margin: 0; padding: 24px; }
+
+#homeBanner {
+  background: linear-gradient(135deg, #00873a 0%, #00b14f 60%, #10b981 100%);
+  border-radius: 24px;
+  padding: 26px 32px 30px;
+  box-shadow: 0 10px 32px rgba(0, 177, 79, 0.22);
+  position: relative;
+  overflow: hidden;
+  color: white;
+}
+.home-banner-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.home-hero-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.home-hero-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+.home-hero-kicker {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}
+.home-hero-title {
+  color: #ffffff;
+  font-size: 1.95rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  margin: 2px 0 0;
+  line-height: 1.15;
+}
+.notif-btn-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.notif-btn {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #ffffff;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: background 0.2s;
+}
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 10px;
+  padding: 1px 6px;
+  border: 2px solid #00873a;
+}
+.home-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 28px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.home-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.home-hero-desc {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 480px;
+}
+.home-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.home-hero-cta {
+  background: #ffffff;
+  color: #00873a;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.home-hero-cta-secondary {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.home-loyalty-card {
+  background: rgba(0, 40, 15, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 20px 22px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+</style>
+</head>
+<body>
+<div style='max-width: 1080px; margin: 0 auto;'>
+  <div id='homeBanner'>
+    <div style='position:absolute;top:0;right:0;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%);pointer-events:none;'></div>
+
+    <!-- Top Row: Greeting & Notification Bell on top right -->
+    <div class='home-banner-top-row'>
+      <div class='home-hero-top'>
+        <div style='width:52px;height:52px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;'>AUTO</div>
+        <div>
+          <p class='home-hero-kicker'>GOOD DAY</p>
+          <h2 class='home-hero-title'>Ash B Tim 👋</h2>
+        </div>
+      </div>
+      <div class='notif-btn-wrap'>
+        <button class='notif-btn'><i class='fas fa-bell'></i></button>
+        <span class='notif-badge'>2</span>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class='home-hero-grid'>
+      <div class='home-hero-left'>
+        <p class='home-hero-desc'>Rent self-drive and with-driver vehicles across the Philippines. Transparent rates, flexible bookings, and 24/7 dedicated support.</p>
+        <div class='home-hero-actions'>
+          <button class='home-hero-cta'><i class='fas fa-car-side'></i> Browse Vehicles</button>
+          <button class='home-hero-cta-secondary'><i class='fas fa-graduation-cap'></i> How to Rent Guide</button>
+        </div>
+      </div>
+
+      <!-- Clean Loyalty Card without Bell -->
+      <div class='home-loyalty-card'>
+        <div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;'>
+          <div style='display:flex;align-items:center;gap:10px;'>
+            <div style='width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(245,158,11,0.3);'>
+              <i class='fas fa-award' style='color:#ffffff;font-size:1.05rem;'></i>
+            </div>
+            <div>
+              <div style='font-size:0.62rem;color:rgba(255,255,255,0.85);font-weight:800;text-transform:uppercase;letter-spacing:1px;'>Loyalty Points</div>
+              <div style='font-size:1.65rem;font-weight:900;color:#ffffff;line-height:1;margin-top:2px;'>0</div>
+            </div>
+          </div>
+          <div style='background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:900;letter-spacing:0.5px;'>BRONZE</div>
+        </div>
+
+        <div style='font-size:0.68rem;display:flex;justify-content:space-between;margin-bottom:6px;'>
+          <span style='color:rgba(255,255,255,0.75);font-weight:600;'>Progress to Silver</span>
+          <span style='color:#fbbf24;font-weight:800;'>0 / 1,000</span>
+        </div>
+
+        <div style='background:rgba(255,255,255,0.18);border-radius:10px;height:7px;overflow:hidden;'>
+          <div style='height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);border-radius:10px;width:0%;'></div>
+        </div>
+
+        <div style='font-size:0.65rem;color:rgba(255,255,255,0.7);margin-top:6px;'>1,000 pts more to unlock Silver benefits</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

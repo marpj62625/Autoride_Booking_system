@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Live Fleet Tracker - Autoride Laguna</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Hidden elements for backward compatibility -->
+<div id="car-trigger" style="display:none;"></div>
+<div id="car-trigger-2" style="display:none;"></div>
+
+<!-- Top Fleet Status Bar -->
+<div id="fleet-bar">
+    <div class="fleet-status">
+        <span class="fleet-dot"></span>
+        <span id="fleet-count-text">Fleet Radar: Checking...</span>
+    </div>
+    <button id="view-all-btn" onclick="fitAllDevices()" title="View All Live Vehicles">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <span>View All</span>
+    </button>
+</div>
+
+<!-- Leaflet Map Container -->
+<div id="map"></div>
+
+<!-- ============================================== -->
+<!-- BOTTOM SHEET PANELS (Device, My, Function)      -->
+<!-- ============================================== -->
+
+<!-- 1. DEVICE PANEL (Unified Vehicles Tab) -->
+<div id="device-modal" class="bottom-sheet-panel">
+    <div class="sheet-header">
+        <div class="sheet-title-group">
+            <div class="sheet-icon-circle blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div>
+                <h3 class="sheet-title">Fleet Vehicles & Devices</h3>
+                <span class="sheet-subtitle">Select unit to track or assign vehicles</span>
+            </div>
+        </div>
+        <button class="sheet-close-btn" onclick="closeAllModals()" aria-label="Close">✕</button>
+    </div>
+
+    <!-- Sub-tab switcher: GPS 1 | GPS 2 | Both -->
+    <div class="device-subtabs">
+        <button class="device-subtab active" id="subtab-btn-1" onclick="switchDeviceTab(1)">
+            <span class="subtab-dot green"></span> GPS 01 (Car 1)
+        </button>
+        <button class="device-subtab" id="subtab-btn-2" onclick="switchDeviceTab(2)">
+            <span class="subtab-dot blue"></span> GPS 02 (Car 2)
+        </button>
+        <button class="device-subtab" id="subtab-btn-all" onclick="switchDeviceTab('all')">
+            📋 Both Units
+        </button>
+    </div>
+
+    <div class="sheet-body">
+        <!-- GPS 1 CARD -->
+        <div id="details-panel" class="device-card active-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span id="ui-dot" class="status-dot"></span>
+                    <span id="ui-title-1">GPS 1: Montero Sport</span>
+                </div>
+                <span class="badge-unit badge-green">Pins v1-v4</span>
+            </div>
+
+            <div class="veh-select-box">
+                <label>Assigned Vehicle:</label>
+                <select id="vehicle-select-1" onchange="onVehicleSelectChange(1, this.value)">
+                </select>
+            </div>
+
+            <div id="ui-privacy-badge" class="privacy-badge" style="background:#d4edda; color:#155724;">Security: Decrypted (Live)</div>
+
+            <div class="telemetry-grid">
+                <div class="data-item"><span class="data-label">Satellites:</span> <span id="ui-sats" class="data-value">--</span></div>
+                <div class="data-item"><span class="data-label">Latitude:</span> <span id="ui-lat" class="data-value">--</span></div>
+                <div class="data-item"><span class="data-label">Longitude:</span> <span id="ui-lng" class="data-value">--</span></div>
+            </div>
+
+            <div class="card-actions">
+                <button id="locate-btn" class="action-btn btn-locate">🎯 Center Map on Car 1</button>
+                <button id="override-btn" class="action-btn btn-mask" onclick="toggleOverride()" style="background-color:#475569; color:white;">🔒 Mask Location</button>
+            </div>
+        </div>
+
+        <!-- GPS 2 CARD -->
+        <div id="details-panel-2" class="device-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span id="ui-dot-2" class="status-dot"></span>
+                    <span id="ui-title-2">GPS 2: Vios XE</span>
+                </div>
+                <span class="badge-unit badge-blue">Pins v5-v8</span>
+            </div>
+
+            <div class="veh-select-box">
+                <label>Assigned Vehicle:</label>
+                <select id="vehicle-select-2" onchange="onVehicleSelectChange(2, this.value)">
+                </select>
+            </div>
+
+            <div id="ui-privacy-badge-2" class="privacy-badge" style="background:#d4edda; color:#155724;">Security: Decrypted (Live)</div>
+
+            <div class="telemetry-grid">
+                <div class="data-item"><span class="data-label">Satellites:</span> <span id="ui-sats-2" class="data-value">--</span></div>
+                <div class="data-item"><span class="data-label">Latitude:</span> <span id="ui-lat-2" class="data-value">--</span></div>
+                <div class="data-item"><span class="data-label">Longitude:</span> <span id="ui-lng-2" class="data-value">--</span></div>
+            </div>
+
+            <div class="card-actions">
+                <button id="locate-btn-2" class="action-btn btn-locate">🎯 Center Map on Car 2</button>
+                <button id="override-btn-2" class="action-btn btn-mask" onclick="toggleOverride2()" style="background-color:#475569; color:white;">🔒 Mask Location</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. FUNCTION PANEL (Fleet Utilities) -->
+<div id="function-modal" class="bottom-sheet-panel">
+    <div class="sheet-header">
+        <div class="sheet-title-group">
+            <div class="sheet-icon-circle gray">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+            </div>
+            <div>
+                <h3 class="sheet-title">Functions & Radar</h3>
+                <span class="sheet-subtitle">Fleet map utilities & controls</span>
+            </div>
+        </div>
+        <button class="sheet-close-btn" onclick="closeAllModals()" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+        <div class="functions-list">
+            <button class="fn-card-btn" onclick="fitAllDevices(); closeAllModals();">
+                <div class="fn-icon-box green">🎯</div>
+                <div class="fn-info">
+                    <strong>Radar: View All Live Cars</strong>
+                    <small>Auto-zoom map to fit all active vehicles</small>
+                </div>
+            </button>
+            <button class="fn-card-btn" onclick="toggleMapStyle()">
+                <div class="fn-icon-box blue">🛰️</div>
+                <div class="fn-info">
+                    <strong id="map-style-name">Switch Map Style</strong>
+                    <small>Toggle Street Map / Dark Carto View</small>
+                </div>
+            </button>
+            <button class="fn-card-btn" onclick="syncFleetListFromAPI(); alert('Fleet vehicles list synced from database!');">
+                <div class="fn-icon-box orange">🔄</div>
+                <div class="fn-info">
+                    <strong>Sync Fleet from Database</strong>
+                    <small>Update vehicle models & photos from Supabase</small>
+                </div>
+            </button>
+            <button class="fn-card-btn" onclick="toggleDecryptAll()">
+                <div class="fn-icon-box red">🔓</div>
+                <div class="fn-info">
+                    <strong>Emergency Decrypt All</strong>
+                    <small>Force unmask location on all active GPS units</small>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- BOTTOM NAVIGATION DOCK (Yi Tracker UI Style)    -->
+<!-- ============================================== -->
+<div id="bottom-dock">
+    <!-- 1. Position Button (Green) -->
+    <button type="button" class="dock-btn btn-position active" id="dock-btn-position" onclick="onDockClick('position')" title="View Live Positions">
+        <div class="dock-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+        </div>
+        <span class="dock-label">Position</span>
+    </button>
+
+    <!-- 2. Device Button (Blue) -->
+    <button type="button" class="dock-btn btn-device" id="dock-btn-device" onclick="onDockClick('device')" title="Manage Vehicles & Devices">
+        <div class="dock-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+        </div>
+        <span class="dock-label">Device</span>
+    </button>
+
+    <!-- 4. Function Button (Grey) -->
+    <button type="button" class="dock-btn btn-function" id="dock-btn-function" onclick="onDockClick('function')" title="Fleet Tools & Functions">
+        <div class="dock-icon-wrapper">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+        </div>
+        <span class="dock-label">Function</span>
+    </button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

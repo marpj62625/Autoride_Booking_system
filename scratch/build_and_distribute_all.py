@@ -28,10 +28,24 @@ print("\n" + "-" * 50)
 print("[1/2] PREPARING & COMPILING CUSTOMER DEBUG APK")
 print("-" * 50)
 
-# Sync customer web assets
+# Sync customer web assets from frontend -> customer_mobile/www -> android assets
+frontend_dir = os.path.join(base_dir, 'frontend')
 cm_dir = os.path.join(base_dir, 'customer_mobile')
 cm_www = os.path.join(cm_dir, 'www')
 cm_assets = os.path.join(cm_dir, 'android', 'app', 'src', 'main', 'assets', 'public')
+
+for rel_path in ['index.html', os.path.join('js', 'app.js'), os.path.join('js', 'utils.js'), os.path.join('css', 'style.css')]:
+    src_f = os.path.join(frontend_dir, rel_path)
+    if os.path.exists(src_f):
+        sync_roots = [cm_www, cm_assets]
+        root_candidate = os.path.join(root_dir, rel_path)
+        if os.path.exists(root_candidate):
+            sync_roots.append(root_dir)
+        for dst_root in sync_roots:
+            dst_f = os.path.join(dst_root, rel_path)
+            os.makedirs(os.path.dirname(dst_f), exist_ok=True)
+            shutil.copy2(src_f, dst_f)
+        print(f"Synced {rel_path} from frontend -> customer_mobile/www & android assets")
 
 if os.path.exists(cm_www) and os.path.exists(cm_assets):
     for root, dirs, files in os.walk(cm_www):
@@ -116,7 +130,10 @@ with zipfile.ZipFile(cust_apk_src, 'r') as z:
     appjs_cust = z.read('assets/public/js/app.js').decode('utf-8', errors='ignore')
     has_cam = 'Take Selfie' in idx_cust
     has_rate = 'vd-rate-action-box' in idx_cust
-    print(f"Customer APK Verification: Take Selfie={has_cam}, vd-rate-action-box={has_rate}")
+    has_clear = 'clearAllCustomerFieldsAndState' in appjs_cust
+    print(f"Customer APK Verification: Take Selfie={has_cam}, vd-rate-action-box={has_rate}, clearAllCustomerFieldsAndState={has_clear}")
+    if not has_clear:
+        raise RuntimeError("Customer APK missing clearAllCustomerFieldsAndState!")
 
 
 # ----------------------------------------------------------------------

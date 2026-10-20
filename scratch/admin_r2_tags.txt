@@ -1,0 +1,96 @@
+Line 7270 (id="quickTotalPrice"):
+                        <input type="number" id="quickTotalPrice" step="50" min="0" oninput="FleetCalendar.recalcQuickBalance()"
+
+Line 7275 (id="quickAmountPaid"):
+                        <input type="number" id="quickAmountPaid" step="50" min="0" oninput="FleetCalendar.recalcQuickBalance()"
+
+Line 8588 (id="addonPriceInput"):
+                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+
+Line 8650 (id="insurancePriceInput"):
+                    <input type="number" id="insurancePriceInput" placeholder="e.g. 500" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+
+Line 8724 (id="locationFeeInput"):
+                        <input type="number" id="locationFeeInput" placeholder="0" value="0" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+
+Line 5165 (id="vehicleSearch"):
+                <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
+
+Line 7014 (id="nlSubSearchInput"):
+                    <input type="text" id="nlSubSearchInput" oninput="NewsletterAdmin.filterSubscribers()" placeholder="Search by email, name, or status..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.825rem; color: #0f172a !important; background: #fff !important;">
+
+Line 8025 (id="chatCtrlAiGreeting"):
+                    <textarea id="chatCtrlAiGreeting" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+
+Line 8033 (id="chatCtrlAiFallback"):
+                    <textarea id="chatCtrlAiFallback" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+
+Line 8064 (id="faqFormChipLabel"):
+                    <input type="text" id="faqFormChipLabel" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+
+Line 8068 (id="faqFormCategory"):
+                    <input type="text" id="faqFormCategory" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+
+Line 8074 (id="faqFormQuestion"):
+                <input type="text" id="faqFormQuestion" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+
+Line 8079 (id="faqFormKeywords"):
+                <input type="text" id="faqFormKeywords" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+
+Line 8085 (id="faqFormAnswer"):
+                <textarea id="faqFormAnswer" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
+
+Line 8134 (id="settingsSearchInput"):
+                    <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
+
+Line 8584 (id="addonNameInput"):
+                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+
+Line 8592 (id="addonDescInput"):
+                    <textarea id="addonDescInput" placeholder="Briefly describe this add-on..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+
+Line 8646 (id="insuranceNameInput"):
+                    <input type="text" id="insuranceNameInput" placeholder="e.g. Standard Protection" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+
+Line 8654 (id="insuranceDescInput"):
+                    <textarea id="insuranceDescInput" placeholder="Briefly describe what this insurance covers..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+
+Line 8705 (id="locationNameInput"):
+                    <input type="text" id="locationNameInput" placeholder="e.g. San Pablo City, Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+
+Line 8710 (id="locationProvinceInput"):
+                        <input type="text" id="locationProvinceInput" placeholder="Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+
+Line 8714 (id="locationMuniInput"):
+                        <input type="text" id="locationMuniInput" placeholder="San Pablo City" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+
+Line 8720 (id="locationBrgyInput"):
+                        <input type="text" id="locationBrgyInput" placeholder="Leave empty for all" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+
+Line 9491 (id="newInstructionInput"):
+                <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+
+Line 10076 (id="newMobilePassword"):
+                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
+
+Line 10092 (id="confirmMobilePassword"):
+                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
+
+Line 10619 (id="pushNotifTitle"):
+                <input type="text" id="pushNotifTitle" placeholder="e.g. System Update" style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'">
+
+Line 10629 (id="pushNotifBody"):
+                <textarea id="pushNotifBody" rows="4" placeholder="Type your message here..." style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; resize:none; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'"></textarea>
+
+Line 38493 (id="staffReqPermReason"):
+            <textarea id="staffReqPermReason" placeholder="e.g. Need access to manage incoming holiday blackout dates for customers..." rows="3" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; resize: vertical; box-sizing: border-box; outline: none;"></textarea>
+
+Line 38571 (id="gpsConfigDeviceName"):
+                <input type="text" id="gpsConfigDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-weight:600; outline:none; box-sizing:border-box;">
+
+Line 38584 (id="gpsConfigToken"):
+                    <input type="password" id="gpsConfigToken" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
+
+Line 38594 (id="gpsConfigServer"):
+                <input type="text" id="gpsConfigServer" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
+

@@ -1214,6 +1214,17 @@ function showPage(id) {
   }
 
   // Page load hooks
+  if (id === 'page-login') {
+    var lErr = document.getElementById('loginErr');
+    if (lErr) lErr.textContent = '';
+    var lEm = document.getElementById('loginEmail');
+    var lPw = document.getElementById('loginPassword');
+    if (lEm) clearInlineError(lEm);
+    if (lPw) clearInlineError(lPw);
+  }
+  if (id === 'page-register') {
+    if (typeof clearRegistrationForm === 'function') clearRegistrationForm();
+  }
   if (id === 'page-home') loadHome();
   if (id === 'page-vehicles') {
     // Check for saved booking session (1-min TTL)
@@ -1787,6 +1798,7 @@ function handleBackButton() {
     unsubscribeFromNotifications();
     notifList = [];
     Session.clear();
+    if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
     currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
       window.Capacitor.Plugins.App.exitApp();
@@ -1948,6 +1960,7 @@ function doLogin() {
   showLoading(true);
   apiCall('/login', { method: 'POST', body: JSON.stringify({ email: email, password: password }) })
     .then(function(data) {
+      if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
       currentUser = {
         id: data.user_id,
         fullName: data.full_name,
@@ -2289,6 +2302,7 @@ function doSubmitResetPassword() {
     
     // Auto-login user if payload returned
     if (data && data.user) {
+      if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
       currentUser = data.user;
       Session.save(currentUser);
 
@@ -2336,6 +2350,311 @@ window.forgotOtpBackspace = forgotOtpBackspace;
 window.doSubmitResetPassword = doSubmitResetPassword;
 window.doForgotPassword = doForgotPassword;
 
+// ============================================================
+// ACCOUNT STATE & DOM RESET HELPERS (100% Clean Logout/Switch)
+// ============================================================
+function clearRegistrationForm() {
+  var regFields = ['regFirstName', 'regMiddleName', 'regLastName', 'regEmail', 'regPassword', 'regConfirmPassword'];
+  regFields.forEach(function(fid) {
+    var el = document.getElementById(fid);
+    if (el) {
+      el.value = '';
+      clearInlineError(el);
+    }
+  });
+  var regErr = document.getElementById('regErr');
+  if (regErr) regErr.textContent = '';
+  var regPwErr = document.getElementById('regPasswordErr');
+  if (regPwErr) regPwErr.textContent = '';
+  var reqDivs = document.querySelectorAll('#passwordReqs .req-item, [id^="req-"]');
+  for (var i = 0; i < reqDivs.length; i++) {
+    reqDivs[i].classList.remove('valid');
+  }
+}
+
+function clearAuthForms() {
+  var loginEm = document.getElementById('loginEmail');
+  var loginPw = document.getElementById('loginPassword');
+  var loginErr = document.getElementById('loginErr');
+  if (loginEm) { loginEm.value = ''; clearInlineError(loginEm); }
+  if (loginPw) { loginPw.value = ''; clearInlineError(loginPw); }
+  if (loginErr) loginErr.textContent = '';
+
+  clearRegistrationForm();
+
+  for (var i = 0; i < 6; i++) {
+    var otpBox = document.getElementById('otp' + i);
+    if (otpBox) otpBox.value = '';
+    var fOtpBox = document.getElementById('forgotOtp' + i);
+    if (fOtpBox) fOtpBox.value = '';
+  }
+  var otpErr = document.getElementById('otpErr');
+  if (otpErr) otpErr.textContent = '';
+  var otpDisp = document.getElementById('otpEmailDisplay');
+  if (otpDisp) otpDisp.textContent = '';
+
+  var fpEmail = document.getElementById('forgotPwEmail');
+  var fpNew = document.getElementById('forgotNewPw');
+  var fpConf = document.getElementById('forgotConfirmPw');
+  if (fpEmail) { fpEmail.value = ''; clearInlineError(fpEmail); }
+  if (fpNew) { fpNew.value = ''; clearInlineError(fpNew); }
+  if (fpConf) { fpConf.value = ''; clearInlineError(fpConf); }
+  ['forgotPwErr', 'forgotPwStep2Err', 'forgotNewPwErr', 'forgotConfirmPwErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  var fpStep1 = document.getElementById('forgotPwStep1');
+  var fpStep2 = document.getElementById('forgotPwStep2');
+  if (fpStep1) fpStep1.style.display = 'block';
+  if (fpStep2) fpStep2.style.display = 'none';
+
+  ['changePasswordCurrent', 'changePasswordNew', 'changePasswordConfirm'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.value = ''; clearInlineError(el); }
+  });
+  ['changePasswordCurrentErr', 'changePasswordNewErr', 'changePasswordConfirmErr', 'changePasswordErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+}
+
+function clearLicenseEditFields() {
+  _licenseFrontBlob = null;
+  _licenseBackBlob = null;
+  licenseBlob = null;
+
+  var licInputs = [
+    'editLicenseNumber',
+    'editLicenseExpiry',
+    'editLicenseClass',
+    'editLicenseAddress',
+    'editLicenseName',
+    'editLicenseDob',
+    'editLicenseEmName',
+    'editLicenseEmPhone',
+    'editLicenseEmRel'
+  ];
+  licInputs.forEach(function(fid) {
+    var el = document.getElementById(fid);
+    if (el) {
+      el.value = '';
+      el.style.borderColor = '';
+      clearInlineError(el);
+    }
+  });
+  var countryEl = document.getElementById('editLicenseCountry');
+  if (countryEl) {
+    countryEl.value = 'Philippines';
+    countryEl.style.borderColor = '';
+    clearInlineError(countryEl);
+  }
+
+  ['licenseFileInputFront', 'licenseCameraInputFront', 'licenseFileInputBack', 'licenseCameraInputBack'].forEach(function(fid) {
+    var fi = document.getElementById(fid);
+    if (fi) fi.value = '';
+  });
+
+  var prevF = document.getElementById('licenseEditPreviewFront');
+  if (prevF) { prevF.removeAttribute('src'); prevF.style.display = 'none'; }
+  var prevB = document.getElementById('licenseEditPreviewBack');
+  if (prevB) { prevB.removeAttribute('src'); prevB.style.display = 'none'; }
+
+  var licErr = document.getElementById('licenseEditErr');
+  if (licErr) licErr.textContent = '';
+  var ocrStatus = document.getElementById('ocrStatusText');
+  if (ocrStatus) ocrStatus.style.display = 'none';
+  var ocrDetails = document.getElementById('ocrExtractedDetails');
+  if (ocrDetails) ocrDetails.style.display = 'none';
+  var ocrRaw = document.getElementById('ocrRawTextContainer');
+  if (ocrRaw) ocrRaw.textContent = '';
+}
+
+function clearProfileDOM() {
+  clearLicenseEditFields();
+  profilePicBlob = null;
+
+  // Reset edit mode visibility back to view mode
+  var pEditCard = document.getElementById('profileEditCard');
+  if (pEditCard) pEditCard.style.display = 'none';
+  var pEditBtn = document.getElementById('profileEditBtn');
+  if (pEditBtn) pEditBtn.style.display = '';
+
+  var lViewMode = document.getElementById('licenseViewMode');
+  if (lViewMode) lViewMode.style.display = '';
+  var lEditMode = document.getElementById('licenseEditMode');
+  if (lEditMode) lEditMode.style.display = 'none';
+  var lEditBtn = document.getElementById('licenseEditBtn');
+  if (lEditBtn) {
+    lEditBtn.style.display = '';
+    lEditBtn.innerHTML = '<i class="fas fa-pen"></i> Edit';
+    lEditBtn.style.color = 'var(--primary)';
+  }
+
+  var existingWarn = document.getElementById('licenseProfileIncompleteWarn');
+  if (existingWarn) existingWarn.remove();
+  document.querySelectorAll('.no-license-info').forEach(function(n) { n.remove(); });
+
+  // Reset profile summary & view texts
+  var pName = document.getElementById('profileName');
+  if (pName) pName.textContent = '-';
+  var pEmail = document.getElementById('profileEmail');
+  if (pEmail) pEmail.textContent = '-';
+  var pPhoneDisp = document.getElementById('profilePhoneDisplay');
+  if (pPhoneDisp) pPhoneDisp.textContent = 'Not set';
+  var pEmailDisp = document.getElementById('profileEmailDisplay');
+  if (pEmailDisp) pEmailDisp.textContent = '-';
+  var pPts = document.getElementById('profilePoints');
+  if (pPts) pPts.textContent = '0';
+  var badge = document.getElementById('profileVerifyBadge');
+  if (badge) {
+    badge.textContent = 'Not Verified';
+    badge.className = 'verify-badge verify-0';
+  }
+  var avatarWrap = document.getElementById('profileAvatarWrap');
+  if (avatarWrap) {
+    avatarWrap.innerHTML = '<div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">U</div>';
+  }
+
+  // Reset profile edit inputs
+  ['editFirstName', 'editMiddleName', 'editLastName', 'editPhone', 'editEmail'].forEach(function(fid) {
+    var el = document.getElementById(fid);
+    if (el) {
+      el.value = '';
+      clearInlineError(el);
+    }
+  });
+  ['editPhoneErr', 'editEmailErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  var picPrev = document.getElementById('profilePicPreview');
+  if (picPrev) { picPrev.removeAttribute('src'); picPrev.style.display = 'none'; }
+  var picFi = document.getElementById('profilePicFileInput');
+  if (picFi) picFi.value = '';
+
+  // Reset license view fields & thumbnails
+  var licenseThumb = document.getElementById('profileLicenseThumb');
+  if (licenseThumb) {
+    licenseThumb.innerHTML =
+      '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">FRONT</p>' +
+      '<div style="padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-id-card" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Front Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Uploaded</span></div></div>' +
+      '<div style="flex:1;margin-left:10px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">BACK</p>' +
+      '<div style="padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-id-card-clip" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Back Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Uploaded</span></div></div>';
+  }
+  [
+    'viewLicenseNumber', 'viewLicenseExpiry', 'viewLicenseClass', 'viewLicenseDob',
+    'viewLicenseName', 'viewLicenseAddress', 'viewLicenseCountry',
+    'viewLicenseEmName', 'viewLicenseEmPhone', 'viewLicenseEmRel', 'viewLicenseStatus'
+  ].forEach(function(vid) {
+    var el = document.getElementById(vid);
+    if (el) el.textContent = '-';
+  });
+}
+
+function clearAllCustomerFieldsAndState() {
+  // 1. Stop all timers & background pollers
+  try { stopBgSessionPolling(); } catch(e) {}
+  try { stopBgChatPolling(); } catch(e) {}
+  try { if (typeof LiveChat !== 'undefined' && LiveChat.stopPolling) LiveChat.stopPolling(); } catch(e) {}
+  try { stopGpsPolling(); } catch(e) {}
+  try { stopPaymentPolling(); } catch(e) {}
+  if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
+  if (window._homePayTimer) { clearInterval(window._homePayTimer); window._homePayTimer = null; }
+  if (window._detailPayCountdownInterval) { clearInterval(window._detailPayCountdownInterval); window._detailPayCountdownInterval = null; }
+  if (typeof resendInterval !== 'undefined' && resendInterval) { clearInterval(resendInterval); resendInterval = null; }
+  if (typeof forgotResendInterval !== 'undefined' && forgotResendInterval) { clearInterval(forgotResendInterval); forgotResendInterval = null; }
+
+  // 2. Reset in-memory state variables
+  _allBookingsData = [];
+  notifList = [];
+  profilePicBlob = null;
+  licenseBlob = null;
+  _licenseFrontBlob = null;
+  _licenseBackBlob = null;
+  inspectionPhotos = [];
+  paymentProofBlob = null;
+  pendingOtpEmail = '';
+  forgotPendingEmail = '';
+  couponData = null;
+  selectedAddons = [];
+  selectedInsurance = { type: 'Basic', price: 0 };
+  bookingFormVehicle = null;
+  currentVehicleDetail = null;
+  activeBookingId = null;
+  activeBookingData = null;
+  window._activeBookingId = null;
+  window._pendingVerificationFlow = false;
+  window._unreviewedBookingActive = false;
+  _currentUnreviewedBooking = null;
+  _bgChatLastId = 0;
+  _activeBookingNotified = false;
+  _graceNotified = false;
+
+  // 3. Clear local storage / session caches
+  try { BookingSession.clear(); } catch(e) {}
+  try { localStorage.removeItem('notifications'); } catch(e) {}
+
+  // 4. Clear Profile, Driver's License, and Auth forms
+  clearProfileDOM();
+  clearAuthForms();
+
+  // 5. Reset Home, Bookings, More, and Overlays DOM
+  var hName = document.getElementById('homeUserName');
+  if (hName) hName.textContent = 'there';
+  var hPts = document.getElementById('homePoints');
+  if (hPts) hPts.textContent = '0';
+  var hPts2 = document.getElementById('homePoints2');
+  if (hPts2) hPts2.textContent = '0';
+  var tBadge = document.getElementById('loyaltyTierBadge');
+  if (tBadge) tBadge.textContent = 'BRONZE';
+  var lBar = document.getElementById('loyaltyBar');
+  if (lBar) lBar.style.width = '0%';
+  var payMon = document.getElementById('pendingPaymentMonitor');
+  if (payMon) payMon.style.display = 'none';
+  var payCard = document.getElementById('pendingPaymentCard');
+  if (payCard) payCard.innerHTML = '';
+  var actMon = document.getElementById('activeBookingMonitor');
+  if (actMon) actMon.style.display = 'none';
+  var actCard = document.getElementById('activeBookingCard');
+  if (actCard) actCard.innerHTML = '';
+  var nBadge = document.getElementById('notifBadge');
+  if (nBadge) { nBadge.textContent = '0'; nBadge.classList.add('hidden'); }
+  var cBadge = document.getElementById('chatUnreadBadge');
+  if (cBadge) { cBadge.textContent = '0'; cBadge.style.display = 'none'; }
+  var bBanner = document.getElementById('browseActiveBanner');
+  if (bBanner) bBanner.style.display = 'none';
+
+  var bkTot = document.getElementById('bkStatTotalVal');
+  if (bkTot) bkTot.textContent = '0';
+  var bkDone = document.getElementById('bkStatDoneVal');
+  if (bkDone) bkDone.textContent = '0';
+  var bkSpent = document.getElementById('bkStatSpentVal');
+  if (bkSpent) bkSpent.textContent = '-';
+  var bkList = document.getElementById('bookingsList');
+  if (bkList) bkList.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found</p></div>';
+
+  try { updateStandingCard(null); } catch(e) {}
+  var vBanner = document.getElementById('violationBanner');
+  if (vBanner) vBanner.remove();
+  var cPopup = document.getElementById('chatPopupBanner');
+  if (cPopup) cPopup.remove();
+  var mRevModal = document.getElementById('mandatoryReviewModal');
+  if (mRevModal) mRevModal.style.display = 'none';
+
+  [
+    'vehicleDetailContent', 'vehicleUnitsContent', 'colorSelectionContent',
+    'bookingFormContent', 'paymentContent', 'receiptContent', 'bookingDetailContent',
+    'inspectionContent', 'gpsMapContent', 'reviewContent', 'licenseUploadContent',
+    'savedPaymentsContent', 'favoritesContent', 'liveChatContent',
+    'notificationsContent', 'newsletterContent'
+  ].forEach(function(cid) {
+    var el = document.getElementById(cid);
+    if (el) el.innerHTML = '';
+  });
+  var cbEl = document.getElementById('chatbotContent');
+  if (cbEl) { cbEl.dataset.initialized = ''; cbEl.innerHTML = ''; }
+}
+
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
@@ -2363,6 +2682,7 @@ function doLogout() {
   }
   currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
   notifList = [];
+  clearAllCustomerFieldsAndState();
   
   // Revoke Google OAuth2 Access Token
   try {
@@ -2392,13 +2712,7 @@ function doLogout() {
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
-  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
-  
-  // Clear login inputs for privacy
-  var emailInput = document.getElementById('loginEmail');
-  var passInput = document.getElementById('loginPassword');
-  if (emailInput) emailInput.value = '';
-  if (passInput) passInput.value = '';
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); p.style.display = 'none'; });
   
   showPage('page-login');
   showToast('Logged out successfully', 'success');
@@ -2419,6 +2733,7 @@ function forceLogoutSilent(message) {
   }
   currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
   notifList = [];
+  clearAllCustomerFieldsAndState();
   
   // Revoke Google OAuth2 Access Token
   try {
@@ -2448,13 +2763,7 @@ function forceLogoutSilent(message) {
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
-  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
-  
-  // Clear login inputs for privacy
-  var emailInput = document.getElementById('loginEmail');
-  var passInput = document.getElementById('loginPassword');
-  if (emailInput) emailInput.value = '';
-  if (passInput) passInput.value = '';
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); p.style.display = 'none'; });
   
   showPage('page-login');
   showToast(message || 'You have been logged out.', 'info');
@@ -2670,6 +2979,7 @@ function _finishGoogleLogin(idToken, email, name) {
   })
     .then(function(data) {
       if (data && data.user) {
+        if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
         currentUser = data.user;
         Session.save(currentUser);
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
@@ -2815,6 +3125,7 @@ function doVerifyEmail() {
       
       // Auto-login after verification
       if (data && data.user) {
+        if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
         currentUser = data.user;
         Session.save(currentUser);
         
@@ -9255,12 +9566,7 @@ var Profile = {
     document.getElementById('licenseViewMode').style.display = 'none';
     document.getElementById('licenseEditMode').style.display = '';
     document.getElementById('licenseEditBtn').style.display = 'none';
-    _licenseFrontBlob = null;
-    _licenseBackBlob = null;
-    var prevF = document.getElementById('licenseEditPreviewFront');
-    if (prevF) { prevF.src = ''; prevF.style.display = 'none'; }
-    var prevB = document.getElementById('licenseEditPreviewBack');
-    if (prevB) { prevB.src = ''; prevB.style.display = 'none'; }
+    clearLicenseEditFields();
 
     // Set realistic min/max date constraints on DOB (18–75 yrs old) and Expiry (tomorrow to +10 yrs)
     var now = new Date();
@@ -10113,6 +10419,7 @@ function processSelectedLicenseFile(file, side) {
 
 function loadLicenseDetailsForEdit() {
   console.log('loadLicenseDetailsForEdit() called');
+  clearLicenseEditFields();
   currentUser = currentUser || Session.get();
   var uid = (currentUser && (currentUser.id || currentUser.user_id)) || null;
   if (!uid || uid === 'undefined' || uid === 'null') return;
@@ -10125,8 +10432,18 @@ function loadLicenseDetailsForEdit() {
       var data = response && response.data ? response.data : response;
       console.log('Extracted license data for edit:', data);
       
-      if (!data || !data.license_number) {
-        console.log('No license data found for editing');
+      // Clear again right before populating in case of async race conditions
+      clearLicenseEditFields();
+
+      var hasAnyLicenseData = data && (
+        data.license_number ||
+        data.full_name ||
+        data.license_front_url ||
+        data.license_image_url ||
+        data.license_back_url
+      );
+      if (!hasAnyLicenseData) {
+        console.log('No license data found for editing - keeping fields clean');
         return;
       }
       
@@ -10274,6 +10591,13 @@ function loadProfile(callback) {
   currentUser.id = uid;
   currentUser.user_id = uid;
 
+  // Ensure edit forms are closed and license edit fields are cleared when entering/reloading Profile
+  if (!window._pendingVerificationFlow) {
+    Profile.cancelEdit();
+    Profile.cancelLicenseEdit();
+  }
+  clearLicenseEditFields();
+
   // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + uid);
   // Load license details from new table with enhanced error handling
@@ -10304,10 +10628,10 @@ function loadProfile(callback) {
       // Store license details on currentUser for reference
       currentUser._profileData = profile;
       currentUser._licenseDetails = licenseData;
-      if (profile.profile_picture) currentUser.profile_picture = profile.profile_picture;
-      if (profile.license_image_url) currentUser.license_image_url = profile.license_image_url;
-      if (licenseData.license_front_url) currentUser.license_front_url = licenseData.license_front_url;
-      if (profile.phone) currentUser.phone = profile.phone;
+      currentUser.profile_picture = profile.profile_picture || null;
+      currentUser.license_image_url = profile.license_image_url || null;
+      currentUser.license_front_url = licenseData.license_front_url || null;
+      currentUser.phone = profile.phone || null;
       if (profile.is_verified !== undefined) currentUser.isVerified = profile.is_verified;
       Session.save(currentUser);
 
@@ -10515,20 +10839,45 @@ function loadProfile(callback) {
         console.log('viewLicenseEmRel element not found');
       }
       
-      // Show message if no license details exist
+      // Show or remove message depending on whether license details exist
+      var licenseCard = document.getElementById('viewLicenseNumber');
+      var parentCard = licenseCard ? licenseCard.closest('.card') : null;
       if (!licenseData.license_number && !licenseData.full_name) {
         console.log('No license data found, showing empty state');
-        var licenseCard = document.getElementById('viewLicenseNumber');
-        if (licenseCard && licenseCard.closest('.card')) {
-          var infoMsg = licenseCard.closest('.card').querySelector('.no-license-info');
+        if (parentCard) {
+          var infoMsg = parentCard.querySelector('.no-license-info');
           if (!infoMsg) {
             infoMsg = document.createElement('p');
             infoMsg.className = 'no-license-info';
             infoMsg.style.cssText = 'font-size:0.85rem;color:var(--text-muted);text-align:center;margin:20px 0;font-style:italic;';
             infoMsg.textContent = 'No license details uploaded yet. Click Edit to add your license information.';
-            licenseCard.closest('.card').appendChild(infoMsg);
+            parentCard.appendChild(infoMsg);
           }
         }
+      } else if (parentCard) {
+        var staleMsg = parentCard.querySelector('.no-license-info');
+        if (staleMsg) staleMsg.remove();
+      }
+
+      // Also sync editLicense* inputs to current user's licenseData (or empty string if none)
+      var editLicMap = {
+        'editLicenseNumber': licenseData.license_number || '',
+        'editLicenseExpiry': licenseData.expiry_date || '',
+        'editLicenseClass': licenseData.license_class || '',
+        'editLicenseAddress': licenseData.address || licenseData.issuing_country_state || '',
+        'editLicenseName': licenseData.full_name || '',
+        'editLicenseDob': licenseData.date_of_birth || '',
+        'editLicenseEmName': licenseData.emergency_contact_name || '',
+        'editLicenseEmPhone': licenseData.emergency_contact_phone || '',
+        'editLicenseEmRel': licenseData.emergency_contact_relationship || ''
+      };
+      for (var efId in editLicMap) {
+        var efEl = document.getElementById(efId);
+        if (efEl) efEl.value = editLicMap[efId];
+      }
+      var editCountryEl = document.getElementById('editLicenseCountry');
+      if (editCountryEl) {
+        editCountryEl.value = licenseData.address || licenseData.issuing_country_state || 'Philippines';
       }
 
       // Check profile completeness for driver's license lock/warning
@@ -10709,7 +11058,7 @@ function showRequirementGuardModal() {
     '<p style="font-size:0.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:20px;">' +
     descText +
     '</p>' +
-    '<button class="btn-primary" style="width:100%;padding:12px;font-weight:800;background:#00B14F;" onclick="document.getElementById(\'requirementGuardModal\').remove();closeOverlay(\'page-booking-form\');showOverlay(\'page-profile\');Profile.showTab(\'license\');">' +
+    '<button class="btn-primary" style="width:100%;padding:12px;font-weight:800;background:#00B14F;" onclick="document.getElementById(\'requirementGuardModal\').remove();closeOverlay(\'page-booking-form\');goToProfileForVerification();">' +
     btnText + '</button>' +
     '<button class="btn-secondary" style="width:100%;margin-top:8px;padding:10px;" onclick="document.getElementById(\'requirementGuardModal\').remove()">Cancel</button>' +
     '</div>';
@@ -10843,7 +11192,8 @@ function openLicenseUpload() {
     return;
   }
   var el = document.getElementById('licenseUploadContent');
-  if (!el || el.innerHTML.trim() !== '') return; // already loaded
+  if (!el) return;
+  licenseBlob = null;
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-license-upload\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Upload License</h2></div>' +
@@ -10926,6 +11276,8 @@ function submitLicense() {
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
+        if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
+        currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
         showPage('page-login');
       }, 2500);
     })

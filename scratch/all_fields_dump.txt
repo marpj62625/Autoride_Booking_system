@@ -1,0 +1,311 @@
+=== CUSTOMER FIELDS ===
+[email     ] ID: loginEmail                 MAXL: 60     MIN: None       MAX: None       PH: yourname@gmail.com
+[password  ] ID: loginPassword              MAXL: 64     MIN: None       MAX: None       PH: Enter your password
+[email     ] ID: forgotPwEmail              MAXL: 60     MIN: None       MAX: None       PH: yourname@gmail.com
+[text      ] ID: regFirstName               MAXL: 30     MIN: None       MAX: None       PH: Juan
+[text      ] ID: regMiddleName              MAXL: 30     MIN: None       MAX: None       PH: M. (Optional)
+[text      ] ID: regLastName                MAXL: 30     MIN: None       MAX: None       PH: Dela Cruz
+[email     ] ID: regEmail                   MAXL: 60     MIN: None       MAX: None       PH: yourname@gmail.com
+[password  ] ID: regPassword                MAXL: 64     MIN: None       MAX: None       PH: At least 8 characters
+[number    ] ID: otp0                       MAXL: 1      MIN: None       MAX: None       PH: 
+[number    ] ID: otp1                       MAXL: 1      MIN: None       MAX: None       PH: 
+[number    ] ID: otp2                       MAXL: 1      MIN: None       MAX: None       PH: 
+[number    ] ID: otp3                       MAXL: 1      MIN: None       MAX: None       PH: 
+[number    ] ID: otp4                       MAXL: 1      MIN: None       MAX: None       PH: 
+[number    ] ID: otp5                       MAXL: 1      MIN: None       MAX: None       PH: 
+[text      ] ID: vehicleSearch              MAXL: 50     MIN: None       MAX: None       PH: Search for cars, locations...
+[text      ] ID: editFirstName              MAXL: 30     MIN: None       MAX: None       PH: Juan
+[text      ] ID: editMiddleName             MAXL: 30     MIN: None       MAX: None       PH: M. (Optional)
+[text      ] ID: editLastName               MAXL: 30     MIN: None       MAX: None       PH: Dela Cruz
+[tel       ] ID: editPhone                  MAXL: 11     MIN: None       MAX: None       PH: 09XXXXXXXXX
+[email     ] ID: editEmail                  MAXL: 60     MIN: None       MAX: None       PH: yourname@gmail.com
+[file      ] ID: profilePicFileInput        MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: editLicenseNumber          MAXL: 13     MIN: None       MAX: None       PH: e.g. N01-23-456789
+[date      ] ID: editLicenseExpiry          MAXL: None   MIN: 2026-01-01 MAX: 2037-12-31 PH: 
+[text      ] ID: editLicenseClass           MAXL: 15     MIN: None       MAX: None       PH: e.g. A, B, B1
+[text      ] ID: editLicenseAddress         MAXL: 100    MIN: None       MAX: None       PH: House/Unit No., Street, Barang
+[hidden    ] ID: editLicenseCountry         MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: editLicenseName            MAXL: 50     MIN: None       MAX: None       PH: First Name, Middle Name, Last 
+[date      ] ID: editLicenseDob             MAXL: None   MIN: 1950-01-01 MAX: 2008-12-31 PH: 
+[text      ] ID: editLicenseEmName          MAXL: 50     MIN: None       MAX: None       PH: Maria Dela Cruz
+[tel       ] ID: editLicenseEmPhone         MAXL: 11     MIN: None       MAX: None       PH: 09XXXXXXXXX
+[select    ] ID: editLicenseEmRel           MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: licenseFileInputFront      MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: licenseCameraInputFront    MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: licenseFileInputBack       MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: licenseCameraInputBack     MAXL: None   MIN: None       MAX: None       PH: 
+[password  ] ID: changePasswordCurrent      MAXL: 64     MIN: None       MAX: None       PH: Enter current password
+[password  ] ID: changePasswordNew          MAXL: 64     MIN: None       MAX: None       PH: At least 8 characters
+[password  ] ID: changePasswordConfirm      MAXL: 64     MIN: None       MAX: None       PH: Re-enter new password
+[textarea  ] ID: mandatoryReviewComment     MAXL: 300    MIN: None       MAX: None       PH: Tell us how we did or how we c
+[select    ] ID: vd-trans                   MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vd-color                   MAXL: None   MIN: None       MAX: None       PH: 
+[radio     ] ID: insurance                  MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: addonChk_                  MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: bfStartDate                MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: bfPickupTime               MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: bfEndDate                  MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: bfReturnTime               MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: bfDestination              MAXL: 60     MIN: None       MAX: None       PH: e.g., Baguio City, Tagaytay, M
+[select    ] ID: bfRentalPurpose            MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: bfServiceType              MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: bfPickupLocation           MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: bfReturnLocation           MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: bfDeliveryZone             MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: bfDeliveryAddress          MAXL: 100    MIN: None       MAX: None       PH: Enter specific delivery addres
+[text      ] ID: bfDeliveryBarangay         MAXL: 40     MIN: None       MAX: None       PH: Barangay
+[text      ] ID: bfDeliveryMunicipality     MAXL: 40     MIN: None       MAX: None       PH: Municipality or City
+[text      ] ID: bfDeliveryProvince         MAXL: 40     MIN: None       MAX: None       PH: Province
+[hidden    ] ID: bfRentalType               MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: bfPaymentType              MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: bfPoints                   MAXL: None   MIN: 0          MAX: None       PH: 
+[checkbox  ] ID: bfGpsConsent               MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: gpsTrackingOptIn           MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: agreeCheck                 MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: payMethod                  MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: extOrigEnd                 MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: extDailyRate               MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: extNewEnd                  MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: extMethod                  MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: extRef                     MAXL: 30     MIN: None       MAX: None       PH: e.g. 1234567890
+[radio     ] ID: refundChannel              MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: refundAcctName             MAXL: 50     MIN: None       MAX: None       PH: Full name on account
+[tel       ] ID: refundAcctNum              MAXL: 11     MIN: None       MAX: None       PH: e.g. 09XX-XXX-XXXX
+[textarea  ] ID: refundNotes                MAXL: 200    MIN: None       MAX: None       PH: e.g. Bank name, branch, etc.
+[date      ] ID: modStart                   MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: modEnd                     MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: modAmountPaid              MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: inspMileage                MAXL: None   MIN: None       MAX: None       PH: e.g. 12500
+[select    ] ID: inspFuel                   MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: inspNotes                  MAXL: 300    MIN: None       MAX: None       PH: Describe vehicle condition...
+[textarea  ] ID: reviewComment              MAXL: 300    MIN: None       MAX: None       PH: Share your experience...
+[select    ] ID: newCardType                MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: newLastFour                MAXL: 4      MIN: None       MAX: None       PH: 1234
+[text      ] ID: newProvider                MAXL: 40     MIN: None       MAX: None       PH: e.g. BDO, BPI, GCash
+[text      ] ID: chatInput                  MAXL: 250    MIN: None       MAX: None       PH: Type a message...
+[email     ] ID: nlEmail                    MAXL: 60     MIN: None       MAX: None       PH: Enter your email address
+[text      ] ID: lcInput                    MAXL: 250    MIN: None       MAX: None       PH: Type a message...
+
+=== ADMIN FIELDS ===
+[date      ] ID: popupDateFrom              MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: popupDateTo                MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: popupStatusFilter          MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: popupVehicleFilter         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: popupMetricFilter          MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: popupLimitFilter           MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: dashDateFrom               MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: dashDateTo                 MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: vehicleSearch              MAXL: None   MIN: None       MAX: None       PH: Search brand, model or plate..
+[select    ] ID: vehicleCategoryFilter      MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: activitySearch             MAXL: None   MIN: None       MAX: None       PH: Search by name, action or deta
+[text      ] ID: pastBookingsSearch         MAXL: None   MIN: None       MAX: None       PH: Search by customer, ID, or veh
+[select    ] ID: pastBookingsSort           MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: pastBookingsPageSize       MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: archivedBookingsSearch     MAXL: None   MIN: None       MAX: None       PH: Search by customer, booking #,
+[select    ] ID: archivedBookingsReasonFilter MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: newBookingsSort            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: allBookingsSort            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: verificationsSearch        MAXL: None   MIN: None       MAX: None       PH: Search name, license no, email
+[select    ] ID: verificationsSort          MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: blackoutStartDate          MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: blackoutEndDate            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: blackoutReason             MAXL: None   MIN: None       MAX: None       PH: e.g. Christmas Holiday, Car Ma
+[text      ] ID: nlFormTitle                MAXL: None   MIN: None       MAX: None       PH: e.g. Summer Weekend Roadtrip S
+[select    ] ID: nlFormCategory             MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: nlFormDiscount             MAXL: None   MIN: 1          MAX: 99         PH: e.g. 15
+[text      ] ID: nlFormCode                 MAXL: None   MIN: None       MAX: None       PH: e.g. SUMMER15 (Leave blank if 
+[textarea  ] ID: nlFormContent              MAXL: None   MIN: None       MAX: None       PH: Write your newsletter announce
+[checkbox  ] ID: nlFormNotify               MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: nlSubSearchInput           MAXL: None   MIN: None       MAX: None       PH: Search by email, name, or stat
+[select    ] ID: maintBatchBookingDays      MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: maintLogsDays              MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: maintNotificationsDays     MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: maintChatsDays             MAXL: None   MIN: None       MAX: None       PH: 
+[color     ] ID: quickCustomColorPicker     MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: quickApplyToCustomer       MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: quickTotalPrice            MAXL: None   MIN: 0          MAX: None       PH: 
+[number    ] ID: quickAmountPaid            MAXL: None   MIN: 0          MAX: None       PH: 
+[text      ] ID: quickBalanceAmount         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: quickPaymentStatus         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: quickPaymentMethod         MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: walkinCustName             MAXL: None   MIN: None       MAX: None       PH: e.g. Juan Dela Cruz
+[tel       ] ID: walkinCustPhone            MAXL: None   MIN: None       MAX: None       PH: e.g. 09171234567
+[text      ] ID: walkinCustAddress          MAXL: None   MIN: None       MAX: None       PH: e.g. 123 Rizal St., San Fernan
+[text      ] ID: walkinEmergName            MAXL: None   MIN: None       MAX: None       PH: Name
+[tel       ] ID: walkinEmergPhone           MAXL: None   MIN: None       MAX: None       PH: Phone
+[text      ] ID: walkinEmergRel             MAXL: None   MIN: None       MAX: None       PH: e.g. Spouse / Sibling
+[text      ] ID: walkinCustomerSearch       MAXL: None   MIN: None       MAX: None       PH: Type customer name, email, or 
+[hidden    ] ID: walkinCustUserId           MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: walkinVehicleSelect        MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: walkinStartDate            MAXL: None   MIN: None       MAX: None       PH: 
+[time      ] ID: walkinStartTime            MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: walkinEndDate              MAXL: None   MIN: None       MAX: None       PH: 
+[time      ] ID: walkinEndTime              MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: walkinRentalType           MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: walkinPickupLocation       MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: walkinBasePrice            MAXL: None   MIN: 0          MAX: None       PH: 
+[number    ] ID: walkinExtraFee             MAXL: None   MIN: 0          MAX: None       PH: 
+[number    ] ID: walkinDiscount             MAXL: None   MIN: 0          MAX: None       PH: 
+[select    ] ID: walkinPaymentMethod        MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: walkinPaymentStatus        MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: walkinAmountPaid           MAXL: None   MIN: 0          MAX: None       PH: 
+[select    ] ID: walkinBookingStatus        MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: chatCtrlFaqEnabled         MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: chatCtrlFaqAutoreplyEnabled MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: chatCtrlAiEnabled          MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: chatCtrlAiAutoreplyEnabled MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: chatCtrlAiGreeting         MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: chatCtrlAiFallback         MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: faqFormId                  MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: faqFormChipLabel           MAXL: None   MIN: None       MAX: None       PH: e.g. 💳 20% DP &amp; Balance
+[text      ] ID: faqFormCategory            MAXL: None   MIN: None       MAX: None       PH: e.g. payment, general, fuel
+[text      ] ID: faqFormQuestion            MAXL: None   MIN: None       MAX: None       PH: e.g. How does the 20% downpaym
+[text      ] ID: faqFormKeywords            MAXL: None   MIN: None       MAX: None       PH: e.g. 20%, downpayment, dp, bal
+[textarea  ] ID: faqFormAnswer              MAXL: None   MIN: None       MAX: None       PH: Enter clear policy explanation
+[number    ] ID: faqFormDisplayOrder        MAXL: None   MIN: 1          MAX: 999        PH: 
+[checkbox  ] ID: faqFormIsActive            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: settingsSearchInput        MAXL: None   MIN: None       MAX: None       PH: Search settings (e.g. strike, 
+[radio     ] ID: fleetExportScopeAll        MAXL: None   MIN: None       MAX: None       PH: 
+[radio     ] ID: fleetExportScopeMonth      MAXL: None   MIN: None       MAX: None       PH: 
+[radio     ] ID: fleetExportScopeCustom     MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: fleetExportStartDate       MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: fleetExportEndDate         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: fleetExportVehicle         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: fleetExportStatus          MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: fcImportFileInput          MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: fcImportAutoMatch          MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: fcImportAutoCreate         MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: fcImportSkipConflicts      MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: fcImportSelectAll          MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: expVehicleId               MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: expType                    MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: expAmount                  MAXL: None   MIN: 0          MAX: None       PH: 
+[date      ] ID: expDate                    MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: expDesc                    MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: expProofFile               MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: addonIdInput               MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: addonNameInput             MAXL: None   MIN: None       MAX: None       PH: e.g. GPS Navigator
+[number    ] ID: addonPriceInput            MAXL: None   MIN: None       MAX: None       PH: e.g. 150
+[textarea  ] ID: addonDescInput             MAXL: None   MIN: None       MAX: None       PH: Briefly describe this add-on..
+[hidden    ] ID: insuranceIdInput           MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: insuranceNameInput         MAXL: None   MIN: None       MAX: None       PH: e.g. Standard Protection
+[number    ] ID: insurancePriceInput        MAXL: None   MIN: None       MAX: None       PH: e.g. 500
+[textarea  ] ID: insuranceDescInput         MAXL: None   MIN: None       MAX: None       PH: Briefly describe what this ins
+[hidden    ] ID: locationIdInput            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: locationNameInput          MAXL: None   MIN: None       MAX: None       PH: e.g. San Pablo City, Laguna
+[text      ] ID: locationProvinceInput      MAXL: None   MIN: None       MAX: None       PH: Laguna
+[text      ] ID: locationMuniInput          MAXL: None   MIN: None       MAX: None       PH: San Pablo City
+[text      ] ID: locationBrgyInput          MAXL: None   MIN: None       MAX: None       PH: Leave empty for all
+[number    ] ID: locationFeeInput           MAXL: None   MIN: None       MAX: None       PH: 0
+[select    ] ID: assignDriverSelect         MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: rptDateFrom                MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: rptDateTo                  MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: driverWageInput            MAXL: None   MIN: None       MAX: None       PH: e.g. 500 per day
+[text      ] ID: driverSearchInput          MAXL: None   MIN: None       MAX: None       PH: Search drivers...
+[select    ] ID: driverStatusFilter         MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: gpsVehicleSelect           MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: newInstructionInput        MAXL: None   MIN: None       MAX: None       PH: e.g. Bring 2 valid IDs upon pi
+[text      ] ID: staffName                  MAXL: None   MIN: None       MAX: None       PH: John Doe
+[email     ] ID: staffEmail                 MAXL: None   MIN: None       MAX: None       PH: john@autoride.com
+[password  ] ID: staffPass                  MAXL: None   MIN: None       MAX: None       PH: ********
+[select    ] ID: staffRole                  MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: editId                     MAXL: None   MIN: None       MAX: None       PH: 
+[file      ] ID: vGalleryPicker             MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vBrand                     MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vModel                     MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: vPlate                     MAXL: None   MIN: None       MAX: None       PH: e.g. ABC 1234
+[text      ] ID: vColor                     MAXL: None   MIN: None       MAX: None       PH: e.g. Red, Blue
+[select    ] ID: vTrans                     MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vType                      MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vFuel                      MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vSeats                     MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: vYear                      MAXL: 4      MIN: None       MAX: None       PH: e.g. 2023
+[number    ] ID: vRate                      MAXL: None   MIN: None       MAX: None       PH: e.g. 2500
+[select    ] ID: vMileageType               MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: vMileageKm                 MAXL: None   MIN: None       MAX: None       PH: e.g. 250
+[select    ] ID: vLocation                  MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: vStatus                    MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: vOdometer                  MAXL: None   MIN: None       MAX: None       PH: e.g. 45000
+[select    ] ID: vFuelLevel                 MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: vNextService               MAXL: None   MIN: None       MAX: None       PH: 
+[date      ] ID: vLtoExpiry                 MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: vGpsDeviceName             MAXL: None   MIN: None       MAX: None       PH: e.g. Tracker Unit 1 (ESP32)
+[text      ] ID: vGpsDeviceToken            MAXL: None   MIN: None       MAX: None       PH: e.g. 6fub_AeSZfywBab9j...
+[email     ] ID: superAdminEditEmail        MAXL: None   MIN: None       MAX: None       PH: superadmin@autoride.com
+[password  ] ID: superAdminCurrentPassword  MAXL: None   MIN: None       MAX: None       PH: Enter current password to veri
+[password  ] ID: superAdminNewPassword      MAXL: None   MIN: None       MAX: None       PH: Min. 6 characters
+[password  ] ID: superAdminConfirmPassword  MAXL: None   MIN: None       MAX: None       PH: Re-enter new password
+[password  ] ID: newMobilePassword          MAXL: None   MIN: None       MAX: None       PH: ********
+[password  ] ID: confirmMobilePassword      MAXL: None   MIN: None       MAX: None       PH: ********
+[hidden    ] ID: inspectBookingId           MAXL: None   MIN: None       MAX: None       PH: 
+[hidden    ] ID: inspectType                MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: inspectMileage             MAXL: None   MIN: None       MAX: None       PH: 0
+[select    ] ID: inspectFuel                MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: inspectFuelChargeAmount    MAXL: None   MIN: 0          MAX: None       PH: 0
+[text      ] ID: inspectFuelChargeNotes     MAXL: None   MIN: None       MAX: None       PH: e.g. Refuel to Full Tank: miss
+[checkbox  ] ID: inspectChargeCustomerCheckbox MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: inspectDriverOTHours       MAXL: None   MIN: 0          MAX: None       PH: 0
+[text      ] ID: inspectDriverOTAmount      MAXL: None   MIN: None       MAX: None       PH: 
+[radio     ] ID: inspectDriverOTCash        MAXL: None   MIN: None       MAX: None       PH: 
+[radio     ] ID: inspectDriverOTCharge      MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: inspectDriverOTNotes       MAXL: None   MIN: None       MAX: None       PH: e.g. Trip Ticket #0482: Batang
+[file      ] ID: inspectPhotos              MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: inspectNotes               MAXL: None   MIN: None       MAX: None       PH: Describe any scratches, dents,
+[text      ] ID: umSearch                   MAXL: None   MIN: None       MAX: None       PH: Search name, email, phone...
+[select    ] ID: umSort                     MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: pushNotifTitle             MAXL: None   MIN: None       MAX: None       PH: e.g. System Update
+[textarea  ] ID: pushNotifBody              MAXL: None   MIN: None       MAX: None       PH: Type your message here...
+[text      ] ID: fleetCalendarSearch        MAXL: None   MIN: None       MAX: None       PH: Filter customer or car...
+[email     ] ID: loginEmail                 MAXL: None   MIN: None       MAX: None       PH: Email Address
+[password  ] ID: loginPass                  MAXL: None   MIN: None       MAX: None       PH: Password
+[checkbox  ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: fleetVehicleRateInput      MAXL: None   MIN: 0          MAX: None       PH: 
+[checkbox  ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: blackoutVehiclesAll        MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: penaltyType_${b.id}        MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: penaltyAmount_${b.id}      MAXL: None   MIN: None       MAX: None       PH: Amount (PHP)
+[textarea  ] ID: penaltyNotes_${b.id}       MAXL: None   MIN: None       MAX: None       PH: Reason/Details
+[file      ] ID: refundProofFile_${b.id}    MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: refundRefInput_${b.id}     MAXL: None   MIN: None       MAX: None       PH: e.g. TXN123456789
+[radio     ] ID: markPaidMethod             MAXL: None   MIN: None       MAX: None       PH: 
+[number    ] ID: extRfAmt_${extensionId}    MAXL: None   MIN: None       MAX: None       PH: Amount (PHP)
+[select    ] ID: extRfMethod_${extensionId} MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: extRfRef_${extensionId}    MAXL: None   MIN: None       MAX: None       PH: Reference # (optional)
+[file      ] ID: extRfProof_${extensionId}  MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[password  ] ID: ${inputId}                 MAXL: None   MIN: None       MAX: None       PH: ${placeholder}
+[text      ] ID:                            MAXL: None   MIN: None       MAX: None       PH: ${placeholder}
+[number    ] ID:                            MAXL: None   MIN: ${nc.min}  MAX: ${nc.max}  PH: 
+[textarea  ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID:                            MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: umEditName                 MAXL: None   MIN: None       MAX: None       PH: Full Name
+[text      ] ID: umEditPhone                MAXL: None   MIN: None       MAX: None       PH: Phone Number
+[number    ] ID: umLoyaltyInput             MAXL: None   MIN: None       MAX: None       PH: Points
+[password  ] ID: umNewPass                  MAXL: None   MIN: None       MAX: None       PH: New password (min 8 chars)
+[select    ] ID: editStrikes_${u.id}        MAXL: None   MIN: None       MAX: None       PH: 
+[select    ] ID: editSuspPreset_${u.id}     MAXL: None   MIN: None       MAX: None       PH: 
+[datetime-local] ID: editSuspCustom_${u.id}     MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: editFeeReq_${u.id}         MAXL: None   MIN: None       MAX: None       PH: 
+[checkbox  ] ID: editPermRest_${u.id}       MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: editNote_${u.id}           MAXL: None   MIN: None       MAX: None       PH: e.g., Customer dispute approve
+[text      ] ID: umFreezeReason             MAXL: None   MIN: None       MAX: None       PH: Reason for freezing...
+[text      ] ID: chatSearchInput            MAXL: None   MIN: None       MAX: None       PH: Search conversations by name, 
+[text      ] ID: acUserSearchInput          MAXL: None   MIN: None       MAX: None       PH: Search by name or email...
+[text      ] ID: acInput                    MAXL: None   MIN: None       MAX: None       PH: Type a message...
+[email     ] ID: manualSmtpEmail            MAXL: None   MIN: None       MAX: None       PH: Your Gmail address (e.g. yourn
+[password  ] ID: manualSmtpPass             MAXL: None   MIN: None       MAX: None       PH: 16-character Gmail App Passwor
+[email     ] ID: testEmailRecipient         MAXL: None   MIN: None       MAX: None       PH: Enter recipient email...
+[select    ] ID: permStaffSelect            MAXL: None   MIN: None       MAX: None       PH: 
+[textarea  ] ID: staffReqPermReason         MAXL: None   MIN: None       MAX: None       PH: e.g. Need access to manage inc
+[select    ] ID: gpsConfigVehicleSelect     MAXL: None   MIN: None       MAX: None       PH: 
+[text      ] ID: gpsConfigDeviceName        MAXL: None   MIN: None       MAX: None       PH: e.g. Tracker Unit 1 (ESP32)
+[password  ] ID: gpsConfigToken             MAXL: None   MIN: None       MAX: None       PH: Paste Blynk Auth Token from ha
+[text      ] ID: gpsConfigServer            MAXL: None   MIN: None       MAX: None       PH: sgp1.blynk.cloud
+[file      ] ID: refundProofFile            MAXL: None   MIN: None       MAX: None       PH: 

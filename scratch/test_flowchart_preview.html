@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #fff; }
+        .chart-box { margin-bottom: 50px; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <div class="chart-box">
+        <h2>Flowchart with Clean Vertical Arrangement</h2>
+        <div class="mermaid">
+flowchart TD
+    Start([Start: User Accesses System]) --> Reg[Account Registration & Profile Setup]
+    Reg --> UploadKYC[Upload Driver's License for KYC]
+    UploadKYC --> ReviewKYC[Admin Reviews License Details]
+    ReviewKYC --> CheckKYC{License Approved?}
+
+    CheckKYC -->|No| RejectKYC[Notify User & Request Valid License Re-upload]
+    RejectKYC --> UploadKYC
+
+    CheckKYC -->|Yes| UnlockAcc[Activate Account & Unlock Booking Access]
+    UnlockAcc --> BrowseCars[Browse Fleet & Select Rental Dates]
+    BrowseCars --> CheckAvail{Vehicle Available?}
+
+    CheckAvail -->|No| ChangeChoice[Suggest Other Vehicles or Different Dates]
+    ChangeChoice --> BrowseCars
+
+    CheckAvail -->|Yes| SelectBooking[Select Insurance Package & Add-on Options]
+    SelectBooking --> Payment[Process Payment: GCash, Card, or Cash]
+    Payment --> CheckPay{Payment Confirmed?}
+
+    CheckPay -->|No| RetryPay[Payment Failed: Prompt User to Retry]
+    RetryPay --> Payment
+
+    CheckPay -->|Yes| ConfirmBook[Lock Vehicle in Fleet Calendar & Dispatch Confirmation]
+    ConfirmBook --> Handover[Initial Vehicle Inspection & Key Handover]
+    Handover --> ActiveRental[Active Trip: Live GPS Tracking & Automated Reminders]
+
+    ActiveRental --> ExtRequest{Extension Requested?}
+
+    ExtRequest -->|Yes| CheckExt{Vehicle Available for Extension?}
+    CheckExt -->|Yes| PayExt[Settle Extension Fee & Update Fleet Calendar]
+    PayExt --> ActiveRental
+    CheckExt -->|No| DenyExt[Decline Extension & Maintain Return Schedule]
+    DenyExt --> ReturnVehicle
+
+    ExtRequest -->|No| ReturnVehicle[Return Vehicle at Designated Location]
+
+    ReturnVehicle --> ReturnInspect[Admin Return Inspection: Fuel Level, Odometer & Condition]
+    ReturnInspect --> CheckPenalty{Late Return or Penalties Incurred?}
+
+    CheckPenalty -->|Yes| ApplyPenalty[System Calculates Late Penalty & Settles Balance]
+    ApplyPenalty --> FinalizeTrip
+
+    CheckPenalty -->|No| FinalizeTrip[Complete Booking & Submit Customer Rating/Review]
+
+    FinalizeTrip --> SystemLog[Update Vehicle Status to Available & Record Audit Logs]
+    SystemLog --> End([End: Vehicle Ready for Next Booking])
+        </div>
+    </div>
+</body>
+</html>

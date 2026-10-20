@@ -1,0 +1,162 @@
+Line 489   GET, POST       /api/bookings/check-return-reminders Inputs: admin_id
+Line 616   GET, POST       /api/cron/tick                      Inputs: key
+Line 2547  POST            /api/register                       Inputs: first_name, middle_name, last_name, email, password
+Line 2707  POST            /api/user/forgot-password           Inputs: email
+Line 2774  POST            /api/login                          Inputs: email, password
+Line 2882  POST            /api/admin/verify-action            Inputs: user_id, status, admin_id
+Line 2994  GET             /api/user/verify-status             Inputs: user_id
+Line 3046  POST            /api/user/upload-license            Inputs: user_id
+Line 3186  GET             /api/admin/pending-verifications    Inputs: status
+Line 3433  POST            /api/admin/users/<int:user_id>/freeze Inputs: freeze, reason
+Line 3497  POST            /api/admin/users/<int:user_id>/violations/reset Inputs: note, admin_id
+Line 3540  POST            /api/admin/users/<int:user_id>/violations/blacklist Inputs: blacklist
+Line 3573  POST, PUT       /api/admin/users/<int:user_id>/violations/edit Inputs: violation_strikes, booking_suspension_until, violation_permanently_restricted, violation_commitment_fee_required, note, admin_id
+Line 3754  GET             /api/user/violation-status          Inputs: user_id
+Line 3817  GET             /api/user/booking-eligibility       Inputs: user_id
+Line 3925  PUT             /api/admin/users/<int:user_id>/edit Inputs: first_name, middle_name, last_name, phone
+Line 3948  PUT             /api/admin/users/<int:user_id>/loyalty Inputs: points
+Line 3965  POST            /api/admin/users/<int:user_id>/reset-password Inputs: new_password
+Line 4049  GET             /api/user/points                    Inputs: user_id
+Line 4082  POST            /api/auth/resend-otp                Inputs: email
+Line 4102  POST            /api/auth/verify-email              Inputs: email, otp
+Line 4144  POST            /api/auth/google                    Inputs: credential, id_token, is_driver, email, name
+Line 4376  POST            /api/users/<int:user_id>/fcm-token  Inputs: fcm_token
+Line 4457  POST            /api/test-push/<int:user_id>        Inputs: title, message
+Line 4488  POST            /api/admin/send-custom-push         Inputs: title, body, user_id, broadcast
+Line 4565  POST            /api/admin/upload-refund-proof      Inputs: booking_id, admin_id, refund_ref
+Line 4715  POST            /api/admin/process-refund           Inputs: booking_id, extension_id, admin_id, refund_amount, refund_method, refund_ref, refund_note
+Line 4839  POST            /api/vehicles/<int:vehicle_id>/location Inputs: latitude, longitude, address, speed, gps_status
+Line 4906  GET             /api/admin/gps-locations            Inputs: admin_id
+Line 4997  GET             /api/vehicles/<int:vehicle_id>/gps-history Inputs: limit, start_date, end_date
+Line 5066  PUT             /api/admin/vehicles/<int:vehicle_id>/gps-config Inputs: gps_device_token, gps_device_name, gps_server
+Line 5097  GET             /api/vehicle/<int:vehicle_id>       Inputs: user_id
+Line 5322  PUT             /api/vehicles/<int:vehicle_id>/images/order Inputs: order
+Line 5408  POST            /api/book                           Inputs: user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, pickup_province, pickup_municipality, pickup_barangay, return_province, return_municipality, return_barangay, pickup_time, return_time, service_type, destination, rental_purpose, addons, addon_price, driver_fee, delivery_fee, points_redeemed, tax_amount, base_price, total_price, payment_type, gps_tracking_consent
+Line 5815  POST            /api/legacy-payment                 Inputs: booking_id, amount, method, reference_number
+Line 6034  GET             /api/user-bookings                  Inputs: user_id
+Line 6116  GET             /api/profile                        Inputs: user_id
+Line 6158  POST            /api/user/change-password           Inputs: user_id, current_password, new_password
+Line 6204  POST            /api/update-profile                 Inputs: user_id, first_name, middle_name, last_name, phone, email
+Line 6334  POST            /api/toggle-favorite                Inputs: user_id, vehicle_id
+Line 6398  GET             /api/favorites                      Inputs: user_id
+Line 6444  POST            /api/review                         Inputs: user_id, vehicle_id, rating, comment, booking_id
+Line 6652  POST            /api/saved-payment                  Inputs: user_id, card_type, last_four, provider
+Line 6702  GET             /api/saved-payments                 Inputs: user_id
+Line 6740  POST            /api/modify-booking                 Inputs: booking_id, start_date, end_date, preview, vehicle_id
+Line 6949  POST            /api/split-bill/request             Inputs: booking_id, partner_email, amount
+Line 7035  GET             /api/split-bills                    Inputs: email
+Line 7093  POST            /api/split-bill/pay                 Inputs: split_id
+Line 7177  GET             /api/admin/bookings                 Inputs: admin_id, include_archived, archived_only
+Line 7313  POST            /api/admin/bookings/walkin          Inputs: vehicle_id, start_date, end_date, start_time, end_time, is_existing_account, user_id, customer_name, customer_phone, customer_address, emergency_name, emergency_phone, emergency_rel, base_price, addon_price, driver_fee, delivery_fee, discount_amount, total_price, amount_paid, balance_amount, payment_method, payment_status, payment_type, status, rental_type, pickup_location, destination, rental_purpose, addons
+Line 7548  GET             /api/bookings/cancelled             Inputs: page, page_size, sort_by
+Line 7625  PUT             /api/admin/bookings/<int:booking_id>/assign_driver Inputs: driver_id
+Line 7679  PUT             /api/bookings/<int:booking_id>/approve Inputs: admin_id
+Line 7791  POST            /api/admin/bookings/<int:booking_id>/mark-paid Inputs: payment_method, payment_fee, payment_fee_percent
+Line 7947  POST            /api/inspections/submit             Inputs: booking_id, inspection_type, mileage, fuel_level, notes, inspector_id, fuel_charge, fuel_charge_notes, override_unpaid, collect_balance_cash, driver_ot_hours, driver_ot_collection_method, driver_ot_notes
+Line 8478  POST            /api/cancel-booking                 Inputs: booking_id, user_id, reason
+Line 8804  POST            /api/bookings/<int:booking_id>/refund-details Inputs: user_id, refund_channel, refund_account_name, refund_account_number, refund_notes
+Line 8975  PUT             /api/bookings/<int:booking_id>/pickup Inputs: admin_id, collect_balance_cash, override_unpaid, total_price, amount_paid, balance_amount, payment_status, vehicle_id
+Line 9078  PUT             /api/bookings/<int:booking_id>/complete Inputs: admin_id
+Line 9165  GET, POST, PUT  /api/settings/driver_wage           Inputs: wage
+Line 9333  PUT, POST       /api/drivers/<int:driver_id>/reject Inputs: reason
+Line 9402  POST            /api/driver/apply                   Inputs: user_id, full_name, license_number, contact_info
+Line 9504  GET             /api/driver/status                  Inputs: user_id
+Line 9542  GET             /api/driver/bookings                Inputs: user_id
+Line 9610  PUT             /api/driver/bookings/<int:booking_id>/status Inputs: user_id, status
+Line 9684  POST            /api/admin/download-report          Inputs: content, filename, mimetype
+Line 9704  GET             /api/admin/detailed-stats           Inputs: admin_id, type, date_from, date_to, status, vehicle_type, filter
+Line 9879  GET, POST       /api/admin/reports/export-excel     Inputs: admin_id, date_from, date_to, filter, status, vehicle_type
+Line 10462 GET             /api/reports/top-vehicles           Inputs: admin_id
+Line 10560 POST            /api/support                        Inputs: name, email, subject, message
+Line 10638 PUT             /api/admin/support/<int:ticket_id>  Inputs: admin_reply, status
+Line 10680 GET, POST       /api/admin/instructions             Inputs: instruction
+Line 10741 GET, POST       /api/newsletter/toggle              Inputs: enabled
+Line 10810 GET             /api/newsletter/status              Inputs: email, user_id
+Line 10845 POST            /api/newsletter                     Inputs: email, user_id
+Line 10874 POST            /api/newsletter/unsubscribe         Inputs: email, user_id
+Line 10928 POST            /api/admin/newsletters              Inputs: title, category, promo_code, discount_percent, content, banner_url, created_by, broadcast_notification
+Line 11063 GET             /api/admin/bookings/archived        Inputs: page, page_size, search, status, date_from, date_to
+Line 11159 POST            /api/admin/bookings/<int:id>/archive Inputs: reason, admin_name, admin_id, force
+Line 11206 POST            /api/admin/bookings/<int:id>/unarchive Inputs: admin_name, admin_id
+Line 11246 POST            /api/admin/bookings/batch-archive   Inputs: older_than_days, statuses, admin_name, admin_id
+Line 11321 DELETE          /api/admin/bookings/<int:id>/permanent Inputs: admin_name, admin_id
+Line 11459 POST            /api/admin/maintenance/cleanup-logs Inputs: older_than_days, admin_name, admin_id
+Line 11497 POST            /api/admin/maintenance/cleanup-notifications Inputs: older_than_days, only_read, admin_name, admin_id
+Line 11539 POST            /api/admin/maintenance/cleanup-chats Inputs: older_than_days, admin_name, admin_id
+Line 11697 POST            /api/admin/verify-user              Inputs: user_id, status
+Line 11988 POST            /api/chat                           Inputs: message, user_id
+Line 12079 POST            /api/admin/login                    Inputs: email, password
+Line 12149 GET             /api/admin/list                     Inputs: requester_id
+Line 12185 PUT             /api/admin/update/<int:user_id>     Inputs: requester_id, name, email, password, role, assigned_location
+Line 12277 DELETE          /api/admin/delete/<int:user_id>     Inputs: requester_id
+Line 12339 POST, PUT       /api/admin/super-admin/update-profile Inputs: admin_id, current_password, email, new_password
+Line 12427 PUT             /api/admin/status/<int:user_id>     Inputs: requester_id, status
+Line 12496 POST            /api/admin/create                   Inputs: requester_id, name, email, password, role, assigned_location
+Line 12635 POST            /api/vehicles                       Inputs: color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name, seats, daily_rate, vehicle_image, brand, transmission, status
+Line 12728 PUT             /api/vehicles/<int:vehicle_id>/     Inputs: color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name, seats, daily_rate, vehicle_image, brand, transmission, status
+Line 12817 PATCH, PUT, POST /api/admin/vehicles/<int:vehicle_id>/status/ Inputs: status
+Line 12839 PATCH, PUT, POST /api/admin/vehicles/<int:vehicle_id>/rate/ Inputs: daily_rate
+Line 12898 POST            /api/vehicles/check-availability    Inputs: vehicle_id, start_date, end_date
+Line 13111 GET             /api/vehicles/<int:vehicle_id>/     Inputs: user_id
+Line 13230 GET             /api/admin/stats                    Inputs: admin_id, period, date_from, date_to
+Line 13393 GET             /api/admin/dashboard-stats          Inputs: admin_id
+Line 13493 POST            /api/admin/change-password          Inputs: user_id, new_password
+Line 13536 GET, POST       /api/admin/settings                 Inputs: requester_id, settings
+Line 13637 POST            /api/admin/locations                Inputs: requester_id, name, province, municipality, barangay, delivery_fee
+Line 13679 GET, PUT, DELETE /api/admin/locations/<int:loc_id>   Inputs: requester_id, name, province, municipality, barangay, delivery_fee
+Line 13754 GET             /api/admin/activity-logs            Inputs: page, limit, filter, q
+Line 13872 GET             /api/vehicles/<int:vehicle_id>/location Inputs: user_id
+Line 13987 GET             /api/vehicles/colors                Inputs: brand, model
+Line 14013 GET             /api/vehicles/units                 Inputs: brand, model, color, user_id
+Line 14068 GET             /api/user/profile-full              Inputs: user_id
+Line 14170 POST            /api/user/update-license-info       Inputs: user_id, license_number, license_expiry, license_type
+Line 14327 GET             /api/user/license-details           Inputs: user_id, address, issuing_country_state, table_exists
+Line 14508 POST            /api/user/license-details           Inputs: user_id, full_name, date_of_birth, license_number, expiry_date, address, license_class, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, license_front_url, license_back_url
+Line 14804 POST            /api/admin/fcm-token                Inputs: admin_id, fcm_token
+Line 14859 POST            /api/user/fcm-token                 Inputs: user_id, fcm_token
+Line 14898 POST            /api/user/fcm-token/clear           Inputs: user_id, fcm_token
+Line 14949 POST            /api/debug/test-push                Inputs: admin_id
+Line 14977 POST            /api/debug/test-user-push           Inputs: user_id, title, body
+Line 15138 POST            /api/debug/fix-admin-fcm            Inputs: fcm_token, admin_id, username
+Line 15334 GET, POST       /api/debug/test-notification        Inputs: user_id
+Line 15370 GET             /api/notifications/<int:user_id>    Inputs: user_id
+Line 15407 POST            /api/notifications/read-all         Inputs: user_id
+Line 15436 POST            /api/notifications/<int:notif_id>/read Inputs: user_id
+Line 15477 GET             /api/admin/notifications            Inputs: admin_id
+Line 15525 POST            /api/admin/notifications/read-all   Inputs: admin_id
+Line 15560 POST            /api/admin/notifications/<int:notif_id>/read Inputs: admin_id
+Line 15612 GET             /api/users/search                   Inputs: q, limit
+Line 15786 POST            /api/admin/chat/faqs                Inputs: chip_label, question, keywords, answer, category, display_order, is_active
+Line 15817 PUT, POST       /api/admin/chat/faqs/<int:faq_id>   Inputs: chip_label, question, keywords, answer, category, display_order, is_active
+Line 15871 POST            /api/chat/send                      Inputs: sender_type, sender_id, receiver_type, receiver_id, message
+Line 15962 GET             /api/chat/messages                  Inputs: user_id, admin_id, limit
+Line 16044 GET             /api/debug/chat-query-test          Inputs: user_id, admin_id
+Line 16086 GET             /api/chat/inbox                     Inputs: viewer_type, viewer_id
+Line 16187 POST            /api/chat/mark-read                 Inputs: receiver_type, receiver_id, sender_type, sender_id
+Line 16214 GET             /api/chat/admins                    Inputs: user_id
+Line 16292 POST            /api/addons                         Inputs: name, price_per_day, description, admin_id
+Line 16338 PUT             /api/addons/<int:addon_id>          Inputs: name, price_per_day, description, admin_id
+Line 16382 DELETE          /api/addons/<int:addon_id>          Inputs: admin_id
+Line 16408 GET             /api/insurance-options              Inputs: all
+Line 16432 POST            /api/insurance-options              Inputs: name, price_per_day, description, admin_id
+Line 16495 PUT             /api/insurance-options/<int:ins_id> Inputs: name, price_per_day, description, is_active, admin_id
+Line 16553 DELETE          /api/insurance-options/<int:ins_id> Inputs: admin_id
+Line 16590 POST            /api/admin/expenses                 Inputs: vehicle_id, expense_type, amount, expense_date, description, recorded_by
+Line 16645 GET             /api/admin/expenses                 Inputs: admin_id, date_from, date_to, vehicle_id
+Line 16713 DELETE          /api/admin/expenses/<int:expense_id> Inputs: admin_id
+Line 16737 GET             /api/public/blackout-dates          Inputs: start, end
+Line 16783 POST            /api/admin/blackout-dates           Inputs: start_date, end_date, reason, affected_vehicles, admin_id
+Line 16869 GET             /api/admin/fleet-bookings           Inputs: start, end, all, status, vehicle_id
+Line 16952 GET             /api/admin/fleet-calendar/export-excel Inputs: start, end, all, status, vehicle_id
+Line 17083 POST            /api/admin/fleet-calendar/import-confirm Inputs: records, auto_create_renters, requester_id
+Line 17155 PUT, POST       /api/admin/bookings/<int:booking_id>/quick-pricing Inputs: total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, apply_to_customer, requester_id
+Line 17281 POST            /api/admin/bookings/<int:booking_id>/penalties Inputs: charge_type, amount, notes, admin_id
+Line 17329 PUT             /api/admin/penalties/<int:p_id>     Inputs: amount, notes, charge_type, admin_id
+Line 17496 GET             /api/admin/smtp/callback            Inputs: code, error
+Line 17656 POST            /api/admin/smtp/manual-save         Inputs: email, app_password
+Line 17683 GET, POST       /api/admin/smtp/test-send           Inputs: email
+Line 17760 GET             /api/admin/permissions              Inputs: staff_id, requester_id
+Line 17805 POST            /api/admin/permissions/grant        Inputs: requester_id, staff_id, permission_key, is_granted
+Line 17858 POST            /api/admin/permissions/request      Inputs: staff_id, permission_key, reason
+Line 17922 GET             /api/admin/permissions/requests     Inputs: user_id, status
+Line 17964 POST            /api/admin/permissions/requests/<int:req_id>/review Inputs: requester_id, action

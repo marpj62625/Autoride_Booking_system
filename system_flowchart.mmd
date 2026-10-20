@@ -1,0 +1,53 @@
+flowchart TD
+    %% START & ONBOARDING
+    Start([Start: User Accesses System]) --> Register[Account Registration & Profile Setup]
+    Register --> UploadKYC[Upload Driver's License for KYC]
+    UploadKYC --> VerifyKYC[Admin Reviews License Details]
+    VerifyKYC --> CheckKYC{License Approved?}
+
+    CheckKYC -- No --> RejectKYC[Notify User & Request Valid License Re-upload]
+    RejectKYC --> UploadKYC
+
+    CheckKYC -- Yes --> UnlockAccount[Activate Account & Unlock Booking Access]
+
+    %% VEHICLE SELECTION & BOOKING
+    UnlockAccount --> BrowseCars[Browse Fleet & Select Rental Dates]
+    BrowseCars --> CheckAvail{Vehicle Available?}
+
+    CheckAvail -- No --> ChangeChoice[Suggest Other Vehicles or Different Dates]
+    ChangeChoice --> BrowseCars
+
+    CheckAvail -- Yes --> SelectBooking[Select Insurance Package & Add-on Options]
+    SelectBooking --> Payment[Process Payment: GCash, Card, or Cash]
+    Payment --> CheckPay{Payment Confirmed?}
+
+    CheckPay -- No --> RetryPay[Payment Failed: Prompt User to Retry]
+    RetryPay --> Payment
+
+    %% CONFIRMATION & DISPATCH
+    CheckPay -- Yes --> ConfirmBook[Lock Vehicle in Fleet Calendar & Dispatch Booking Confirmation]
+    ConfirmBook --> Handover[Initial Vehicle Inspection & Key Handover]
+    Handover --> ActiveRental[Active Trip: Live GPS Tracking & Automated Reminders]
+
+    %% ACTIVE TRIP & EXTENSIONS
+    ActiveRental --> ExtRequest{Extension Requested?}
+
+    ExtRequest -- Yes --> CheckExt{Vehicle Available for Extension?}
+    CheckExt -- Yes --> PayExt[Settle Extension Fee & Update Fleet Calendar]
+    PayExt --> ActiveRental
+    CheckExt -- No --> DenyExt[Decline Extension & Maintain Return Schedule]
+    DenyExt --> ReturnVehicle
+
+    ExtRequest -- No --> ReturnVehicle[Return Vehicle at Designated Location]
+
+    %% RETURN, PENALTY & CLOSING
+    ReturnVehicle --> ReturnInspect[Admin Return Inspection: Fuel Level, Odometer & Condition]
+    ReturnInspect --> CheckPenalty{Late Return or Penalties Incurred?}
+
+    CheckPenalty -- Yes --> ApplyPenalty[System Calculates Late Penalty & Settles Balance]
+    ApplyPenalty --> FinalizeTrip
+
+    CheckPenalty -- No --> FinalizeTrip[Complete Booking & Submit Customer Rating/Review]
+
+    FinalizeTrip --> SystemLog[Update Vehicle Status to Available & Record Audit Logs]
+    SystemLog --> End([End: Vehicle Ready for Next Booking])

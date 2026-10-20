@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autoride - Driver Wage & Overtime (OT) Policy Specification Form</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #00B14F;
+      --primary-dark: #00873c;
+      --dark: #0f172a;
+      --slate: #334155;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--slate);
+      line-height: 1.5;
+      padding: 30px 15px;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .brand-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .doc-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+    .doc-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+    .meta-item strong { color: var(--dark); }
+    .intro-box {
+      background: rgba(0, 177, 79, 0.06);
+      border-left: 4px solid var(--primary);
+      padding: 14px 16px;
+      border-radius: 0 10px 10px 0;
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+      color: var(--dark);
+    }
+    .q-card {
+      margin-bottom: 26px;
+      padding-bottom: 20px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .q-card:last-of-type { border-bottom: none; }
+    .q-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .q-num {
+      background: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .q-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--dark);
+    }
+    .q-desc {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      margin-left: 4px;
+    }
+    .option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-left: 8px;
+    }
+    .option-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+    .option-item input[type="radio"],
+    .option-item input[type="checkbox"] {
+      margin-top: 4px;
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .option-text strong { color: var(--dark); }
+    .option-text span { color: var(--muted); }
+    .custom-input {
+      border: none;
+      border-bottom: 1.5px solid #cbd5e1;
+      outline: none;
+      width: 100%;
+      max-width: 400px;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      margin-top: 4px;
+      display: block;
+    }
+    .sig-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+    .sig-box {
+      font-size: 0.85rem;
+    }
+    .sig-line {
+      margin-top: 40px;
+      border-bottom: 1.5px solid var(--dark);
+      padding-bottom: 4px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .sig-title {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-bottom: 20px;
+      max-width: 820px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      text-decoration: none;
+    }
+    .btn-print { background: var(--primary); color: white; }
+    .btn-print:hover { background: var(--primary-dark); }
+    @media print {
+      body { background: white; padding: 0; }
+      .container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+      .action-bar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="action-bar">
+    <button class="btn btn-print" onclick="window.print()">
+      <i class="fas fa-print"></i> Print / Save as PDF
+    </button>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="brand-title">Autoride Car Rental System</div>
+      <h1 class="doc-title">Driver Wage & Overtime (OT) Policy Specification Form</h1>
+      <div class="doc-sub">Requirements Gathering & System Configuration Document</div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item"><strong>Project:</strong> Autoride Booking & Fleet Management</div>
+      <div class="meta-item"><strong>Date:</strong> October 2026</div>
+      <div class="meta-item"><strong>Prepared For:</strong> Company Owner / Management</div>
+      <div class="meta-item"><strong>Baseline Rate:</strong> ₱755 / 8 Hours (₱95/Hour OT)</div>
+    </div>
+
+    <div class="intro-box">
+      <strong>Dear Client / Management:</strong><br>
+      To ensure our software accurately computes and enforces your company's business rules for bookings requested <em>"With Driver"</em>, kindly select your preferred operational workflow below.
+    </div>
+
+    <!-- Question 1 -->
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Item 1</span>
+        <h3 class="q-title">Multi-Day Rental Baseline (Higit sa Isang Araw na Biyahe)</h3>
+      </div>
+      <p class="q-desc">Kapag ang booking ay tumatagal ng 2 o higit pang mga araw (hal. 3-day out-of-town rental):</p>
+      <div class="option-list">
+        <label class="option-item">
+          <input type="radio" name="q1" value="A" checked>
+          <div class="option-text">
+            <strong>Option A (Standard Daily Wage):</strong> <span>₱755 bawat araw (Hal. 3 Araw = 3 × ₱755 = ₱2,265. Bawat araw ay may kasamang standard 8 hours duty).</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q1" value="B">
+          <div class="option-text">
+            <strong>Option B (One-Time Flat Driver Fee):</strong> <span>Isang beses lang sisingilin ang ₱755 kahit ilang araw ang biyahe.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q1" value="C">
+          <div class="option-text">
+            <strong>Option C (Custom Policy):</strong>
+            <input type="text" class="custom-input" placeholder="Specify here...">
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Item 2</span>
+        <h3 class="q-title">Overtime (OT) Computation Method for Multi-Day Rentals</h3>
+      </div>
+      <p class="q-desc">Paano ikukwenta ang ₱95/hour OT kapag ilang araw kasama ang driver?</p>
+      <div class="option-list">
+        <label class="option-item">
+          <input type="radio" name="q2" value="A" checked>
+          <div class="option-text">
+            <strong>Option A (Per-Day 8-Hour Shift - Recommended):</strong> <span>Kada araw ay may 8 oras na duty. Ang sobrang oras sa partikular na araw ay agad binibilang bilang OT (Hal. Day 1: 10h = 2h OT; Day 2: 5h = 0 OT).</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q2" value="B">
+          <div class="option-text">
+            <strong>Option B (Cumulative Free Hours Pool):</strong> <span>Pagsasama-samahin ang libreng oras ng buong biyahe (Hal. 3 days × 8h = 24 total hours). Doon lang magkaka-OT kapag lumagpas sa 24 total logged hours.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q2" value="C">
+          <div class="option-text">
+            <strong>Option C (Custom Policy):</strong>
+            <input type="text" class="custom-input" placeholder="Specify here...">
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Item 3</span>
+        <h3 class="q-title">Pagsukat sa Oras ng Biyahe (Tracking of Actual Driver Hours)</h3>
+      </div>
+      <p class="q-desc">Paano natin masusukat nang tumpak ang aktwal na oras na nagmaneho o nagserbisyo ang driver?</p>
+      <div class="option-list">
+        <label class="option-item">
+          <input type="radio" name="q3" value="A" checked>
+          <div class="option-text">
+            <strong>Option A (Digital Trip Log - Start/End Duty Button):</strong> <span>Pipindutin ng driver sa kanyang phone ang 'Start Trip' pagsundo sa customer at 'End Trip' pagka-drop-off o pagbalik sa garahe. Awtomatikong magkakaroon ng digital receipt.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q3" value="B">
+          <div class="option-text">
+            <strong>Option B (Booking Schedule Duration):</strong> <span>Ibe-base sa piniling Pickup Time at Return Time ng customer sa booking form.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q3" value="C">
+          <div class="option-text">
+            <strong>Option C (Manual Staff Verification Upon Return):</strong> <span>Ang staff/admin ang mag-e-encode ng aktwal na oras ng biyahe sa system pagbalik ng sasakyan batay sa trip ticket log sheet.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Item 4</span>
+        <h3 class="q-title">Driver Meals & Lodging (Pagkain at Tulugan sa Overnight Trips)</h3>
+      </div>
+      <p class="q-desc">Para sa mga out-of-town o overnight rentals kung saan hindi nakakauwi ang driver sa kanyang tahanan:</p>
+      <div class="option-list">
+        <label class="option-item">
+          <input type="radio" name="q4" value="A" checked>
+          <div class="option-text">
+            <strong>Option A (Renter's Direct Responsibility):</strong> <span>Sagot ng customer ang pagkain at ligtas na matutulugan ng driver sa destinasyon.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q4" value="B">
+          <div class="option-text">
+            <strong>Option B (Fixed Allowance Added to Invoice):</strong> <span>May fixed Meal & Lodging Allowance na idadagdag sa booking (Hal. ₱500 bawat gabi para sa driver).</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q4" value="C">
+          <div class="option-text">
+            <strong>Option C (Included in Base Driver Wage):</strong> <span>Kasama na sa regular na bayad sa driver, walang dagdag na singil sa customer.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="q-card">
+      <div class="q-header">
+        <span class="q-num">Item 5</span>
+        <h3 class="q-title">Paniningil at Pagkolekta ng Overtime (Payment Collection Process)</h3>
+      </div>
+      <p class="q-desc">Kanino at kailan iaabot o babayaran ng customer ang naipong Driver OT fee?</p>
+      <div class="option-list">
+        <label class="option-item">
+          <input type="radio" name="q5" value="A" checked>
+          <div class="option-text">
+            <strong>Option A (System Return Checkout - Recommended):</strong> <span>Awtomatikong idaragdag ng system sa final balance ng booking pagbalik ng sasakyan. Kokolektahin ng kumpanya bago i-release ang security deposit.</span>
+          </div>
+        </label>
+        <label class="option-item">
+          <input type="radio" name="q5" value="B">
+          <div class="option-text">
+            <strong>Option B (Direct Cash to Driver):</strong> <span>Direktang iaabot ng customer ang OT cash kay manong driver pagkatapos ng biyahe bilang sarili niyang tip/overtime.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="sig-section">
+      <div class="sig-box">
+        <strong>Approved / Confirmed By:</strong>
+        <div class="sig-line">____________________________________</div>
+        <div class="sig-title">Company Owner / Authorized Signature</div>
+      </div>
+      <div class="sig-box">
+        <strong>Date Approved:</strong>
+        <div class="sig-line">____________________________________</div>
+        <div class="sig-title">Signature over Printed Name</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

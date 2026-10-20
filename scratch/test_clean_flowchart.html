@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'neutral' });</script>
+</head>
+<body style="background:#111; color:#fff; display:flex; justify-content:center; padding:40px;">
+    <div class="mermaid">
+flowchart TD
+    %% 1. ONBOARDING
+    Start([Start: User Accesses System]) --> Reg[Account Registration & Profile Setup]
+    Reg --> UploadKYC[Upload Driver's License for KYC]
+    UploadKYC --> ReviewKYC[Admin Reviews License Details]
+    ReviewKYC --> CheckKYC{License Status?}
+
+    CheckKYC -->|Approved| BrowseCars[Browse Fleet & Select Rental Dates]
+    CheckKYC -->|Rejected| RejectKYC[Notify Rejection & Re-upload Valid Document]
+    RejectKYC --> ReviewKYC2[Admin Re-evaluates License]
+    ReviewKYC2 --> BrowseCars
+
+    %% 2. BOOKING & AVAILABILITY
+    BrowseCars --> CheckAvail{Vehicle Available?}
+    CheckAvail -->|Available| SelectBooking[Select Insurance Package & Add-on Options]
+    CheckAvail -->|Unavailable| ChangeChoice[Select Alternative Vehicle or Dates]
+    ChangeChoice --> SelectBooking
+
+    %% 3. PAYMENT & CONFIRMATION
+    SelectBooking --> Payment[Process Payment: GCash, Card, or Cash]
+    Payment --> CheckPay{Payment Status?}
+    CheckPay -->|Confirmed| ConfirmBook[Lock Fleet Calendar & Dispatch Booking Confirmation]
+    CheckPay -->|Failed| RetryPay[Retry Payment or Choose Alternative Method]
+    RetryPay --> ConfirmBook
+
+    %% 4. DISPATCH & ACTIVE TRIP
+    ConfirmBook --> Handover[Pre-Rental Vehicle Inspection & Key Handover]
+    Handover --> ActiveRental[Active Trip: Live GPS Tracking & Automated Reminders]
+
+    %% 5. EXTENSION LOGIC
+    ActiveRental --> ExtRequest{Extension Requested?}
+    ExtRequest -->|Yes| CheckExt{Vehicle Available for Extension?}
+    CheckExt -->|Approved| PayExt[Settle Extension Fee & Extend Calendar Schedule]
+    PayExt --> ReturnVehicle
+    CheckExt -->|Declined| DenyExt[Maintain Original Return Schedule]
+    DenyExt --> ReturnVehicle
+
+    ExtRequest -->|No| ReturnVehicle[Return Vehicle at Designated Location]
+
+    %% 6. RETURN INSPECTION & SETTLEMENT
+    ReturnVehicle --> ReturnInspect[Admin Return Inspection: Fuel Level, Odometer & Condition]
+    ReturnInspect --> CheckPenalty{Late Return or Penalties?}
+
+    CheckPenalty -->|Yes| ApplyPenalty[Calculate Late Penalty & Settle Outstanding Balance]
+    ApplyPenalty --> FinalizeTrip
+    CheckPenalty -->|No| FinalizeTrip[Complete Booking & Submit Customer Rating/Review]
+
+    %% 7. CLOSING
+    FinalizeTrip --> SystemLog[Update Vehicle Status to Available & Record Audit Logs]
+    SystemLog --> End([End: Vehicle Ready for Next Booking])
+    </div>
+</body>
+</html>

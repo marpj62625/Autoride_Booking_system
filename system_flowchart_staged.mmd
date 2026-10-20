@@ -1,0 +1,61 @@
+flowchart TD
+    %% PHASE 1: ONBOARDING & KYC
+    subgraph P1["Phase 1: Onboarding & KYC Verification"]
+        direction TB
+        Start([Start: User Accesses System]) --> Reg[Account Registration & Profile Setup]
+        Reg --> UploadKYC[Upload Driver's License for KYC]
+        UploadKYC --> ReviewKYC[Admin Reviews License Details]
+        ReviewKYC --> CheckKYC{License Approved?}
+        CheckKYC -- No --> RejectKYC[Notify User to Re-upload Valid ID]
+        RejectKYC --> UploadKYC
+        CheckKYC -- Yes --> UnlockAcc[Activate Account & Unlock Booking Access]
+    end
+
+    %% PHASE 2: FLEET DISCOVERY & RESERVATION
+    subgraph P2["Phase 2: Fleet Discovery & Reservation"]
+        direction TB
+        UnlockAcc --> BrowseCars[Browse Fleet & Select Rental Dates]
+        BrowseCars --> CheckAvail{Vehicle Available?}
+        CheckAvail -- No --> ChangeChoice[Suggest Other Vehicles or Dates]
+        ChangeChoice --> BrowseCars
+        CheckAvail -- Yes --> SelectBooking[Select Insurance Package & Add-ons]
+    end
+
+    %% PHASE 3: PAYMENT & ALLOCATION
+    subgraph P3["Phase 3: Payment & Booking Allocation"]
+        direction TB
+        SelectBooking --> Payment[Process Payment: GCash, Card, or Cash]
+        Payment --> CheckPay{Payment Confirmed?}
+        CheckPay -- No --> RetryPay[Payment Failed: Prompt User to Retry]
+        RetryPay --> Payment
+        CheckPay -- Yes --> ConfirmBook[Lock Fleet Calendar & Send Confirmation]
+    end
+
+    %% PHASE 4: DISPATCH & ACTIVE TRIP
+    subgraph P4["Phase 4: Active Rental & Monitoring"]
+        direction TB
+        ConfirmBook --> Handover[Initial Vehicle Inspection & Key Handover]
+        Handover --> ActiveRental[Active Trip: Live GPS Tracking & Alerts]
+        ActiveRental --> ExtRequest{Extension Requested?}
+        ExtRequest -- Yes --> CheckExt{Vehicle Available for Extension?}
+        CheckExt -- Yes --> PayExt[Settle Extension Fee & Update Calendar]
+        PayExt --> ActiveRental
+        CheckExt -- No --> DenyExt[Decline Extension & Keep Return Schedule]
+        DenyExt --> ReturnVehicle
+        ExtRequest -- No --> ReturnVehicle[Return Vehicle at Designated Location]
+    end
+
+    %% PHASE 5: RETURN & SETTLEMENT
+    subgraph P5["Phase 5: Return, Inspection & Closing"]
+        direction TB
+        ReturnVehicle --> ReturnInspect[Admin Return Inspection: Fuel, Odometer & Damage]
+        ReturnInspect --> CheckPenalty{Late Return or Penalties?}
+        CheckPenalty -- Yes --> ApplyPenalty[System Calculates Late Penalty & Settles Balance]
+        ApplyPenalty --> FinalizeTrip
+        CheckPenalty -- No --> FinalizeTrip[Complete Booking & Submit Customer Rating]
+        FinalizeTrip --> SystemLog[Update Vehicle to Available & Record Audit Logs]
+        SystemLog --> End([End: Vehicle Ready for Next Booking])
+    end
+
+    %% ENFORCE STRICT VERTICAL ORDER
+    P1 --> P2 --> P3 --> P4 --> P5
