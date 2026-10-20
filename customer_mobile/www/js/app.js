@@ -6698,7 +6698,6 @@ if (typeof window !== 'undefined') {
       }
     }
   });
-if (typeof window !== 'undefined') {
   window.addEventListener('focus', function() {
     if (window._pendingPaymentBookingId) {
       autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
