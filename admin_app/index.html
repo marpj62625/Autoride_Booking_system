@@ -2964,7 +2964,6 @@
 
 
 
-        #adminNotifPanel *,
         #adminNotifToast * {
             color: white;
         }
@@ -5255,30 +5254,56 @@
 
 
 
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:16px;left:auto;width:calc(100vw - 32px);max-width:380px;max-height:75vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
-
-
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-
-
-
-        <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
-
-
-
-        <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
-
-
-
+<style>
+#adminNotifPanel.anp{display:none;position:fixed;top:64px;right:16px;width:calc(100vw - 32px);max-width:400px;max-height:78vh;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 24px 60px -12px rgba(15,23,42,.28),0 4px 12px rgba(15,23,42,.06);z-index:9000;overflow:hidden;flex-direction:column;font-family:inherit;animation:anpIn .18s ease-out}
+@keyframes anpIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+#adminNotifPanel.anp *{color:inherit}
+.anp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a}
+.anp-title{display:flex;align-items:center;gap:11px}
+.anp-title .anp-bell{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#00B14F,#059669);display:flex;align-items:center;justify-content:center;color:#fff !important;box-shadow:0 4px 10px rgba(0,177,79,.3)}
+.anp-title .anp-bell i{color:#fff !important}
+.anp-title h4{margin:0;font-size:1rem;font-weight:800;color:#0f172a !important}
+.anp-title span{font-size:.74rem;color:#64748b !important}
+.anp-close{width:32px;height:32px;border:none;border-radius:9px;background:#f1f5f9;color:#64748b !important;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.anp-close:hover{background:#e2e8f0}
+.anp-tabs{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid #f1f5f9;overflow-x:auto;scrollbar-width:none}
+.anp-tabs::-webkit-scrollbar{display:none}
+.anp-tabs button{flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569 !important;font-size:.74rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.anp-tabs button .anp-cnt{background:#e2e8f0;color:#475569 !important;border-radius:999px;padding:0 6px;font-size:.65rem;line-height:16px}
+.anp-tabs button.active{background:#00B14F;border-color:#00B14F;color:#fff !important}
+.anp-tabs button.active .anp-cnt{background:rgba(255,255,255,.25);color:#fff !important}
+.anp-list{overflow-y:auto;flex:1;padding:6px 8px 10px}
+.anp-list::-webkit-scrollbar{width:6px}
+.anp-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:6px}
+.anp-group{font-size:.66rem;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#94a3b8 !important;padding:10px 10px 4px}
+.anp-item{position:relative;display:flex;gap:12px;padding:11px 12px;border-radius:12px;cursor:pointer;transition:background .15s;margin:2px 0}
+.anp-item:hover{background:#f8fafc}
+.anp-item.unread{background:#f0fdf4}
+.anp-item.unread:hover{background:#dcfce7}
+.anp-item.unread::after{content:'';position:absolute;top:16px;right:12px;width:8px;height:8px;border-radius:50%;background:#00B14F}
+.anp-ico{flex-shrink:0;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.95rem}
+.anp-body{flex:1;min-width:0;padding-right:12px}
+.anp-body strong{display:block;font-size:.84rem;font-weight:700;color:#0f172a !important;line-height:1.3}
+.anp-body p{margin:3px 0 0;font-size:.78rem;color:#475569 !important;line-height:1.4;word-wrap:break-word}
+.anp-meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.7rem;color:#94a3b8 !important}
+.anp-tag{padding:1px 7px;border-radius:999px;font-weight:700;font-size:.64rem}
+.anp-act{margin-top:8px;padding:5px 12px;background:#ef4444;color:#fff !important;border:none;border-radius:8px;font-size:.72rem;font-weight:700;cursor:pointer}
+.anp-act i{color:#fff !important}
+.anp-empty{text-align:center;padding:42px 20px;color:#94a3b8 !important}
+.anp-empty i{font-size:2.2rem;color:#cbd5e1 !important;margin-bottom:10px;display:block}
+.anp-empty b{display:block;color:#334155 !important;font-size:.9rem;margin-bottom:3px}
+body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{background:#0f172a;border-color:#1e293b}
+</style>
+<div id="adminNotifPanel" class="anp" style="display:none;">
+    <div class="anp-head">
+        <div class="anp-title">
+            <div class="anp-bell"><i class="fas fa-bell"></i></div>
+            <div><h4>Notifications</h4><span id="anpSub">You're all caught up</span></div>
+        </div>
+        <button class="anp-close" onclick="toggleAdminNotifPanel()" title="Close"><i class="fas fa-times"></i></button>
     </div>
-
-
-
-    <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
-
-
-
+    <div class="anp-tabs" id="anpTabs"></div>
+    <div id="adminNotifList" class="anp-list"></div>
 </div>
 
 
@@ -11843,141 +11868,129 @@ input:checked + .ctrl-slider:before {
 
 
 
-    window.toggleAdminNotifPanel = function() {
+    window._anpFilter = 'all';
+    window._anpUnread = new Set();
 
+    window._anpCategorize = function(n) {
+        const t = (n.type || '').toLowerCase();
+        const txt = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
+        if (t === 'admin_no_show') return { cat: 'alerts', icon: 'fa-user-slash', fg: '#dc2626', bg: '#fee2e2', tag: 'No Show' };
+        if (t.includes('refund') || txt.includes('refund')) return { cat: 'payments', icon: 'fa-hand-holding-usd', fg: '#d97706', bg: '#fef3c7', tag: 'Refund' };
+        if (t.includes('payment') || /\bpaid\b/.test(txt)) return { cat: 'payments', icon: 'fa-credit-card', fg: '#059669', bg: '#d1fae5', tag: 'Payment' };
+        if (t.includes('cancel') || txt.includes('cancelled')) return { cat: 'bookings', icon: 'fa-calendar-times', fg: '#dc2626', bg: '#fee2e2', tag: 'Cancelled' };
+        if (t.includes('extension') || txt.includes('extension')) return { cat: 'bookings', icon: 'fa-clock', fg: '#7c3aed', bg: '#ede9fe', tag: 'Extension' };
+        if (t.includes('booking') || txt.includes('booking')) return { cat: 'bookings', icon: 'fa-calendar-check', fg: '#2563eb', bg: '#dbeafe', tag: 'Booking' };
+        if (t.includes('license')) return { cat: 'renters', icon: 'fa-id-card', fg: '#7c3aed', bg: '#ede9fe', tag: 'Renter' };
+        return { cat: 'chat', icon: 'fa-comment-dots', fg: '#0891b2', bg: '#cffafe', tag: 'Message' };
+    };
 
+    window._anpEsc = function(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    };
 
-        const panel = document.getElementById('adminNotifPanel');
+    window._anpRelTime = function(d) {
+        if (!d || isNaN(d)) return '';
+        const s = Math.floor((Date.now() - d.getTime()) / 1000);
+        if (s < 60) return 'Just now';
+        if (s < 3600) return Math.floor(s / 60) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        if (s < 604800) return Math.floor(s / 86400) + 'd ago';
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
 
+    window._anpSetFilter = function(f) {
+        window._anpFilter = f;
+        window._anpRender();
+    };
 
-
+    window._anpRender = function() {
         const list = document.getElementById('adminNotifList');
-
-
-
-        if (!panel) return;
-
-
-
-        const isVisible = panel.style.display !== 'none';
-
-
-
-        panel.style.display = isVisible ? 'none' : 'block';
-
-
-
-        if (!isVisible) {
-
-
-
-            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
-
-
-
-            if (user && user.id) {
-
-
-
-                fetch(API_URL + '/admin/notifications/read-all', {
-
-
-
-                    method: 'POST',
-
-
-
-                    headers: { 'Content-Type': 'application/json' },
-
-
-
-                    body: JSON.stringify({ admin_id: user.id })
-
-
-
-                }).then(() => {
-
-
-
-                    (window.adminNotifList || []).forEach(n => n.is_read = true);
-
-
-
-                    window.updateAdminNotifBadge();
-
-
-
-                }).catch(() => {});
-
-
-
-            }
-
-
-
-            const notifs = window.adminNotifList || [];
-
-
-
-            if (!notifs.length) {
-
-
-
-                list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
-
-
-
-            } else {
-
-
-
-                list.innerHTML = notifs.map(n => {
-
-                    const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-
-                    const isNoShow = n.type === 'admin_no_show';
-                    const unreadStyle = n.is_read ? '' : (isNoShow ? 'border-left:3px solid #ef4444;padding-left:8px;background:rgba(239,68,68,0.08);' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);');
-
-                    let onClickAction = '';
-                    if (n.type === 'license' || n.type === 'admin_license_upload') {
-                        onClickAction = "onclick=\"switchTab('users');\" style=\"cursor:pointer;\"";
-                    } else if (n.type === 'admin_new_booking' || n.type === 'admin_booking_cancelled' || n.type === 'admin_payment_proof' || n.type === 'admin_extension_request' || n.type === 'admin_refund_request' || n.type === 'admin_no_show') {
-                        onClickAction = "onclick=\"switchTab('bookings');\" style=\"cursor:pointer;\"";
-                    } else {
-                        onClickAction = "onclick=\"switchTab('chat');\" style=\"cursor:pointer;\"";
-                    }
-
-                    let bId = n.booking_id;
-                    if (isNoShow && !bId && n.title) {
-                        const match = n.title.match(/Booking #(\d+)/);
-                        if (match) bId = match[1];
-                    }
-                    const noShowBtn = (isNoShow && bId) ? `<div style="margin-top:6px;"><button onclick="event.stopPropagation();Bookings.markNoShow(${bId})" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;"><i class='fas fa-user-slash' style='margin-right:4px;'></i>Mark No Show</button></div>` : '';
-
-                    return `<div ${onClickAction} style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
-
-                        <strong style="font-size:0.85rem;color:${isNoShow ? '#fca5a5' : '#f1f5f9'};">${isNoShow ? '🚫 ' : ''}${n.title || ''}</strong>
-
-                        <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-
-                        <small style="color:var(--text-muted);">${ts}</small>
-
-                        ${noShowBtn}
-
-                    </div>`;
-
-                }).join('');
-
-
-
-            }
-
-
-
+        const tabsEl = document.getElementById('anpTabs');
+        const sub = document.getElementById('anpSub');
+        if (!list) return;
+        const notifs = window.adminNotifList || [];
+        const items = notifs.map(n => ({ n, c: window._anpCategorize(n) }));
+
+        const counts = { all: items.length, bookings: 0, payments: 0, alerts: 0, renters: 0, chat: 0 };
+        items.forEach(i => counts[i.c.cat]++);
+        const tabs = [['all', 'All'], ['bookings', 'Bookings'], ['payments', 'Payments'], ['alerts', 'Alerts'], ['renters', 'Renters'], ['chat', 'Messages']];
+        if (tabsEl) {
+            tabsEl.innerHTML = tabs
+                .filter(([k]) => k === 'all' || counts[k] > 0)
+                .map(([k, label]) => `<button class="${window._anpFilter === k ? 'active' : ''}" onclick="event.stopPropagation();window._anpSetFilter('${k}')">${label}<span class="anp-cnt">${counts[k]}</span></button>`)
+                .join('');
         }
 
+        const unreadCount = window._anpUnread.size;
+        if (sub) sub.textContent = unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? 's' : ''}` : (notifs.length ? `${notifs.length} total \u00b7 all caught up` : "You're all caught up");
 
+        const shown = window._anpFilter === 'all' ? items : items.filter(i => i.c.cat === window._anpFilter);
+        if (!shown.length) {
+            list.innerHTML = `<div class="anp-empty"><i class="far fa-bell-slash"></i><b>No notifications</b>New activity will show up here.</div>`;
+            return;
+        }
 
+        const now = new Date();
+        const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startYest = startToday - 86400000;
+        let lastGroup = '';
+        list.innerHTML = shown.map(({ n, c }, idx) => {
+            const d = n.created_at ? new Date(n.created_at) : null;
+            const tms = d && !isNaN(d) ? d.getTime() : 0;
+            const group = tms >= startToday ? 'Today' : (tms >= startYest ? 'Yesterday' : 'Earlier');
+            const header = group !== lastGroup ? `<div class="anp-group">${group}</div>` : '';
+            lastGroup = group;
+
+            let tab = 'chat';
+            if (n.type === 'license' || n.type === 'admin_license_upload') tab = 'users';
+            else if (['admin_new_booking', 'admin_booking_cancelled', 'admin_payment_proof', 'admin_extension_request', 'admin_refund_request', 'admin_no_show'].includes(n.type) || c.cat === 'bookings' || c.cat === 'payments' || c.cat === 'alerts') tab = 'bookings';
+
+            let bId = n.booking_id;
+            if (c.cat === 'alerts' && !bId && n.title) {
+                const m = n.title.match(/Booking #(\d+)/);
+                if (m) bId = m[1];
+            }
+            const act = (n.type === 'admin_no_show' && bId) ? `<button class="anp-act" onclick="event.stopPropagation();Bookings.markNoShow(${parseInt(bId, 10)})"><i class="fas fa-user-slash" style="margin-right:4px;"></i>Mark No Show</button>` : '';
+            const unread = window._anpUnread.has(n.id != null ? n.id : idx);
+            const title = n.title || c.tag;
+            const full = d && !isNaN(d) ? d.toLocaleString() : '';
+
+            return `${header}<div class="anp-item ${unread ? 'unread' : ''}" onclick="switchTab('${tab}');document.getElementById('adminNotifPanel').style.display='none';">
+                <div class="anp-ico" style="background:${c.bg};"><i class="fas ${c.icon}" style="color:${c.fg} !important;"></i></div>
+                <div class="anp-body">
+                    <strong>${window._anpEsc(title)}</strong>
+                    ${n.message && n.message !== n.title ? `<p>${window._anpEsc(n.message)}</p>` : ''}
+                    <div class="anp-meta"><span class="anp-tag" style="background:${c.bg};color:${c.fg} !important;">${c.tag}</span><span title="${full}">${window._anpRelTime(d)}</span></div>
+                    ${act}
+                </div>
+            </div>`;
+        }).join('');
+    };
+
+    window.toggleAdminNotifPanel = function() {
+        const panel = document.getElementById('adminNotifPanel');
+        if (!panel) return;
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'flex';
+        if (isVisible) return;
+
+        // Snapshot unread items before marking them read, so they stay highlighted while open
+        window._anpUnread = new Set();
+        (window.adminNotifList || []).forEach((n, idx) => { if (!n.is_read) window._anpUnread.add(n.id != null ? n.id : idx); });
+        window._anpFilter = 'all';
+        window._anpRender();
+
+        const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+        if (user && user.id) {
+            fetch(API_URL + '/admin/notifications/read-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_id: user.id })
+            }).then(() => {
+                (window.adminNotifList || []).forEach(n => n.is_read = true);
+                window.updateAdminNotifBadge();
+            }).catch(() => {});
+        }
     };
 
 
