@@ -6625,6 +6625,15 @@
             <button type="button" class="dl-code-box" data-dl-code="BE" onclick="toggleLicenseClassBox('BE')">BE</button>
             <button type="button" class="dl-code-box" data-dl-code="CE" onclick="toggleLicenseClassBox('CE')">CE</button>
           </div>
+          <div id="licenseClassStatusRow" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;margin-top:10px;border-top:1px solid var(--border, #e2e8f0);font-size:0.78rem;">
+            <div>
+              <span style="color:var(--text-muted, #64748b);">Selected: </span>
+              <strong id="licenseClassSelectedText" style="color:var(--text-main, #0f172a);font-weight:800;">None</strong>
+            </div>
+            <div id="licenseClassValidIndicator" style="font-weight:700;color:#f59e0b;">
+              ⚠ Select at least one DL code
+            </div>
+          </div>
           <input type="hidden" id="editLicenseClass" value="">
         </div>
 
@@ -7991,6 +8000,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v14_dl_code_boxes"></script>
+<script src="js/app.js?v=20261020_v15_dl_code_indicator"></script>
 </body>
 </html>

@@ -2448,6 +2448,24 @@ function syncLicenseClassBoxesFromValue(valStr) {
       }
     }
   }
+
+  var selTextEl = document.getElementById('licenseClassSelectedText');
+  var indEl = document.getElementById('licenseClassValidIndicator');
+  if (selTextEl) {
+    selTextEl.textContent = ordered.length > 0 ? ordered.join(', ') : 'None';
+  }
+  if (indEl) {
+    if (ordered.length === 0) {
+      indEl.textContent = '⚠ Select at least one DL code';
+      indEl.style.color = '#f59e0b';
+    } else if (ordered.every(function(c) { return c === 'A' || c === 'A1'; })) {
+      indEl.textContent = '✕ Motorcycle-only (A/A1) — must include B, B1, B2, etc.';
+      indEl.style.color = 'var(--danger, #ef4444)';
+    } else {
+      indEl.textContent = '✓ Valid for Car Rental';
+      indEl.style.color = 'var(--primary, #10b981)';
+    }
+  }
 }
 
 function toggleLicenseClassBox(code) {
