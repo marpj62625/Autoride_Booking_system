@@ -8693,6 +8693,7 @@ function _renderChangeScheduleModal() {
       '</div>' +
     '</div>';
 
+  modal.innerHTML = html;
   document.body.appendChild(modal);
   _renderCsCalGrid();
   _recalcCsSchedule();
