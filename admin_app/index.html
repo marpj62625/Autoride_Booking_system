@@ -19699,14 +19699,22 @@ function toggleNewsletterModal(show = true) {
 
         async refresh() {
             const list = document.getElementById('bookingsList');
-            showSkeleton('bookingsList', 'table');
-
-            if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+            if (list) {
+                showSkeleton('bookingsList', 'table');
+                if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
+                    list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+                }
+            }
+            const newTbody = document.getElementById('newBookingsTableBody');
+            if (newTbody && !newTbody.children.length) {
+                newTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">Loading new bookings...</td></tr>';
+            }
+            const allTbody = document.getElementById('allBookingsTableBody');
+            if (allTbody && !allTbody.children.length) {
+                allTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">Loading bookings...</td></tr>';
             }
 
             try {
-                // Fetch Stats and List in parallel
                 const user = adminAuth.getUser();
                 const adminId = user ? user.id : '';
 
@@ -19726,40 +19734,23 @@ function toggleNewsletterModal(show = true) {
                 // Always update the overview count cards from the actual bookings list
                 this.updateOverviewCounts(this.data, statsData);
 
-
-
                 this.render();
-
-
-
                 this.renderNew();
-
-
-
                 ActiveNow.render(this.data);
 
-
-
                 if (typeof Extensions !== 'undefined') Extensions.load();
-
-
-
             } catch (err) {
-
-
-
                 console.error('Bookings Error:', err);
-
-
-
-                list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
-
-
-
+                if (list) {
+                    list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
+                }
+                if (newTbody) {
+                    newTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--danger);">Failed to load: ${err.message}</td></tr>`;
+                }
+                if (allTbody) {
+                    allTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--danger);">Failed to load: ${err.message}</td></tr>`;
+                }
             }
-
-
-
         },
 
 
