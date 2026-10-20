@@ -6922,6 +6922,12 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '<div class="receipt-row"><span>Rental Type</span><strong>' + (isWithDriver ? 'With Professional Driver (₱' + (parseFloat(appSettings.driver_daily_wage) || 755).toLocaleString() + '/day)' : 'Self-Drive') + '</strong></div>' +
     '<div class="receipt-row"><span>Insurance</span><strong>' + insText + '</strong></div>' +
     '<div class="receipt-row"><span>Add-ons</span><strong>' + addonsText + '</strong></div>' +
+    (parseFloat(receipt.discount_amount || (_pendingBookingPayload && _pendingBookingPayload.discount_amount) || 0) > 0
+      ? '<div class="receipt-row"><span>Promo / Long-Term Discount</span><strong style="color:#10b981;">-' + formatPHP(parseFloat(receipt.discount_amount || (_pendingBookingPayload && _pendingBookingPayload.discount_amount) || 0)) + '</strong></div>'
+      : '') +
+    (parseFloat(receipt.points_discount_amount || (_pendingBookingPayload && _pendingBookingPayload.points_discount_amount) || 0) > 0
+      ? '<div class="receipt-row"><span>Points Discount</span><strong style="color:#10b981;">-' + formatPHP(parseFloat(receipt.points_discount_amount || (_pendingBookingPayload && _pendingBookingPayload.points_discount_amount) || 0)) + '</strong></div>'
+      : '') +
     '<div class="receipt-row"><span>Payment Method</span><strong>' + (method || receipt.method || 'GCash') + '</strong></div>' +
     (refNum ? '<div class="receipt-row"><span>Reference No.</span><strong style="font-family:monospace;">' + refNum + '</strong></div>' : '') +
     '<div class="receipt-row"><span>Date & Time</span><strong>' + dateStr + ', ' + timeStr + '</strong></div>' +
@@ -6990,6 +6996,8 @@ function _viewBookingReceiptLegacy(bookingId) {
         rental_type: b.rental_type || 'Self-Drive',
         insurance_type: b.insurance_type || 'Basic Protection',
         addons: b.addons || 'None',
+        discount_amount: b.discount_amount || 0,
+        points_discount_amount: b.points_discount_amount || 0,
         created_at: b.created_at || b.start_date,
         from_detail: true
       }
@@ -7102,11 +7110,24 @@ function _renderReceiptCardHtml(data, r) {
     rows += row('Previous Return', formatBookingDate(r.start_date));
     rows += row('New Return', formatBookingDate(r.end_date));
     rows += row('Extension', '+' + (r.extension_days || 0) + ' day' + (parseInt(r.extension_days) === 1 ? '' : 's'));
+    var extDisc = parseFloat(r.discount_amount || 0);
+    if (extDisc > 0) {
+      if (r.base_price) rows += row('Extension Base Rate', formatPHP(r.base_price));
+      rows += '<div class="receipt-row"><span>Discount Applied</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(extDisc) + '</strong></div>';
+    }
   } else {
     if (r.start_date) rows += row('Rental Period', formatBookingDate(r.start_date) + ' – ' + formatBookingDate(r.end_date));
     rows += row('Rental Type', isWithDriver ? 'With Professional Driver' : 'Self-Drive');
     rows += row('Insurance', data.insurance_type || 'Basic Protection');
     rows += row('Add-ons', _fmtReceiptAddons(data.addons));
+    var bkDisc = parseFloat(r.discount_amount != null ? r.discount_amount : (data.discount_amount || 0));
+    var ptsDisc = parseFloat(r.points_discount_amount != null ? r.points_discount_amount : (data.points_discount_amount || 0));
+    if (bkDisc > 0) {
+      rows += '<div class="receipt-row"><span>Promo / Long-Term Discount</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(bkDisc) + '</strong></div>';
+    }
+    if (ptsDisc > 0) {
+      rows += '<div class="receipt-row"><span>Points Discount</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(ptsDisc) + '</strong></div>';
+    }
   }
   rows += row('Payment Method', r.method || 'N/A');
   if (r.reference_number) rows += row('Reference No.', r.reference_number, true);

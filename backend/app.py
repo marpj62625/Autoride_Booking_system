@@ -11221,7 +11221,7 @@ def download_receipt(booking_id):
         user_dict = dict(user) if user else {"full_name": "Valued Customer", "email": "N/A"}
 
         # 3. Fetch Vehicle
-        cur.execute("SELECT brand, model, plate_number FROM vehicles WHERE id = %s", (booking_dict['vehicle_id'],))
+        cur.execute("SELECT brand, model, plate_number, daily_rate FROM vehicles WHERE id = %s", (booking_dict['vehicle_id'],))
         vehicle = cur.fetchone()
         vehicle_dict = dict(vehicle) if vehicle else {"brand": "Unknown", "model": "Vehicle", "plate_number": "N/A"}
 

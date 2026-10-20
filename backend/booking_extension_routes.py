@@ -104,7 +104,7 @@ def _send_extension_receipt_email(ext_id):
             SELECT e.id AS ext_id, e.booking_id, e.extension_days, e.extension_price, e.payment_method,
                    e.reference_number, e.original_end_date, e.new_end_date, e.approved_at, e.created_at,
                    b.total_price, b.amount_paid, b.balance_amount, b.start_date,
-                   u.full_name, u.email, v.brand, v.model, v.plate_number
+                   u.full_name, u.email, v.brand, v.model, v.plate_number, v.daily_rate
             FROM booking_extensions e
             JOIN bookings b ON b.id = e.booking_id
             JOIN users u ON u.id = b.user_id
@@ -141,7 +141,8 @@ def _send_extension_receipt_email(ext_id):
             + row('New Return', str(d.get('new_end_date')))
             + "</table><div style='border-top:1px dashed #000;margin:10px 0;'></div>"
             "<table width='100%' style='font-size:13px;margin-bottom:10px;'>"
-            + row(f"Rental Extension ({d.get('extension_days')} day{'s' if int(d.get('extension_days') or 0) != 1 else ''})", '{:,.2f}'.format(price))
+            + row(f"Rental Extension ({d.get('extension_days')} day{'s' if int(d.get('extension_days') or 0) != 1 else ''})", '{:,.2f}'.format(max(price, round(float(d.get('daily_rate') or 0) * int(d.get('extension_days') or 0), 2))))
+            + (row('Discount Applied', '-' + '{:,.2f}'.format(round(float(d.get('daily_rate') or 0) * int(d.get('extension_days') or 0) - price, 2))) if (float(d.get('daily_rate') or 0) * int(d.get('extension_days') or 0) - price) > 0.01 else '')
             + "</table><div style='border-top:1px dashed #000;margin:10px 0;'></div>"
             "<table width='100%' style='font-size:14px;margin-bottom:15px;'>"
             f"<tr><td><strong>AMOUNT PAID (PHP)</strong></td><td style='text-align:right;'><strong>{'{:,.2f}'.format(price)}</strong></td></tr>"
@@ -172,7 +173,7 @@ def list_booking_receipts(booking_id):
         if _backfill_extension_payments(cur, booking_id):
             commit_db()
         cur.execute("""
-            SELECT b.*, v.brand, v.model, v.plate_number
+            SELECT b.*, v.brand, v.model, v.plate_number, v.daily_rate
             FROM bookings b LEFT JOIN vehicles v ON v.id = b.vehicle_id
             WHERE b.id = %s
         """, (booking_id,))
@@ -219,6 +220,9 @@ def list_booking_receipts(booking_id):
             'date': s(main_pay.get('created_at') or b.get('created_at')),
             'start_date': s(b.get('start_date')),
             'end_date': s(orig_end),
+            'base_price': float(b.get('base_price') or 0),
+            'discount_amount': float(b.get('discount_amount') or 0),
+            'points_discount_amount': float(b.get('points_discount_amount') or 0),
         }]
         for idx, e in enumerate(exts, start=1):
             receipts.append({
@@ -235,6 +239,8 @@ def list_booking_receipts(booking_id):
                 'date': s(e.get('approved_at') or e.get('created_at')),
                 'start_date': s(e.get('original_end_date')),
                 'end_date': s(e.get('new_end_date')),
+                'base_price': round(float(b.get('daily_rate') or 0) * int(e.get('extension_days') or 0), 2),
+                'discount_amount': max(0.0, round((float(b.get('daily_rate') or 0) * int(e.get('extension_days') or 0)) - float(e.get('extension_price') or 0), 2)),
             })
         return jsonify({
             'booking_id': booking_id,
@@ -244,6 +250,9 @@ def list_booking_receipts(booking_id):
             'total_price': float(b.get('total_price') or 0),
             'amount_paid': float(b.get('amount_paid') or 0),
             'balance_amount': float(b.get('balance_amount') or 0),
+            'discount_amount': float(b.get('discount_amount') or 0),
+            'points_discount_amount': float(b.get('points_discount_amount') or 0),
+            'daily_rate': float(b.get('daily_rate') or 0),
             'receipts': receipts
         }), 200
     except Exception as e:

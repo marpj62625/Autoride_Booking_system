@@ -287,9 +287,16 @@ def generate_extension_pdf(booking, user, vehicle, ext, payment=None, ext_index=
 
     price = float(ext.get('extension_price') or 0)
     days = int(ext.get('extension_days') or 0)
+    daily_rate = float(vehicle.get('daily_rate') or booking.get('daily_rate') or 0)
+    base_ext = round(daily_rate * days, 2) if daily_rate > 0 else price
+    ext_disc = max(0.0, round(base_ext - price, 2))
     pdf.set_font('Helvetica', 'B', 11)
     pdf.cell(0, 8, ' COST BREAKDOWN', 0, 1, 'L', fill=True)
-    add_row(f'Rental Extension ({days} day{"s" if days != 1 else ""})', price)
+    add_row(f'Rental Extension ({days} day{"s" if days != 1 else ""})', base_ext if ext_disc > 0 else price)
+    if ext_disc > 0:
+        pdf.set_text_color(185, 28, 28)
+        add_row('Long-term / Promo Discount', -ext_disc)
+        pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
     pdf.set_draw_color(30, 41, 59)
     pdf.line(130, pdf.get_y(), 200, pdf.get_y())
