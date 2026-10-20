@@ -160,6 +160,8 @@ def create_payment():
 
     # Map method names to PayMongo payment method types
     method_map = {
+        'qrph': 'qrph',
+        'qr_ph': 'qrph',
         'gcash': 'gcash',
         'maya': 'paymaya',
         'paymaya': 'paymaya',
@@ -211,16 +213,30 @@ def create_payment():
     if customer_phone and customer_phone.strip():
         billing['phone'] = customer_phone.strip()
 
-    # Map method names for Checkout Sessions (exclude 'qrph' because qrph spawns a 2nd tab with code_id=qr_... that hangs on 'processing status')
-    cs_method_map = {
-        'gcash': ['gcash'],
-        'maya': ['paymaya'],
-        'paymaya': ['paymaya'],
-        'card': ['card'],
-        'credit_card': ['card'],
-        'debit_card': ['card'],
-    }
-    cs_pm_types = cs_method_map.get(method.lower(), [pm_type])
+    # Map method names for Checkout Sessions (include 'qrph' for QR Ph option and Live Mode fallback)
+    if active_mode == 'live':
+        cs_method_map = {
+            'qrph': ['qrph'],
+            'qr_ph': ['qrph'],
+            'gcash': ['gcash', 'qrph'],
+            'maya': ['paymaya', 'qrph'],
+            'paymaya': ['paymaya', 'qrph'],
+            'card': ['card', 'paymaya', 'qrph'],
+            'credit_card': ['card', 'paymaya', 'qrph'],
+            'debit_card': ['card', 'paymaya', 'qrph'],
+        }
+    else:
+        cs_method_map = {
+            'qrph': ['qrph'],
+            'qr_ph': ['qrph'],
+            'gcash': ['gcash'],
+            'maya': ['paymaya'],
+            'paymaya': ['paymaya'],
+            'card': ['card'],
+            'credit_card': ['card'],
+            'debit_card': ['card'],
+        }
+    cs_pm_types = cs_method_map.get(method.lower(), [pm_type, 'qrph'] if active_mode == 'live' else [pm_type])
 
     cs_payload = {
         'data': {
@@ -279,10 +295,10 @@ def create_payment():
         checkout_url = None
         reference_number = None
 
-        # For GCash / Maya: Create a Direct Payment Intent + Payment Method + Attach first
+        # In TEST mode for GCash / Maya: Create a Direct Payment Intent + Payment Method + Attach first
         # so the user goes straight to the single-tab GCash/Maya authorization page (no 2nd tab, no qr_... hang)
-        # and auto-redirects to success_url -> window.close() immediately upon clicking Authorize/Fail!
-        if pm_type in ('gcash', 'paymaya'):
+        # In LIVE mode (or when QR Ph is selected), use Checkout Sessions so QR Ph / Live Checkout displays properly!
+        if active_mode != 'live' and pm_type in ('gcash', 'paymaya'):
             try:
                 pi_payload = {
                     'data': {

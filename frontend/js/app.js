@@ -6084,6 +6084,14 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
     '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
 
+    // QR Ph - immediate PayMongo redirect (Scan to Pay)
+    '<div class="option-card" id="pmQrph" onclick="directPayMethod(\'qrph\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:linear-gradient(135deg,#0284c7,#dc2626);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-qrcode" style="color:#fff;font-size:1.1rem;"></i></div>' +
+    '<div><div style="display:flex;align-items:center;gap:6px;"><strong>QR Ph</strong><span style="font-size:0.62rem;font-weight:800;background:rgba(16,185,129,0.14);color:#059669;padding:2px 7px;border-radius:10px;border:1px solid rgba(16,185,129,0.3);">Scan to Pay</span></div><small style="color:var(--text-secondary);">Scan via GCash, Maya, BDO, BPI, UnionBank &amp; more</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0284c7;margin-left:auto;"></i>' +
+    '</div>' +
+
     // GCash - immediate PayMongo redirect
     '<div class="option-card" id="pmGcash" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
@@ -6125,6 +6133,8 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.4;">' +
     'To lock your vehicle dates, please pay the <strong>20% Reservation Deposit (' + formatPHP(nowDue) + ')</strong> online now via PayMongo. The remaining 80% balance will be paid in <strong>CASH at our office upon pickup</strong>.' +
     '</p>' +
+    '<button class="btn-primary" style="margin-bottom:8px;background:linear-gradient(135deg,#0284c7,#0369a1);width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'qrph\',' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-qrcode"></i> Pay 20% Deposit via QR Ph (' + formatPHP(nowDue) + ')</button>' +
     '<button class="btn-primary" style="margin-bottom:8px;background:#0070e0;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')">' +
     '<i class="fas fa-mobile-alt"></i> Pay 20% Deposit via GCash (' + formatPHP(nowDue) + ')</button>' +
     '<button class="btn-secondary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')">' +
@@ -6182,7 +6192,7 @@ function directPayMethod(method, bookingId, amount) {
   // Visual feedback - mark the tapped card as selected
   var cards = document.querySelectorAll('#paymentContent .option-card');
   for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
-  var idMap = { gcash: 'pmGcash', maya: 'pmMaya', card: 'pmCard' };
+  var idMap = { qrph: 'pmQrph', gcash: 'pmGcash', maya: 'pmMaya', card: 'pmCard' };
   var card = document.getElementById(idMap[method]);
   if (card) card.classList.add('selected');
   // Immediately call PayMongo
@@ -6423,7 +6433,7 @@ function showPaymentWaiting(bookingId, amount, method) {
     window._browserPageLoadedListener = null;
   }
 
-  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
+  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : method === 'qrph' ? 'QR Ph' : 'Card';
   var isBalancePayment = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' || (typeof activeBookingData !== 'undefined' && activeBookingData && (activeBookingData.payment_status === 'Partially Paid' || parseFloat(activeBookingData.balance_amount || 0) > 0)));
   var timerOrStatusHtml = isBalancePayment
     ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
@@ -8261,6 +8271,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   parts.push('<h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-money-bill-wave" style="color:var(--primary);margin-right:8px;"></i>Payment</h4>');
   parts.push('<div class="form-group"><label>Payment Method</label>');
   parts.push('<select id="extMethod" style="width:100%;padding:12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);" onchange="document.getElementById(\'extCashFields\').style.display=(this.value===\'cash\'?\'block\':\'none\')">');
+  parts.push('<option value="qrph">QR Ph (Scan to Pay — GCash, Maya, Banks)</option>');
   parts.push('<option value="gcash">GCash</option>');
   parts.push('<option value="maya">Maya</option>');
   parts.push('<option value="cash">Cash Over the Counter</option>');
@@ -8479,10 +8490,11 @@ function submitExtension(bookingId) {
   if (days <= 0) { if (errEl) errEl.textContent = 'New date must be after current return date.'; return; }
   var method = (document.getElementById('extMethod') || {}).value || 'cash';
   var ref = (document.getElementById('extRef') || {}).value || '';
-  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Cash (Over the counter)';
+  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : method === 'qrph' ? 'QR Ph' : 'Cash (Over the counter)';
 
   // PayMongo for GCash / Maya
-  if (method === 'gcash' || method === 'maya') {
+  if (method === 'gcash' || method === 'maya' || method === 'qrph') {
+    preOpenPaymongoWindow();
     showLoading(true);
     var bId = parseInt(bookingId);
     var extAmt = parseFloat(parseFloat(price).toFixed(2));
@@ -8956,6 +8968,13 @@ function openPayBalanceScreen(bookingId, balance) {
     '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
     '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
 
+    '<div class="option-card" id="balPmQrph" onclick="submitBalancePayment(\'qrph\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:linear-gradient(135deg,#0284c7,#dc2626);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-qrcode" style="color:#fff;font-size:1.1rem;"></i></div>' +
+    '<div><div style="display:flex;align-items:center;gap:6px;"><strong>QR Ph</strong><span style="font-size:0.62rem;font-weight:800;background:rgba(16,185,129,0.14);color:#059669;padding:2px 7px;border-radius:10px;border:1px solid rgba(16,185,129,0.3);">Scan to Pay</span></div><small style="color:var(--text-secondary);">Scan via GCash, Maya, BDO, BPI, UnionBank &amp; more</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0284c7;margin-left:auto;"></i>' +
+    '</div>' +
+
     '<div class="option-card" id="balPmGcash" onclick="submitBalancePayment(\'gcash\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
@@ -9056,7 +9075,7 @@ function submitBalancePayment(method, bookingId, amount) {
   var errEl = document.getElementById('balErr') || document.getElementById('payErrOnline');
   if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
   // Visual feedback
-  var idMap = { gcash: 'balPmGcash', maya: 'balPmMaya', card: 'balPmCard' };
+  var idMap = { qrph: 'balPmQrph', gcash: 'balPmGcash', maya: 'balPmMaya', card: 'balPmCard' };
   var cards = document.querySelectorAll('#paymentContent .option-card');
   for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
   var selCard = document.getElementById(idMap[method]);
