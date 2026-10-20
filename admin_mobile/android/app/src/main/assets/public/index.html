@@ -4270,38 +4270,51 @@
         }
 
         /* ==========================================================================
-           SETTINGS SECTION (2-COLUMN RESPONSIVE LAYOUT)
+           SETTINGS SECTION (RESPONSIVE FLUID LAYOUT)
            ========================================================================== */
-        .settings-page-header {
-            margin-bottom: 24px;
-        }
-        .settings-layout-container {
-            display: grid;
-            grid-template-columns: 340px 1fr;
-            gap: 24px;
-            align-items: start;
+        #settings {
             max-width: 1220px;
             margin: 0 auto;
+            padding-bottom: 80px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .settings-page-header {
+            margin-bottom: 20px;
+        }
+
+        /* Mobile-First: 1-Column stacked by default */
+        .settings-layout-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         /* LEFT COLUMN */
         .settings-col-left {
-            position: sticky;
-            top: 24px;
+            position: static;
+            width: 100%;
             display: flex;
             flex-direction: column;
             gap: 16px;
+            box-sizing: border-box;
         }
+
         .settings-profile-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 28px 22px 24px;
+            padding: 22px 18px;
             text-align: center;
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
             overflow: hidden;
             transition: transform 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+            width: 100%;
         }
         .settings-profile-card::before {
             content: '';
@@ -4433,50 +4446,63 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 18px;
-            padding: 18px 20px;
+            padding: 16px 18px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+            box-sizing: border-box;
+            width: 100%;
+            transition: all 0.18s ease;
+        }
+        .settings-security-card:hover {
+            border-color: rgba(0, 177, 79, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
         }
 
         /* RIGHT COLUMN */
         .settings-col-right {
+            width: 100%;
+            min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
+            box-sizing: border-box;
         }
         .settings-group {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 20px 22px;
+            padding: 18px 18px;
             box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03);
+            box-sizing: border-box;
+            width: 100%;
         }
         .settings-group-header {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 16px;
-            padding-bottom: 14px;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
         }
         .settings-group-icon {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 0.95rem;
             flex-shrink: 0;
         }
         .settings-group-title {
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 800;
             color: var(--text-main);
             margin: 0 0 2px;
             letter-spacing: -0.2px;
         }
         .settings-group-desc {
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             color: var(--text-muted);
             margin: 0;
         }
@@ -4484,6 +4510,8 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .settings-action-card {
             background: var(--surface-container);
@@ -4499,6 +4527,9 @@
             position: relative;
             user-select: none;
             margin-bottom: 0 !important;
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
         }
         .settings-action-card:hover {
             background: var(--surface);
@@ -4546,31 +4577,36 @@
             display: none !important;
         }
         .settings-action-icon {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             border-radius: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.05rem;
+            font-size: 1rem;
             flex-shrink: 0;
         }
         .settings-action-body {
             flex: 1;
             min-width: 0;
+            overflow: hidden;
         }
         .settings-action-body h4 {
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-main);
             margin: 0 0 2px;
             letter-spacing: -0.1px;
+            white-space: normal;
+            word-break: break-word;
         }
         .settings-action-body p {
-            font-size: 0.73rem;
+            font-size: 0.72rem;
             color: var(--text-muted);
             margin: 0;
             line-height: 1.35;
+            white-space: normal;
+            word-break: break-word;
         }
         .settings-action-tail {
             display: flex;
@@ -4607,24 +4643,64 @@
             border: 1px solid rgba(0, 177, 79, 0.3);
             font-weight: 700;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
-        @media (max-width: 900px) {
+        /* Large screens: 2-column split with sticky left profile */
+        @media (min-width: 920px) {
             .settings-layout-container {
-                grid-template-columns: 1fr;
-                gap: 18px;
+                display: grid;
+                grid-template-columns: 320px minmax(0, 1fr);
+                gap: 24px;
+                align-items: start;
             }
             .settings-col-left {
-                position: static;
+                position: sticky;
+                top: 20px;
+                width: 320px;
             }
             .settings-profile-card {
-                padding: 22px 18px;
+                padding: 28px 22px 24px;
             }
             .settings-group {
-                padding: 16px 14px;
+                padding: 20px 22px;
             }
-            .settings-action-card:hover {
-                transform: none;
+        }
+
+        /* Small screens (< 500px): compact cards & touch friendly */
+        @media (max-width: 500px) {
+            .settings-action-card {
+                padding: 11px 12px;
+                gap: 10px;
+            }
+            .settings-action-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
+            .settings-profile-card {
+                padding: 18px 14px;
+            }
+            .settings-avatar-wrap {
+                width: 76px;
+                height: 76px;
+                margin-bottom: 12px;
+            }
+            .settings-avatar {
+                width: 76px;
+                height: 76px;
+                font-size: 2.3rem;
+            }
+            .settings-user-name {
+                font-size: 1.2rem;
+            }
+            .settings-group {
+                padding: 14px 12px;
+            }
+            .settings-group-header {
+                gap: 10px;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
             }
         }
 
@@ -5608,11 +5684,11 @@
             <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Manage your account, platform configurations, and system controls</p>
         </div>
 
-        <div class="settings-layout-container" style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;">
+        <div class="settings-layout-container">
             <!-- LEFT COLUMN: Profile & Quick Info -->
-            <div class="settings-col-left" style="position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="settings-col-left">
                 <!-- Profile Card -->
-                <div class="settings-profile-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 22px 24px; text-align: center; position: relative; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); overflow: hidden;">
+                <div class="settings-profile-card">
                     <div class="settings-profile-badge-ribbon" style="margin-bottom: 14px;">
                         <span id="settingsRole" class="settings-role-pill" style="display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3);">SUPER ADMIN</span>
                     </div>
@@ -5653,9 +5729,9 @@
                 </div>
 
                 <!-- Quick Security Card -->
-                <div class="settings-security-card" style="background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);">
+                <div class="settings-security-card" onclick="navTo('activity')" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                        <div style="width:32px; height:32px; border-radius:8px; background:rgba(0,177,79,0.12); display:flex; align-items:center; justify-content:center; color:var(--primary);">
+                        <div style="width:32px; height:32px; border-radius:8px; background:rgba(0,177,79,0.12); display:flex; align-items:center; justify-content:center; color:var(--primary); flex-shrink:0;">
                             <i class="fas fa-shield-virus" style="font-size:0.9rem;"></i>
                         </div>
                         <span style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Security &amp; Audit</span>
@@ -5663,14 +5739,14 @@
                     <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.45; margin:0 0 10px;">
                         All administrator actions, configuration updates, and system operations are actively logged for compliance.
                     </p>
-                    <a href="#activity" onclick="showTab('activity'); return false;" style="font-size:0.75rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                    <a href="javascript:void(0);" onclick="navTo('activity'); event.stopPropagation();" style="font-size:0.75rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
                         View Activity Log <i class="fas fa-arrow-right" style="font-size:0.7rem;"></i>
                     </a>
                 </div>
             </div>
 
             <!-- RIGHT COLUMN: Settings Options Grouped into Categories -->
-            <div class="settings-col-right" style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+            <div class="settings-col-right">
                 <!-- GROUP 1: Account & Security -->
                 <div class="settings-group" style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px 22px; box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03);">
                     <div class="settings-group-header" style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
@@ -16414,6 +16490,8 @@ async edit(id) { this.openModal(id); }
             toggleDrawer(false);
         }
     }
+    window.navTo = navTo;
+    window.showTab = navTo;
 
 
 
