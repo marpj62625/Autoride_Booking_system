@@ -207,6 +207,37 @@ def list_booking_receipts(booking_id):
         def s(v):
             return str(v) if v is not None else ''
 
+        # Calculate days for original booking
+        orig_days = 1
+        try:
+            if b.get('start_date') and orig_end:
+                import datetime
+                d1 = b['start_date'] if isinstance(b['start_date'], (datetime.date, datetime.datetime)) else datetime.datetime.strptime(str(b['start_date'])[:10], '%Y-%m-%d').date()
+                d2 = orig_end if isinstance(orig_end, (datetime.date, datetime.datetime)) else datetime.datetime.strptime(str(orig_end)[:10], '%Y-%m-%d').date()
+                orig_days = max(1, (d2 - d1).days)
+        except Exception:
+            orig_days = 1
+
+        daily_rate_val = float(b.get('daily_rate') or 0)
+        base_price_val = float(b.get('base_price') or 0)
+        if base_price_val <= 0 and daily_rate_val > 0:
+            base_price_val = round(daily_rate_val * orig_days, 2)
+        elif daily_rate_val <= 0 and base_price_val > 0 and orig_days > 0:
+            daily_rate_val = round(base_price_val / orig_days, 2)
+
+        addon_price_val = float(b.get('addon_price') or 0)
+        ins_price_val = float(b.get('insurance_price') or 0)
+        driver_fee_val = float(b.get('driver_fee') or 0)
+        delivery_fee_val = float(b.get('delivery_fee') or 0)
+        payment_fee_val = float(b.get('payment_fee') or 0)
+        discount_val = float(b.get('discount_amount') or 0)
+        pts_val = float(b.get('points_discount_amount') or b.get('points_redeemed') or 0)
+
+        # Fallback discount detection if not explicitly recorded
+        calc_subtotal = base_price_val + addon_price_val + ins_price_val + driver_fee_val + delivery_fee_val + payment_fee_val
+        if discount_val <= 0 and (calc_subtotal - pts_val) > (orig_total + 0.05):
+            discount_val = round((calc_subtotal - pts_val) - orig_total, 2)
+
         receipts = [{
             'key': 'booking',
             'type': 'booking',
@@ -220,39 +251,60 @@ def list_booking_receipts(booking_id):
             'date': s(main_pay.get('created_at') or b.get('created_at')),
             'start_date': s(b.get('start_date')),
             'end_date': s(orig_end),
-            'base_price': float(b.get('base_price') or 0),
-            'discount_amount': float(b.get('discount_amount') or 0),
-            'points_discount_amount': float(b.get('points_discount_amount') or 0),
+            'days': orig_days,
+            'daily_rate': daily_rate_val,
+            'base_price': base_price_val,
+            'addon_price': addon_price_val,
+            'insurance_type': b.get('insurance_type') or 'Basic Protection',
+            'insurance_price': ins_price_val,
+            'driver_fee': driver_fee_val,
+            'delivery_fee': delivery_fee_val,
+            'payment_fee': payment_fee_val,
+            'discount_amount': discount_val,
+            'points_discount_amount': pts_val,
         }]
         for idx, e in enumerate(exts, start=1):
+            e_days = int(e.get('extension_days') or 1)
+            e_base = round(float(b.get('daily_rate') or daily_rate_val) * e_days, 2)
+            e_price = float(e.get('extension_price') or 0)
+            e_disc = max(0.0, round(e_base - e_price, 2))
             receipts.append({
                 'key': f"ext-{e['id']}",
                 'type': 'extension',
                 'extension_id': e['id'],
-                'label': f"Extension #{idx} Receipt (+{e.get('extension_days')} day{'s' if int(e.get('extension_days') or 0) != 1 else ''})",
+                'label': f"Extension #{idx} Receipt (+{e_days} day{'s' if e_days != 1 else ''})",
                 'receipt_no': f"{str(booking_id).zfill(6)}-E{idx}",
-                'amount': float(e.get('extension_price') or 0),
-                'total': float(e.get('extension_price') or 0),
-                'extension_days': e.get('extension_days'),
+                'amount': e_price,
+                'total': e_price,
+                'extension_days': e_days,
+                'days': e_days,
+                'daily_rate': float(b.get('daily_rate') or daily_rate_val),
                 'method': e.get('pay_method') or e.get('payment_method') or 'N/A',
                 'reference_number': e.get('pay_ref') or e.get('reference_number') or f"EXT-{e['id']}",
                 'date': s(e.get('approved_at') or e.get('created_at')),
                 'start_date': s(e.get('original_end_date')),
                 'end_date': s(e.get('new_end_date')),
-                'base_price': round(float(b.get('daily_rate') or 0) * int(e.get('extension_days') or 0), 2),
-                'discount_amount': max(0.0, round((float(b.get('daily_rate') or 0) * int(e.get('extension_days') or 0)) - float(e.get('extension_price') or 0), 2)),
+                'base_price': e_base,
+                'discount_amount': e_disc,
             })
         return jsonify({
             'booking_id': booking_id,
             'brand': b.get('brand'), 'model': b.get('model'), 'plate_number': b.get('plate_number'),
-            'rental_type': b.get('rental_type'), 'insurance_type': b.get('insurance_type'),
+            'rental_type': b.get('rental_type'), 'insurance_type': b.get('insurance_type') or 'Basic Protection',
+            'insurance_price': ins_price_val,
             'addons': b.get('addons'),
+            'base_price': base_price_val,
+            'addon_price': addon_price_val,
+            'driver_fee': driver_fee_val,
+            'delivery_fee': delivery_fee_val,
+            'payment_fee': payment_fee_val,
             'total_price': float(b.get('total_price') or 0),
             'amount_paid': float(b.get('amount_paid') or 0),
             'balance_amount': float(b.get('balance_amount') or 0),
-            'discount_amount': float(b.get('discount_amount') or 0),
-            'points_discount_amount': float(b.get('points_discount_amount') or 0),
-            'daily_rate': float(b.get('daily_rate') or 0),
+            'discount_amount': discount_val,
+            'points_discount_amount': pts_val,
+            'daily_rate': daily_rate_val,
+            'days': orig_days,
             'receipts': receipts
         }), 200
     except Exception as e:

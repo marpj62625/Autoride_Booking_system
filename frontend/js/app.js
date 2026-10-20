@@ -6922,15 +6922,48 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '<div class="receipt-row"><span>Rental Type</span><strong>' + (isWithDriver ? 'With Professional Driver (₱' + (parseFloat(appSettings.driver_daily_wage) || 755).toLocaleString() + '/day)' : 'Self-Drive') + '</strong></div>' +
     '<div class="receipt-row"><span>Insurance</span><strong>' + insText + '</strong></div>' +
     '<div class="receipt-row"><span>Add-ons</span><strong>' + addonsText + '</strong></div>' +
-    (parseFloat(receipt.discount_amount || (_pendingBookingPayload && _pendingBookingPayload.discount_amount) || 0) > 0
-      ? '<div class="receipt-row"><span>Promo / Long-Term Discount</span><strong style="color:#10b981;">-' + formatPHP(parseFloat(receipt.discount_amount || (_pendingBookingPayload && _pendingBookingPayload.discount_amount) || 0)) + '</strong></div>'
-      : '') +
-    (parseFloat(receipt.points_discount_amount || (_pendingBookingPayload && _pendingBookingPayload.points_discount_amount) || 0) > 0
-      ? '<div class="receipt-row"><span>Points Discount</span><strong style="color:#10b981;">-' + formatPHP(parseFloat(receipt.points_discount_amount || (_pendingBookingPayload && _pendingBookingPayload.points_discount_amount) || 0)) + '</strong></div>'
-      : '') +
     '<div class="receipt-row"><span>Payment Method</span><strong>' + (method || receipt.method || 'GCash') + '</strong></div>' +
     (refNum ? '<div class="receipt-row"><span>Reference No.</span><strong style="font-family:monospace;">' + refNum + '</strong></div>' : '') +
     '<div class="receipt-row"><span>Date & Time</span><strong>' + dateStr + ', ' + timeStr + '</strong></div>' +
+    '</div>' +
+
+    // Itemized Price Breakdown
+    '<div style="border-top:2px dashed var(--border);padding-top:12px;margin-top:12px;">' +
+    '<div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;"><i class="fas fa-list-ul" style="margin-right:5px;color:var(--primary);"></i> Price Breakdown</div>' +
+    (function() {
+      var rows = '';
+      function srRow(lbl, val, isDisc, isBold) {
+        var valStyle = isDisc ? 'color:#10b981;font-weight:700;text-align:right;' : (isBold ? 'font-weight:800;color:var(--text-primary);text-align:right;' : 'text-align:right;color:var(--text-secondary);');
+        return '<div class="receipt-row" style="padding:4px 0;' + (isBold ? 'border-top:1px dashed var(--border);margin-top:6px;padding-top:8px;' : '') + '"><span' + (isBold ? ' style="font-weight:800;color:var(--text-primary);"' : ' style="color:var(--text-muted);font-size:0.82rem;"') + '>' + lbl + '</span><span style="' + valStyle + '">' + val + '</span></div>';
+      }
+      var bRate = parseFloat(receipt.base_price || (_pendingBookingPayload && _pendingBookingPayload.base_price) || (_pendingPriceResult && _pendingPriceResult.basePrice) || 0);
+      var bDays = parseInt(receipt.days || (_pendingPriceResult && _pendingPriceResult.days) || 1);
+      var dRate = parseFloat(receipt.daily_rate || (vehicle && vehicle.daily_rate) || (bDays > 0 ? (bRate / bDays) : 0));
+      var dailyLbl = dRate > 0 ? ' (' + bDays + ' day' + (bDays === 1 ? '' : 's') + ' × ' + formatPHP(dRate) + ')' : '';
+      rows += srRow('Base Rental' + dailyLbl, formatPHP(bRate));
+
+      var insPrice = parseFloat(receipt.insurance_price || (_pendingBookingPayload && _pendingBookingPayload.insurance_price) || 0);
+      rows += srRow('Insurance (' + insText + ')', insPrice > 0 ? formatPHP(insPrice) : 'Included');
+
+      var adPrice = parseFloat(receipt.addon_price || (_pendingBookingPayload && _pendingBookingPayload.addon_price) || (_pendingPriceResult && _pendingPriceResult.addonPrice) || 0);
+      if (adPrice > 0) rows += srRow('Add-ons', formatPHP(adPrice));
+
+      var drvPrice = parseFloat(receipt.driver_fee || (_pendingBookingPayload && _pendingBookingPayload.driver_fee) || (_pendingPriceResult && _pendingPriceResult.driverFee) || 0);
+      if (drvPrice > 0) rows += srRow('Driver Service Fee', formatPHP(drvPrice));
+
+      var delPrice = parseFloat(receipt.delivery_fee || (_pendingBookingPayload && _pendingBookingPayload.delivery_fee) || 0);
+      if (delPrice > 0) rows += srRow('Delivery Fee', formatPHP(delPrice));
+
+      var discAmt = parseFloat(receipt.discount_amount || (_pendingBookingPayload && _pendingBookingPayload.discount_amount) || (_pendingPriceResult && _pendingPriceResult.longTermDiscount) || 0);
+      if (discAmt > 0) rows += srRow('Promo / Long-Term Discount', '-' + formatPHP(discAmt), true);
+
+      var ptsAmt = parseFloat(receipt.points_discount_amount || (_pendingBookingPayload && _pendingBookingPayload.points_discount_amount) || (_pendingPriceResult && _pendingPriceResult.pointsDiscount) || 0);
+      if (ptsAmt > 0) rows += srRow('Loyalty Points Discount', '-' + formatPHP(ptsAmt), true);
+
+      var totAmt = parseFloat(receipt.total_price || (_pendingBookingPayload && _pendingBookingPayload.total_price) || (_pendingPriceResult && _pendingPriceResult.total) || amountPaid || 0);
+      rows += srRow('Total Contract Amount', formatPHP(totAmt), false, true);
+      return rows;
+    })() +
     '</div>' +
 
     // Amount
@@ -7109,29 +7142,72 @@ function _renderReceiptCardHtml(data, r) {
   if (isExt) {
     rows += row('Previous Return', formatBookingDate(r.start_date));
     rows += row('New Return', formatBookingDate(r.end_date));
-    rows += row('Extension', '+' + (r.extension_days || 0) + ' day' + (parseInt(r.extension_days) === 1 ? '' : 's'));
-    var extDisc = parseFloat(r.discount_amount || 0);
-    if (extDisc > 0) {
-      if (r.base_price) rows += row('Extension Base Rate', formatPHP(r.base_price));
-      rows += '<div class="receipt-row"><span>Discount Applied</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(extDisc) + '</strong></div>';
-    }
+    rows += row('Extension Duration', '+' + (r.extension_days || 0) + ' day' + (parseInt(r.extension_days) === 1 ? '' : 's'));
   } else {
     if (r.start_date) rows += row('Rental Period', formatBookingDate(r.start_date) + ' – ' + formatBookingDate(r.end_date));
     rows += row('Rental Type', isWithDriver ? 'With Professional Driver' : 'Self-Drive');
-    rows += row('Insurance', data.insurance_type || 'Basic Protection');
+    rows += row('Insurance Plan', data.insurance_type || r.insurance_type || 'Basic Protection');
     rows += row('Add-ons', _fmtReceiptAddons(data.addons));
-    var bkDisc = parseFloat(r.discount_amount != null ? r.discount_amount : (data.discount_amount || 0));
-    var ptsDisc = parseFloat(r.points_discount_amount != null ? r.points_discount_amount : (data.points_discount_amount || 0));
-    if (bkDisc > 0) {
-      rows += '<div class="receipt-row"><span>Promo / Long-Term Discount</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(bkDisc) + '</strong></div>';
-    }
-    if (ptsDisc > 0) {
-      rows += '<div class="receipt-row"><span>Points Discount</span><strong style="color:#10b981;text-align:right;">-' + formatPHP(ptsDisc) + '</strong></div>';
-    }
   }
   rows += row('Payment Method', r.method || 'N/A');
   if (r.reference_number) rows += row('Reference No.', r.reference_number, true);
   if (r.date) rows += row('Date & Time', _fmtReceiptDate(r.date));
+
+  // Itemized Price Breakdown
+  var breakdownRows = '';
+  function bRow(lbl, val, isDisc, isBold) {
+    var valStyle = isDisc ? 'color:#10b981;font-weight:700;text-align:right;' : (isBold ? 'font-weight:800;color:var(--text-primary);text-align:right;' : 'text-align:right;color:var(--text-secondary);');
+    return '<div class="receipt-row" style="padding:4px 0;' + (isBold ? 'border-top:1px dashed var(--border);margin-top:6px;padding-top:8px;' : '') + '"><span' + (isBold ? ' style="font-weight:800;color:var(--text-primary);"' : ' style="color:var(--text-muted);font-size:0.82rem;"') + '>' + lbl + '</span><span style="' + valStyle + '">' + val + '</span></div>';
+  }
+
+  if (isExt) {
+    var extDays = parseInt(r.extension_days || r.days || 1);
+    var extDaily = parseFloat(r.daily_rate || data.daily_rate || 0);
+    var extBase = parseFloat(r.base_price || (extDaily * extDays) || 0);
+    var extDisc = parseFloat(r.discount_amount || 0);
+    var extTot = parseFloat(r.total || r.amount || 0);
+    var extDailyLbl = extDaily > 0 ? ' (' + extDays + ' day' + (extDays === 1 ? '' : 's') + ' × ' + formatPHP(extDaily) + ')' : ' (' + extDays + ' days)';
+    breakdownRows += bRow('Extension Rate' + extDailyLbl, formatPHP(extBase));
+    if (extDisc > 0) {
+      breakdownRows += bRow('Long-Term / Promo Discount', '-' + formatPHP(extDisc), true);
+    }
+    breakdownRows += bRow('Extension Total', formatPHP(extTot), false, true);
+  } else {
+    var bDays = parseInt(r.days || data.days || 1);
+    var bDaily = parseFloat(r.daily_rate || data.daily_rate || 0);
+    var bBase = parseFloat(r.base_price != null ? r.base_price : (data.base_price || (bDaily * bDays) || 0));
+    var bDailyLbl = bDaily > 0 ? ' (' + bDays + ' day' + (bDays === 1 ? '' : 's') + ' × ' + formatPHP(bDaily) + ')' : ' (' + bDays + ' days)';
+    breakdownRows += bRow('Base Rental' + bDailyLbl, formatPHP(bBase));
+
+    var bInsPrice = parseFloat(r.insurance_price != null ? r.insurance_price : (data.insurance_price || 0));
+    var bInsType = data.insurance_type || r.insurance_type || 'Basic Protection';
+    if (bInsPrice > 0) {
+      breakdownRows += bRow('Insurance (' + escapeHtml(bInsType) + ')', formatPHP(bInsPrice));
+    } else {
+      breakdownRows += bRow('Insurance (' + escapeHtml(bInsType) + ')', 'Included');
+    }
+
+    var bAddon = parseFloat(r.addon_price != null ? r.addon_price : (data.addon_price || 0));
+    if (bAddon > 0) breakdownRows += bRow('Add-ons', formatPHP(bAddon));
+
+    var bDriver = parseFloat(r.driver_fee != null ? r.driver_fee : (data.driver_fee || 0));
+    if (bDriver > 0) breakdownRows += bRow('Driver Service Fee', formatPHP(bDriver));
+
+    var bDelivery = parseFloat(r.delivery_fee != null ? r.delivery_fee : (data.delivery_fee || 0));
+    if (bDelivery > 0) breakdownRows += bRow('Delivery Fee', formatPHP(bDelivery));
+
+    var bPaymentFee = parseFloat(r.payment_fee != null ? r.payment_fee : (data.payment_fee || 0));
+    if (bPaymentFee > 0) breakdownRows += bRow('Payment Processing Fee', formatPHP(bPaymentFee));
+
+    var bDisc = parseFloat(r.discount_amount != null ? r.discount_amount : (data.discount_amount || 0));
+    if (bDisc > 0) breakdownRows += bRow('Promo / Long-Term Discount', '-' + formatPHP(bDisc), true);
+
+    var bPtsDisc = parseFloat(r.points_discount_amount != null ? r.points_discount_amount : (data.points_discount_amount || 0));
+    if (bPtsDisc > 0) breakdownRows += bRow('Loyalty Points Discount', '-' + formatPHP(bPtsDisc), true);
+
+    var bTot = parseFloat(r.total != null ? r.total : (data.total_price || 0));
+    breakdownRows += bRow('Total Amount', formatPHP(bTot), false, true);
+  }
 
   return '<div class="receipt-card" style="margin:0;box-shadow:none;">' +
     '<div class="receipt-header">' +
@@ -7141,6 +7217,10 @@ function _renderReceiptCardHtml(data, r) {
       '<p style="color:var(--text-secondary);font-size:0.875rem;">Receipt #' + escapeHtml(r.receipt_no || String(data.booking_id).padStart(6, '0')) + '</p>' +
     '</div>' +
     '<div style="border-top:2px dashed var(--border);padding-top:14px;margin-top:8px;">' + rows + '</div>' +
+    '<div style="border-top:2px dashed var(--border);padding-top:12px;margin-top:12px;">' +
+      '<div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;"><i class="fas fa-list-ul" style="margin-right:5px;color:var(--primary);"></i> Price Breakdown</div>' +
+      breakdownRows +
+    '</div>' +
     '<div style="background:var(--primary);border-radius:var(--radius-sm);padding:14px;text-align:center;margin:16px 0 12px;">' +
       '<div style="color:rgba(255,255,255,0.85);font-size:0.8rem;">' + (isExt ? 'Extension Amount Paid' : 'Amount Paid') + '</div>' +
       '<div style="color:#fff;font-size:1.6rem;font-weight:800;">' + formatPHP(r.amount || 0) + '</div>' +
@@ -8125,6 +8205,59 @@ function renderBookingDetail(b) {
             '</div>' +
           '</div>' +
         '</div>' +
+        (function() {
+          var bkDays = Math.max(1, totalDurationDays || 1);
+          var dRate = parseFloat(b.daily_rate || 0);
+          var bRate = parseFloat(b.base_price || 0);
+          if (bRate <= 0 && dRate > 0) bRate = round2(dRate * bkDays);
+          else if (dRate <= 0 && bRate > 0 && bkDays > 0) dRate = round2(bRate / bkDays);
+          var dailyLbl = dRate > 0 ? ' (' + bkDays + ' day' + (bkDays === 1 ? '' : 's') + ' × ' + formatPHP(dRate) + ')' : ' (' + bkDays + ' days)';
+
+          var insPrice = parseFloat(b.insurance_price || 0);
+          var insType = b.insurance_type || 'Basic Protection';
+          var addonPrice = parseFloat(b.addon_price || 0);
+          var driverFee = parseFloat(b.driver_fee || 0);
+          var delFee = parseFloat(b.delivery_fee || 0);
+          var payFee = parseFloat(b.payment_fee || 0);
+          var disc = parseFloat(b.discount_amount || 0);
+          var ptsDisc = parseFloat(b.points_discount_amount || b.points_redeemed || 0);
+          var tot = parseFloat(b.total_price || 0);
+
+          var calcSub = bRate + addonPrice + insPrice + driverFee + delFee + payFee;
+          if (disc <= 0 && (calcSub - ptsDisc) > (tot + 0.05)) {
+            disc = round2((calcSub - ptsDisc) - tot);
+          }
+
+          var bdRows = '';
+          function detailRow(lbl, val, isDisc, isBold) {
+            var valStyle = isDisc ? 'color:#10b981;font-weight:700;text-align:right;' : (isBold ? 'font-weight:800;color:var(--text-primary);text-align:right;' : 'text-align:right;color:var(--text-secondary);');
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;' + (isBold ? 'border-top:1px dashed var(--border);margin-top:6px;padding-top:8px;' : '') + '">' +
+              '<span style="' + (isBold ? 'font-weight:800;color:var(--text-primary);' : 'color:var(--text-muted);font-size:0.83rem;') + '">' + lbl + '</span>' +
+              '<span style="' + valStyle + '">' + val + '</span>' +
+            '</div>';
+          }
+
+          bdRows += detailRow('Base Rental' + dailyLbl, formatPHP(bRate));
+          if (insPrice > 0) {
+            bdRows += detailRow('Insurance (' + escapeHtml(insType) + ')', formatPHP(insPrice));
+          } else {
+            bdRows += detailRow('Insurance (' + escapeHtml(insType) + ')', 'Included');
+          }
+          if (addonPrice > 0) bdRows += detailRow('Add-ons', formatPHP(addonPrice));
+          if (driverFee > 0) bdRows += detailRow('Driver Service Fee', formatPHP(driverFee));
+          if (delFee > 0) bdRows += detailRow('Delivery Fee', formatPHP(delFee));
+          if (payFee > 0) bdRows += detailRow('Payment Processing Fee', formatPHP(payFee));
+          if (disc > 0) bdRows += detailRow('Promo / Long-Term Discount', '-' + formatPHP(disc), true);
+          if (ptsDisc > 0) bdRows += detailRow('Loyalty Points Discount', '-' + formatPHP(ptsDisc), true);
+          bdRows += detailRow('Total Agreed Amount', formatPHP(tot), false, true);
+
+          return '<div style="margin-top:14px;padding:12px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;">' +
+            '<div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
+              '<i class="fas fa-list-ul" style="color:var(--primary);"></i> Price Breakdown' +
+            '</div>' +
+            bdRows +
+          '</div>';
+        })() +
         refRow +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">' +
           '<button type="button" class="btn-outline" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;font-weight:800;" onclick="viewBookingReceipt(' + b.id + ')">' +

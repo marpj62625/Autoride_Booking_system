@@ -6385,9 +6385,24 @@ def book():
                 except Exception:
                     tax_amount = 0.0
 
+            insurance_type = str(data.get('insurance_type') or 'Basic Protection').strip()
+            insurance_price = 0.0
+            if data.get('insurance_price') is not None:
+                try:
+                    insurance_price = max(0.0, float(data.get('insurance_price') or 0.0))
+                except Exception:
+                    insurance_price = 0.0
+
+            discount_amount = 0.0
+            if data.get('discount_amount') is not None:
+                try:
+                    discount_amount = max(0.0, float(data.get('discount_amount') or 0.0))
+                except Exception:
+                    discount_amount = 0.0
+
             base_price = server_base_price if server_base_price > 0 else float(data.get('base_price') or 0.0)
             addon_price = server_addon_price
-            server_total = max(0.0, base_price + addon_price + driver_fee + delivery_fee + tax_amount - discount)
+            server_total = max(0.0, base_price + addon_price + driver_fee + delivery_fee + tax_amount + insurance_price - discount - discount_amount)
 
             # Prevent price tampering: client total_price cannot be arbitrarily lower than server total
             total_price = server_total if server_total > 0 else float(data.get('total_price') or 0.0)
@@ -6447,16 +6462,16 @@ def book():
                     return_province, return_municipality, return_barangay,
                     start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
                     destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-                    driver_fee, gps_tracking_consent
+                    driver_fee, gps_tracking_consent, insurance_type, insurance_price, discount_amount
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
                   base_price, addon_price, tax_amount, total_price,
                   pickup_province, pickup_municipality, pickup_barangay,
                   return_province, return_municipality, return_barangay,
                   pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
                   destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-                  driver_fee, gps_tracking_consent))
+                  driver_fee, gps_tracking_consent, insurance_type, insurance_price, discount_amount))
 
             booking_id = cur.fetchone()['id']
 
