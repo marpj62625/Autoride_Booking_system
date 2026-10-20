@@ -174,9 +174,12 @@ def create_payment():
         return jsonify({'error': error_msg}), 400
 
     # Build success/failure redirect URLs based on client platform
+    return_origin = (data.get('return_origin') or request.headers.get('Origin') or APP_BASE_URL or '').rstrip('/')
     if client == 'web':
-        success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}&client=web'
-        cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}&client=web'
+        from urllib.parse import quote
+        enc_origin = quote(return_origin, safe='')
+        success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}&client=web&origin={enc_origin}'
+        cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}&client=web&origin={enc_origin}'
     else:
         success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
         cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
@@ -398,9 +401,57 @@ def payment_success():
                     
                     _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
 
-        # If web client, redirect directly to web application with payment=success
+        # If web client, auto-close the PayMongo popup/tab and notify/focus the original Autoride tab
         if client == 'web':
-            return redirect(f'{APP_BASE_URL}/?payment=success&booking_id={booking_id}')
+            target_origin = (request.args.get('origin') or APP_BASE_URL or '').rstrip('/')
+            fallback_url = f'{target_origin}/?payment=success&booking_id={booking_id}'
+            return f'''<!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Payment Confirmed — Returning to Autoride</title>
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                           background: #0f172a; color: #fff; display: flex; flex-direction: column;
+                           align-items: center; justify-content: center; min-height: 100vh; margin: 0;
+                           text-align: center; padding: 24px; }}
+                    .chk {{ width: 72px; height: 72px; border-radius: 50%; background: rgba(16,185,129,0.18);
+                            border: 2px solid #10b981; color: #10b981; display: flex; align-items: center;
+                            justify-content: center; font-size: 2.2rem; margin-bottom: 16px; }}
+                    h2 {{ color: #10b981; margin: 0 0 8px; font-size: 1.5rem; font-weight: 800; }}
+                    p {{ color: #94a3b8; margin: 0 0 20px; font-size: 0.92rem; }}
+                    .btn {{ background: #00B14F; color: #fff; border: none; padding: 12px 24px;
+                            border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+                            text-decoration: none; display: inline-block; }}
+                </style>
+            </head>
+            <body>
+                <div class="chk">&#10003;</div>
+                <h2>Payment Successful!</h2>
+                <p>Closing this window and returning to Autoride...</p>
+                <a href="{fallback_url}" class="btn" onclick="tryClose()">Return to Autoride</a>
+                <script>
+                    function tryClose() {{
+                        try {{
+                            if (window.opener && !window.opener.closed) {{
+                                window.opener.postMessage({{ type: 'AUTORIDE_PAYMENT_SUCCESS', booking_id: '{booking_id}' }}, '*');
+                                window.opener.focus();
+                            }}
+                        }} catch (e) {{}}
+                        try {{ window.open('', '_self', ''); }} catch (e) {{}}
+                        try {{ window.close(); }} catch (e) {{}}
+                    }}
+                    tryClose();
+                    setTimeout(function() {{
+                        tryClose();
+                        if (!window.opener || window.opener.closed) {{
+                            window.location.replace('{fallback_url}');
+                        }}
+                    }}, 400);
+                </script>
+            </body>
+            </html>''', 200
 
         # Redirect back to mobile app with deep link
         return f'''
@@ -461,7 +512,43 @@ def payment_cancel():
     booking_id = request.args.get('booking_id')
     client = request.args.get('client', 'mobile')
     if client == 'web':
-        return redirect(f'{APP_BASE_URL}/?payment=cancelled&booking_id={booking_id or ""}')
+        target_origin = (request.args.get('origin') or APP_BASE_URL or '').rstrip('/')
+        fallback_url = f'{target_origin}/?payment=cancelled&booking_id={booking_id or ""}'
+        return f'''<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Payment Cancelled — Returning to Autoride</title>
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                       background: #0f172a; color: #fff; display: flex; flex-direction: column;
+                       align-items: center; justify-content: center; min-height: 100vh; margin: 0;
+                       text-align: center; padding: 24px; }}
+                h2 {{ color: #f87171; margin: 0 0 8px; font-size: 1.4rem; font-weight: 800; }}
+                p {{ color: #94a3b8; margin: 0 0 20px; font-size: 0.9rem; }}
+            </style>
+        </head>
+        <body>
+            <h2>Payment Cancelled</h2>
+            <p>Closing this window and returning to Autoride...</p>
+            <script>
+                try {{
+                    if (window.opener && !window.opener.closed) {{
+                        window.opener.postMessage({{ type: 'AUTORIDE_PAYMENT_CANCELLED', booking_id: '{booking_id or ""}' }}, '*');
+                        window.opener.focus();
+                    }}
+                }} catch (e) {{}}
+                try {{ window.open('', '_self', ''); }} catch (e) {{}}
+                try {{ window.close(); }} catch (e) {{}}
+                setTimeout(function() {{
+                    if (!window.opener || window.opener.closed) {{
+                        window.location.replace('{fallback_url}');
+                    }}
+                }}, 400);
+            </script>
+        </body>
+        </html>''', 200
     return f'''
     <!DOCTYPE html>
     <html>

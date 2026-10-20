@@ -699,7 +699,7 @@ function subscribeToNotifications(userId) {
                         _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
                         setTimeout(function() {
                             forceLogoutSilent('Your license was approved! Please log in again to continue.');
-                        }, 2500);
+                        }, 1500); // fast poll for instant auto-close
                     } else {
                         _showNotifPopup(title, msg, '#f87171', 'fa-id-card');
                         apiCall('/user/verify-status?user_id=' + userId)
@@ -1592,6 +1592,11 @@ function initApp() {
         var paymentStatus = urlParams.get('payment');
         var bId = urlParams.get('booking_id');
         if (paymentStatus === 'success' && bId) {
+          if (window.opener && !window.opener.closed) {
+            try { window.opener.postMessage({ type: 'AUTORIDE_PAYMENT_SUCCESS', booking_id: bId }, '*'); window.opener.focus(); } catch(e) {}
+            try { window.open('', '_self', ''); window.close(); } catch(e) {}
+            return;
+          }
           window.history.replaceState({}, document.title, window.location.pathname);
           showToast('Verifying payment for booking #' + bId + '...', 'info');
           // Actively verify and confirm booking status in DB
@@ -1619,6 +1624,11 @@ function initApp() {
               }, 400);
             });
         } else if (paymentStatus === 'cancelled' && bId) {
+          if (window.opener && !window.opener.closed) {
+            try { window.opener.postMessage({ type: 'AUTORIDE_PAYMENT_CANCELLED', booking_id: bId }, '*'); window.opener.focus(); } catch(e) {}
+            try { window.open('', '_self', ''); window.close(); } catch(e) {}
+            return;
+          }
           window.history.replaceState({}, document.title, window.location.pathname);
           showToast('Payment was cancelled. You can retry anytime from your bookings.', 'info');
           loadBookings();
@@ -6218,6 +6228,25 @@ function pickPaymentProof() {
 
 // Helper to open PayMongo checkout securely and seamlessly
 var _paymongoWindow = null;
+function closePaymongoWindow() {
+  if (_paymongoWindow && !_paymongoWindow.closed) {
+    try { _paymongoWindow.close(); } catch (e) {}
+  }
+  _paymongoWindow = null;
+}
+function preOpenPaymongoWindow() {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) return;
+  try {
+    if (!_paymongoWindow || _paymongoWindow.closed) {
+      _paymongoWindow = window.open('about:blank', 'PayMongoCheckout');
+    }
+    if (_paymongoWindow && !_paymongoWindow.closed && _paymongoWindow.document) {
+      _paymongoWindow.document.open();
+      _paymongoWindow.document.write('<!DOCTYPE html><html><head><title>Connecting to PayMongo...</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#0f172a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}.sp{width:44px;height:44px;border:4px solid rgba(16,185,129,0.2);border-top-color:#10b981;border-radius:50%;animation:s .8s linear infinite;margin-bottom:16px}@keyframes s{to{transform:rotate(360deg)}}</style></head><body><div class="sp"></div><h3 style="margin:0 0 6px;font-size:1.15rem">Connecting to PayMongo Secure Checkout...</h3><p style="margin:0;color:#94a3b8;font-size:0.85rem">Please wait while we prepare your payment session.</p></body></html>');
+      _paymongoWindow.document.close();
+    }
+  } catch (e) {}
+}
 function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCallback) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     var browser = window.Capacitor.Plugins.Browser;
@@ -6244,7 +6273,14 @@ function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCa
         window.location.href = checkoutUrl;
       });
   } else {
-    // On Web: Open checkout in a centered popup window so the main Autoride app tab remains active and keeps polling
+    // On Web: Navigate pre-opened tab/window (or open a new one) so parent tab retains close() permission
+    try {
+      if (_paymongoWindow && !_paymongoWindow.closed) {
+        _paymongoWindow.location.href = checkoutUrl;
+        try { _paymongoWindow.focus(); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
     var w = 550;
     var h = 750;
     var left = Math.max(0, (window.screen.width / 2) - (w / 2));
@@ -6315,6 +6351,7 @@ function submitPayment(bookingId, amount) {
   }
 
   // Online payment - redirect to PayMongo
+  preOpenPaymongoWindow();
   showLoading(true);
   var paymentTypeForPaymongo = _pendingPayType || 'Full';
   if (activeBookingData && activeBookingData.payment_status === 'Partially Paid') {
@@ -6331,6 +6368,7 @@ function submitPayment(bookingId, amount) {
       payment_type: paymentTypeForPaymongo,
       client: 'web',
       description: 'Autoride Booking #' + bId,
+      return_origin: (typeof window !== 'undefined' && window.location ? window.location.origin : ''),
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || '',
       customer_phone: (currentUser && currentUser.phone) || ''
@@ -6343,6 +6381,7 @@ function submitPayment(bookingId, amount) {
         // Show waiting screen and poll for payment confirmation
         showPaymentWaiting(bId, amt, method);
       } else {
+        closePaymongoWindow();
         var errMsg = data.error || 'Failed to create payment. Please try again.';
         if (errEl) {
           errEl.textContent = errMsg;
@@ -6448,10 +6487,10 @@ function showPaymentWaiting(bookingId, amount, method) {
   window._pendingPaymentAmount = amount;
   window._pendingPaymentMethod = method;
 
-  // Start polling every 2.5 seconds
+  // Start polling every 1.5 seconds
   _paymentPollInterval = setInterval(function() {
     autoCheckPaymentStatus(bookingId, amount, method);
-  }, 2500);
+  }, 1500);
 
   // --- 30-minute payment countdown timer (Only for new reservations, NOT for balance/penalty payments) ---
   if (window._payCountdownInterval) {
@@ -6639,7 +6678,26 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
     .catch(function() { _paymentCheckInProgress = false; });
 }
 
-// Auto-check payment status when the customer switches back to this tab/window
+// Auto-check payment status when the customer switches back to this tab/window or receives postMessage
+if (typeof window !== 'undefined') {
+  window.addEventListener('message', function(ev) {
+    if (!ev || !ev.data || typeof ev.data !== 'object') return;
+    if (ev.data.type === 'AUTORIDE_PAYMENT_SUCCESS') {
+      closePaymongoWindow();
+      try { window.focus(); } catch (e) {}
+      var bId = parseInt(ev.data.booking_id) || window._pendingPaymentBookingId;
+      if (bId) {
+        autoCheckPaymentStatus(bId, window._pendingPaymentAmount || 0, window._pendingPaymentMethod || 'gcash');
+      }
+    } else if (ev.data.type === 'AUTORIDE_PAYMENT_CANCELLED') {
+      closePaymongoWindow();
+      try { window.focus(); } catch (e) {}
+      var cId = parseInt(ev.data.booking_id) || window._pendingPaymentBookingId;
+      if (cId && typeof changePaymentMethod === 'function') {
+        changePaymentMethod(cId, window._pendingPaymentAmount || 0);
+      }
+    }
+  });
 if (typeof window !== 'undefined') {
   window.addEventListener('focus', function() {
     if (window._pendingPaymentBookingId) {
@@ -6739,6 +6797,7 @@ function retryPayment(bookingId, amount, method) {
       payment_type: paymentTypeForPaymongo,
       client: 'web',
       description: 'Autoride Booking #' + bId,
+      return_origin: (typeof window !== 'undefined' && window.location ? window.location.origin : ''),
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || ''
     })
@@ -6753,6 +6812,7 @@ function retryPayment(bookingId, amount, method) {
           console.error('[retryPayment] Failed to open checkout or waiting page:', e);
         }
       } else {
+        closePaymongoWindow();
         var errMsg = data.error || 'Failed to create payment. Please try again.';
         showPaymentFailed(bId, amt, method, errMsg);
         showToast(errMsg, 'error');
@@ -8445,6 +8505,7 @@ function submitExtension(bookingId) {
         openPaymongoCheckout(data.checkout_url, bId, extAmt, method);
         _showExtPaymentWaiting(bId, newEnd, extAmt, methodLabel, days, data.link_id);
       } else {
+        closePaymongoWindow();
         var errMsg = data.error || 'Failed to create payment. Please try again.';
         if (errEl) errEl.textContent = errMsg;
         showToast(errMsg, 'error');
@@ -9003,6 +9064,7 @@ function submitBalancePayment(method, bookingId, amount) {
   if (selCard) selCard.classList.add('selected');
 
   _pendingPayType = 'Balance';
+  preOpenPaymongoWindow();
   showLoading(true);
   apiCall('/paymongo/create-payment', {
     method: 'POST',
@@ -9013,6 +9075,7 @@ function submitBalancePayment(method, bookingId, amount) {
       payment_type: 'Balance',
       client: 'web',
       description: 'Autoride Booking #' + bId + ' Balance Payment',
+      return_origin: (typeof window !== 'undefined' && window.location ? window.location.origin : ''),
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || ''
     })
@@ -9023,6 +9086,7 @@ function submitBalancePayment(method, bookingId, amount) {
         openPaymongoCheckout(data.checkout_url, bId, amt, method);
         showPaymentWaiting(bId, amt, method);
       } else {
+        closePaymongoWindow();
         var errMsg = data.error || 'Failed to create payment. Please try again.';
         if (errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
         showToast(errMsg, 'error');
@@ -11562,7 +11626,7 @@ function submitLicense() {
         if (typeof clearAllCustomerFieldsAndState === 'function') clearAllCustomerFieldsAndState();
         currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
         showPage('page-login');
-      }, 2500);
+      }, 1500); // fast poll for instant auto-close
     })
     .catch(function(err) {
       if (errEl) errEl.textContent = err.message;
