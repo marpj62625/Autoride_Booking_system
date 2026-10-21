@@ -5255,6 +5255,18 @@
 
 
 <style>
+@keyframes notifPulseHighlight {
+    0% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0.7); outline: 3px solid rgba(0, 177, 79, 0.9); transform: scale(1); }
+    30% { box-shadow: 0 0 0 14px rgba(0, 177, 79, 0); outline: 3px solid rgba(0, 177, 79, 1); transform: scale(1.02); }
+    60% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0.5); outline: 3px solid rgba(0, 177, 79, 0.9); transform: scale(1.01); }
+    100% { box-shadow: 0 0 0 16px rgba(0, 177, 79, 0); outline: 3px solid rgba(0, 177, 79, 0); transform: scale(1); }
+}
+.pulse-target-highlight {
+    animation: notifPulseHighlight 1s ease-in-out 3 !important;
+    position: relative !important;
+    z-index: 100 !important;
+    transition: all 0.3s ease !important;
+}
 #adminNotifPanel.anp{display:none;position:fixed;top:64px;right:16px;width:calc(100vw - 32px);max-width:400px;max-height:78vh;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 24px 60px -12px rgba(15,23,42,.28),0 4px 12px rgba(15,23,42,.06);z-index:9000;overflow:hidden;flex-direction:column;font-family:inherit;animation:anpIn .18s ease-out}
 @keyframes anpIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
 #adminNotifPanel.anp *{color:inherit}
@@ -11875,12 +11887,12 @@ input:checked + .ctrl-slider:before {
         const t = (n.type || '').toLowerCase();
         const txt = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
         if (t === 'admin_no_show') return { cat: 'alerts', icon: 'fa-user-slash', fg: '#dc2626', bg: '#fee2e2', tag: 'No Show' };
-        if (t.includes('refund') || txt.includes('refund')) return { cat: 'payments', icon: 'fa-hand-holding-usd', fg: '#d97706', bg: '#fef3c7', tag: 'Refund' };
+        if (t.includes('refund') || txt.includes('refund')) return { cat: 'refunds', icon: 'fa-hand-holding-usd', fg: '#d97706', bg: '#fef3c7', tag: 'Refund' };
         if (t.includes('payment') || /\bpaid\b/.test(txt)) return { cat: 'payments', icon: 'fa-credit-card', fg: '#059669', bg: '#d1fae5', tag: 'Payment' };
-        if (t.includes('cancel') || txt.includes('cancelled')) return { cat: 'bookings', icon: 'fa-calendar-times', fg: '#dc2626', bg: '#fee2e2', tag: 'Cancelled' };
-        if (t.includes('extension') || txt.includes('extension')) return { cat: 'bookings', icon: 'fa-clock', fg: '#7c3aed', bg: '#ede9fe', tag: 'Extension' };
+        if (t.includes('cancel') || txt.includes('cancelled')) return { cat: 'cancelled', icon: 'fa-calendar-times', fg: '#dc2626', bg: '#fee2e2', tag: 'Cancelled' };
+        if (t.includes('extension') || txt.includes('extension')) return { cat: 'extensions', icon: 'fa-clock', fg: '#7c3aed', bg: '#ede9fe', tag: 'Extension' };
         if (t.includes('booking') || txt.includes('booking')) return { cat: 'bookings', icon: 'fa-calendar-check', fg: '#2563eb', bg: '#dbeafe', tag: 'Booking' };
-        if (t.includes('license')) return { cat: 'renters', icon: 'fa-id-card', fg: '#7c3aed', bg: '#ede9fe', tag: 'Renter' };
+        if (t.includes('license') || txt.includes('license') || txt.includes('renter')) return { cat: 'renters', icon: 'fa-id-card', fg: '#7c3aed', bg: '#ede9fe', tag: 'Renter' };
         return { cat: 'chat', icon: 'fa-comment-dots', fg: '#0891b2', bg: '#cffafe', tag: 'Message' };
     };
 
@@ -11898,6 +11910,120 @@ input:checked + .ctrl-slider:before {
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    window._anpPulseElement = function(el) {
+        if (!el) return;
+        try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            el.scrollIntoView();
+        }
+        el.classList.remove('pulse-target-highlight');
+        void el.offsetWidth; // trigger reflow
+        el.classList.add('pulse-target-highlight');
+        setTimeout(() => {
+            el.classList.remove('pulse-target-highlight');
+        }, 3600);
+    };
+
+    window._anpNavigate = function(idx) {
+        const notifs = window.adminNotifList || [];
+        const n = notifs[idx];
+        if (!n) return;
+
+        // Close notification panel
+        const panel = document.getElementById('adminNotifPanel');
+        if (panel) panel.style.display = 'none';
+
+        const c = window._anpCategorize(n);
+        const t = (n.type || '').toLowerCase();
+        const txt = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
+
+        // Extract booking ID if present
+        let bId = n.booking_id || null;
+        if (!bId) {
+            const m = (n.title || '' + ' ' + (n.message || '')).match(/#(\d+)/);
+            if (m) bId = m[1];
+        }
+
+        // 1. REFUND REQUESTS
+        if (c.cat === 'refunds') {
+            switchTab('bookings');
+            if (typeof switchBookingTab === 'function') switchBookingTab('refunds');
+            setTimeout(() => {
+                let target = bId ? document.getElementById('refund-card-' + bId) : null;
+                if (!target && bId) {
+                    target = document.querySelector(`[data-booking-id="${bId}"]`);
+                }
+                if (target) {
+                    window._anpPulseElement(target);
+                } else if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
+                    Bookings.view(bId);
+                }
+            }, 300);
+            return;
+        }
+
+        // 2. EXTENSION REQUESTS
+        if (c.cat === 'extensions') {
+            switchTab('bookings');
+            if (typeof switchBookingTab === 'function') switchBookingTab('extensions');
+            setTimeout(() => {
+                let target = bId ? document.getElementById('ext-req-' + bId) : null;
+                if (!target && bId) {
+                    target = document.querySelector(`[data-booking-id="${bId}"]`) || document.querySelector(`[data-ext-id]`);
+                }
+                if (target) {
+                    window._anpPulseElement(target);
+                } else if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
+                    Bookings.view(bId);
+                }
+            }, 300);
+            return;
+        }
+
+        // 3. RENTER / LICENSE VERIFICATION
+        if (c.cat === 'renters' || t === 'license' || t === 'admin_license_upload') {
+            switchTab('users');
+            if (n.user_id) {
+                setTimeout(() => {
+                    const uCard = document.getElementById('user-card-' + n.user_id);
+                    if (uCard) {
+                        window._anpPulseElement(uCard);
+                    } else if (typeof UserMgmt !== 'undefined' && UserMgmt.openModal) {
+                        UserMgmt.openModal(n.user_id);
+                    }
+                }, 300);
+            }
+            return;
+        }
+
+        // 4. CHAT MESSAGES
+        if (c.cat === 'chat') {
+            switchTab('chat');
+            return;
+        }
+
+        // 5. BOOKINGS (New, Payment, Cancelled, Alerts, No Show)
+        if (bId) {
+            switchTab('bookings');
+            if (c.cat === 'bookings' || t === 'admin_new_booking') {
+                if (typeof switchBookingTab === 'function') switchBookingTab('new');
+            } else {
+                if (typeof switchBookingTab === 'function') switchBookingTab('all');
+            }
+            // Open booking details modal directly for clear inspection
+            setTimeout(() => {
+                if (typeof Bookings !== 'undefined' && typeof Bookings.view === 'function') {
+                    Bookings.view(bId);
+                }
+            }, 250);
+            return;
+        }
+
+        // Fallback default
+        switchTab('bookings');
+    };
+
     window._anpSetFilter = function(f) {
         window._anpFilter = f;
         window._anpRender();
@@ -11909,11 +12035,25 @@ input:checked + .ctrl-slider:before {
         const sub = document.getElementById('anpSub');
         if (!list) return;
         const notifs = window.adminNotifList || [];
-        const items = notifs.map(n => ({ n, c: window._anpCategorize(n) }));
+        const items = notifs.map((n, idx) => ({ n, c: window._anpCategorize(n), origIdx: idx }));
 
-        const counts = { all: items.length, bookings: 0, payments: 0, alerts: 0, renters: 0, chat: 0 };
-        items.forEach(i => counts[i.c.cat]++);
-        const tabs = [['all', 'All'], ['bookings', 'Bookings'], ['payments', 'Payments'], ['alerts', 'Alerts'], ['renters', 'Renters'], ['chat', 'Messages']];
+        const counts = { all: items.length, refunds: 0, payments: 0, bookings: 0, extensions: 0, cancelled: 0, alerts: 0, renters: 0, chat: 0 };
+        items.forEach(i => {
+            if (counts[i.c.cat] !== undefined) counts[i.c.cat]++;
+        });
+
+        const tabs = [
+            ['all', 'All'],
+            ['refunds', 'Refunds'],
+            ['payments', 'Payments'],
+            ['bookings', 'Bookings'],
+            ['extensions', 'Extensions'],
+            ['cancelled', 'Cancelled'],
+            ['alerts', 'Alerts'],
+            ['renters', 'Renters'],
+            ['chat', 'Messages']
+        ];
+
         if (tabsEl) {
             tabsEl.innerHTML = tabs
                 .filter(([k]) => k === 'all' || counts[k] > 0)
@@ -11922,11 +12062,11 @@ input:checked + .ctrl-slider:before {
         }
 
         const unreadCount = window._anpUnread.size;
-        if (sub) sub.textContent = unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? 's' : ''}` : (notifs.length ? `${notifs.length} total \u00b7 all caught up` : "You're all caught up");
+        if (sub) sub.textContent = unreadCount > 0 ? `${unreadCount} new notification${unreadCount > 1 ? 's' : ''}` : (notifs.length ? `${notifs.length} total · all caught up` : "You're all caught up");
 
         const shown = window._anpFilter === 'all' ? items : items.filter(i => i.c.cat === window._anpFilter);
         if (!shown.length) {
-            list.innerHTML = `<div class="anp-empty"><i class="far fa-bell-slash"></i><b>No notifications</b>New activity will show up here.</div>`;
+            list.innerHTML = `<div class="anp-empty"><i class="far fa-bell-slash"></i><b>No notifications</b>No items found under this filter.</div>`;
             return;
         }
 
@@ -11934,28 +12074,24 @@ input:checked + .ctrl-slider:before {
         const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const startYest = startToday - 86400000;
         let lastGroup = '';
-        list.innerHTML = shown.map(({ n, c }, idx) => {
+        list.innerHTML = shown.map(({ n, c, origIdx }) => {
             const d = n.created_at ? new Date(n.created_at) : null;
             const tms = d && !isNaN(d) ? d.getTime() : 0;
             const group = tms >= startToday ? 'Today' : (tms >= startYest ? 'Yesterday' : 'Earlier');
             const header = group !== lastGroup ? `<div class="anp-group">${group}</div>` : '';
             lastGroup = group;
 
-            let tab = 'chat';
-            if (n.type === 'license' || n.type === 'admin_license_upload') tab = 'users';
-            else if (['admin_new_booking', 'admin_booking_cancelled', 'admin_payment_proof', 'admin_extension_request', 'admin_refund_request', 'admin_no_show'].includes(n.type) || c.cat === 'bookings' || c.cat === 'payments' || c.cat === 'alerts') tab = 'bookings';
-
             let bId = n.booking_id;
-            if (c.cat === 'alerts' && !bId && n.title) {
-                const m = n.title.match(/Booking #(\d+)/);
+            if (!bId && n.title) {
+                const m = n.title.match(/Booking #(\d+)/) || n.title.match(/#(\d+)/);
                 if (m) bId = m[1];
             }
             const act = (n.type === 'admin_no_show' && bId) ? `<button class="anp-act" onclick="event.stopPropagation();Bookings.markNoShow(${parseInt(bId, 10)})"><i class="fas fa-user-slash" style="margin-right:4px;"></i>Mark No Show</button>` : '';
-            const unread = window._anpUnread.has(n.id != null ? n.id : idx);
+            const unread = window._anpUnread.has(n.id != null ? n.id : origIdx);
             const title = n.title || c.tag;
             const full = d && !isNaN(d) ? d.toLocaleString() : '';
 
-            return `${header}<div class="anp-item ${unread ? 'unread' : ''}" onclick="switchTab('${tab}');document.getElementById('adminNotifPanel').style.display='none';">
+            return `${header}<div class="anp-item ${unread ? 'unread' : ''}" onclick="window._anpNavigate(${origIdx});" title="Click to view">
                 <div class="anp-ico" style="background:${c.bg};"><i class="fas ${c.icon}" style="color:${c.fg} !important;"></i></div>
                 <div class="anp-body">
                     <strong>${window._anpEsc(title)}</strong>
@@ -27180,7 +27316,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    <div data-ext-id="${e.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
+                    <div id="ext-req-${e.booking_id || e.id}" data-booking-id="${e.booking_id}" data-ext-id="${e.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;transition:all 0.3s ease;">
 
 
 
@@ -28095,7 +28231,8 @@ function toggleNewsletterModal(show = true) {
             }
             if (typeof Refunds !== 'undefined') {
                 Refunds.load();
-            } else if (tab === 'archived') {
+            }
+        } else if (tab === 'archived') {
             const archTab = document.getElementById('tabArchived');
             if (archTab) archTab.style.display = 'block';
             const archBtn = document.getElementById('tabBtnArchived');
@@ -28107,7 +28244,6 @@ function toggleNewsletterModal(show = true) {
             if (typeof ArchivedBookings !== 'undefined') {
                 ArchivedBookings.load();
             }
-        }
         }
 
 
@@ -28235,7 +28371,7 @@ function toggleNewsletterModal(show = true) {
                 const amount = parseFloat(b.refund_amount || b.amount_paid || 0).toLocaleString('en-PH', {minimumFractionDigits:2});
                 const refundAmt = parseFloat(b.amount_paid || 0).toLocaleString('en-PH', {minimumFractionDigits:2});
                 return `
-                <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${accentColor};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+                <div id="refund-card-${b.id}" data-booking-id="${b.id}" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${accentColor};border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:all 0.3s ease;">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                         <div>
                             <span style="font-size:0.7rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Booking #${b.id}</span>
@@ -34582,7 +34718,7 @@ function toggleNewsletterModal(show = true) {
 
 
                 return `
-                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;">
+                <div id="user-card-${u.id}" data-user-id="${u.id}" onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.3s ease;">
                     ${u.profile_picture ? `
                         <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();viewLicenseImage('${u.profile_picture}')" title="Click to enlarge">` : `
                         <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;color:#fff;">${avatar}</div>`}
