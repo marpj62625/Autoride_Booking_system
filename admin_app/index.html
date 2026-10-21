@@ -38972,14 +38972,6 @@ function toggleNewsletterModal(show = true) {
                 tab.classList.add('users-desktop-tab');
             }
         }
-            });
-            // Fix tab: only remove bottom padding (was 100px for mobile nav bar)
-            var tab = document.getElementById('users');
-            if (tab) {
-                tab.style.removeProperty('padding-bottom');
-                tab.classList.add('users-desktop-tab');
-            }
-        }
 
         function watchUserList() {
             var container = document.getElementById('umList');
