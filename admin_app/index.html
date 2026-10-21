@@ -7298,14 +7298,58 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
         </div>
 
-        <div id="verificationsList" style="display: grid; gap: 16px; margin-bottom: 40px;">
+        <!-- Verifications List View & Controls -->
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 25px;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Renter / Applicant</th>
+                            <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">License Details</th>
+                            <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Submitted / Expiry</th>
+                            <th style="padding: 14px 16px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Photos</th>
+                            <th style="padding: 14px 16px; text-align: center; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; width: 140px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="verificationsTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
+            <!-- Empty State -->
+            <div id="verificationsEmpty" style="display: none; text-align: center; padding: 50px 20px; color: var(--text-muted);">
+                <i class="fas fa-user-shield" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--text-main);">No Verifications Found</h3>
+                <p style="font-size: 0.85rem;" id="verificationsEmptyMsg">No pending renter license verifications found.</p>
+            </div>
 
-
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
-
-
-
+            <!-- Pagination Bar -->
+            <div id="verifPagination" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: var(--surface-container); border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Show:</span>
+                    <select id="verifPageSize" onchange="Verifications.setPageSize(this.value)" style="padding: 6px 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 700; cursor: pointer; outline: none;">
+                        <option value="5">5 per page</option>
+                        <option value="10" selected>10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="verifPageInfo" style="font-size: 0.82rem; color: var(--text-main); font-weight: 700;">Page 1 of 1 (0 total)</span>
+                    <div style="display: flex; gap: 6px;">
+                        <button id="verifPrevBtn" onclick="Verifications.prevPage()" style="padding: 7px 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                            <i class="fas fa-chevron-left" style="margin-right: 4px;"></i> Prev
+                        </button>
+                        <button id="verifNextBtn" onclick="Verifications.nextPage()" style="padding: 7px 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                            Next <i class="fas fa-chevron-right" style="margin-left: 4px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -8160,6 +8204,31 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
     
 
 
+
+    <!-- VERIFICATION DETAILS POPUP MODAL -->
+    <div id="verificationDetailModal" class="premium-modal" style="background: rgba(15,23,42,0.9); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000;" onclick="if(event.target === this) Verifications.closeDetailModal()">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-width: 680px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
+                <button onclick="Verifications.closeDetailModal()" style="position: absolute; right: 0; background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 11px; border-radius: 8px; cursor: pointer; line-height: 1; transition: background 0.15s;" onmouseover="this.style.background='rgba(0,0,0,0.12)'" onmouseout="this.style.background='rgba(0,0,0,0.06)'">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div style="text-align: center;">
+                    <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-id-card" style="color: #00B14F;"></i> Renter License Verification
+                    </h2>
+                    <p style="font-size: 0.75rem; color: #64748b; margin: 3px 0 0 0; font-weight: 600;">Review documents, selfie, and approve or reject verification</p>
+                </div>
+            </div>
+
+            <div id="verificationDetailContent" style="flex: 1; overflow-y: auto; padding-right: 4px;">
+                <!-- Populated dynamically via Verifications.openDetailModal(userId) -->
+            </div>
+
+            <div id="verificationDetailFooter" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px; flex-shrink: 0;">
+                <!-- Action buttons populated dynamically -->
+            </div>
+        </div>
+    </div>
 
     <!-- LICENSE PREVIEW MODAL -->
 
@@ -23096,23 +23165,47 @@ function toggleNewsletterModal(show = true) {
 
 
     const Verifications = {
-
-
-
         data: [],
         _searchQuery: '',
         _sortBy: 'date_desc',
+        currentPage: 1,
+        pageSize: 10,
+        activeDetailUserId: null,
 
         onSearch(query) {
             this._searchQuery = (query || '').toLowerCase().trim();
+            this.currentPage = 1;
             this.render();
         },
 
         setSort(sortKey) {
             this._sortBy = sortKey;
+            this.currentPage = 1;
             const el = document.getElementById('verificationsSort');
             if (el && el.value !== sortKey) el.value = sortKey;
             this.render();
+        },
+
+        setPageSize(size) {
+            this.pageSize = parseInt(size, 10) || 10;
+            this.currentPage = 1;
+            this.render();
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.render();
+            }
+        },
+
+        nextPage() {
+            const filtered = this.getFilteredData();
+            const totalPages = Math.ceil(filtered.length / this.pageSize) || 1;
+            if (this.currentPage < totalPages) {
+                this.currentPage++;
+                this.render();
+            }
         },
 
         sortList(list, sortKey) {
@@ -23150,124 +23243,8 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
-
-
-        async refresh() {
-
-
-
-            const list = document.getElementById('verificationsList');
-            showSkeleton('verificationsList', 'list');
-
-
-
-            if (!list) return;
-
-
-
-            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
-
-
-
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>';
-
-
-
-            }
-
-
-
-            
-
-
-
-            try {
-
-
-
-                const url = `${API_URL}/admin/pending-verifications`;
-
-
-
-                const res = await fetch(url);
-
-
-
-                
-
-
-
-                if (!res.ok) {
-
-
-
-                    const errTxt = await res.text();
-
-
-
-                    alert('API Error: ' + res.status + '\n' + errTxt);
-
-
-
-                    list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">Server Error ' + res.status + '</div>';
-
-
-
-                    return;
-
-
-
-                }
-
-
-
-                
-
-
-
-                this.data = await res.json();
-
-
-
-                this.render();
-
-
-
-            } catch (err) {
-
-
-
-                console.error('Refresh Error:', err);
-
-
-
-                console.error('Connection Error:', err.message);
-
-
-
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-wifi" style="font-size:2rem; margin-bottom:10px;"></i><br>Connection Error. Please retry.</div>';
-
-
-
-            }
-
-
-
-        },
-
-
-
-        render() {
-
-
-
-            const list = document.getElementById('verificationsList');
-
-
-
+        getFilteredData() {
             let displayData = Array.isArray(this.data) ? this.data : [];
-
-            // Apply search filter
             if (this._searchQuery) {
                 const q = this._searchQuery;
                 displayData = displayData.filter(v =>
@@ -23277,534 +23254,357 @@ function toggleNewsletterModal(show = true) {
                     (v.license_number || '').toLowerCase().includes(q)
                 );
             }
+            return this.sortList(displayData, this._sortBy || 'date_desc');
+        },
 
-            // Apply sorting
-            displayData = this.sortList(displayData, this._sortBy || 'date_desc');
+        async refresh() {
+            const tbody = document.getElementById('verificationsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading verifications...</td></tr>';
+            }
+            try {
+                const url = `${API_URL}/admin/pending-verifications`;
+                const res = await fetch(url);
+                if (!res.ok) {
+                    const errTxt = await res.text();
+                    alert('API Error: ' + res.status + '\n' + errTxt);
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--danger);">Server Error ' + res.status + '</td></tr>';
+                    return;
+                }
+                this.data = await res.json();
+                this.render();
+            } catch (err) {
+                console.error('Refresh Error:', err);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-wifi" style="font-size:1.5rem; margin-bottom:8px; display:block;"></i>Connection Error. Please retry.</td></tr>';
+            }
+        },
 
-            if (!displayData || displayData.length === 0) {
-                list.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                        <i class="fas fa-user-shield" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
-                        <p style="color: var(--text-muted); font-weight: 600;">${this._searchQuery ? 'No verifications match your search.' : 'No pending verifications.'}</p>
-                    </div>`;
+        render() {
+            const tbody = document.getElementById('verificationsTableBody');
+            const emptyEl = document.getElementById('verificationsEmpty');
+            const emptyMsg = document.getElementById('verificationsEmptyMsg');
+            const prevBtn = document.getElementById('verifPrevBtn');
+            const nextBtn = document.getElementById('verifNextBtn');
+            const pageInfo = document.getElementById('verifPageInfo');
+
+            if (!tbody) return;
+
+            const filtered = this.getFilteredData();
+            const totalRecords = filtered.length;
+            const totalPages = Math.ceil(totalRecords / this.pageSize) || 1;
+
+            if (this.currentPage > totalPages) this.currentPage = totalPages;
+            if (this.currentPage < 1) this.currentPage = 1;
+
+            // Handle empty state
+            if (totalRecords === 0) {
+                tbody.innerHTML = '';
+                if (emptyEl) {
+                    emptyEl.style.display = 'block';
+                    if (emptyMsg) {
+                        emptyMsg.textContent = this._searchQuery
+                            ? 'No verifications match "' + this._searchQuery + '".'
+                            : 'No pending renter license verifications found.';
+                    }
+                }
+                if (pageInfo) pageInfo.textContent = 'Page 1 of 1 (0 total)';
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = true;
                 return;
             }
 
-            list.innerHTML = displayData.map(v => {
+            if (emptyEl) emptyEl.style.display = 'none';
 
+            // Pagination slice
+            const startIndex = (this.currentPage - 1) * this.pageSize;
+            const pagedRecords = filtered.slice(startIndex, startIndex + this.pageSize);
 
-
+            tbody.innerHTML = pagedRecords.map((v, idx) => {
+                const uId = v.user_id || v.id;
                 const name = v.full_name || 'Unnamed User';
-
-
-
                 const initial = name[0] ? name[0].toUpperCase() : '?';
-
-
-
                 const licenseUrl = v.license_image || v.license_image_url || '';
-
-
-
-
-
-
-
-                // License detail rows
-
-
-
-                const hasDetails = v.license_number || v.license_type || v.license_expiry;
-
-
-
-                const detailsHtml = `
-
-
-
-                    <div style="background:rgba(0,177,79,0.06);border:1px solid rgba(0,177,79,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-
-
-
-                        <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
-
-
-
-                        
-
-
-
-                        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
-                            ${v.profile_picture ? `
-                                <div style="flex:1;min-width:90px;">
-                                    <div style="font-size:0.6rem;color:#00B14F;font-weight:800;text-transform:uppercase;margin-bottom:4px;"><i class="fas fa-camera"></i> Live Selfie</div>
-                                    <img src="${v.profile_picture}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:2px solid #00B14F;cursor:pointer;" onclick="Verifications.viewLicense('${v.profile_picture}', 'Live Selfie Profile Photo')">
-                                </div>` : `
-                                <div style="flex:1;min-width:90px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;height:85px;">
-                                    <i class="fas fa-user-slash" style="color:#94a3b8;font-size:1.2rem;margin-bottom:4px;"></i>
-                                    <span style="font-size:0.6rem;color:#94a3b8;font-weight:700;">No Selfie</span>
-                                </div>`}
-
-                            ${licenseUrl ? `
-                                <div style="flex:1;min-width:90px;">
-                                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">License Front</div>
-                                    <img src="${licenseUrl}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" onclick="Verifications.viewLicense('${licenseUrl}', 'License Front')">
-                                </div>` : ''}
-
-                            ${v.license_back_url ? `
-                                <div style="flex:1;min-width:90px;">
-                                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">License Back</div>
-                                    <img src="${v.license_back_url}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" onclick="Verifications.viewLicense('${v.license_back_url}', 'License Back')">
-                                </div>` : ''}
-                        </div>
-
-
-
-
-
-
-
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">License No.</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_number || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Expiry Date</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_expiry || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Class / Category</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_type || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div style="grid-column: span 2;">
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Complete Residential Address</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);line-height:1.4;word-break:break-word;">${v.address || v.issuing_country_state || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                        </div>
-
-
-
-                        
-
-
-
-                        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:12px 0;">
-
-
-
-                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-main);margin-bottom:8px;">Personal Info</div>
-
-
-
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Full Name</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${name || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Date of Birth</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.date_of_birth || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                        </div>
-
-
-
-
-
-
-
-                        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:12px 0;">
-
-
-
-                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-main);margin-bottom:8px;">IV. IN CASE OF EMERGENCY NOTIFY:</div>
-
-
-
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-
-
-
-                            <div style="grid-column: span 2;">
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Contact Name</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_name || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Phone Number</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_phone || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                            <div>
-
-
-
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Relationship</div>
-
-
-
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_relationship || '-'}</div>
-
-
-
-                            </div>
-
-
-
-                        </div>
-
-
-
-                    </div>`;
-
-
-
-
-
-
-
-                const actionButtons = licenseUrl
-
-
-
-                    ? `<button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>
-
-
-
-                       <button onclick="Verifications.process(${v.id}, 0)" class="btn-premium" style="flex: 0.7; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--danger); box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);">Reject</button>`
-
-
-
-                    : `<div style="flex: 1; text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border: 1px dashed var(--border);">
-
-
-
-                            <i class="fas fa-clock" style="margin-right: 5px;"></i> Waiting for Upload
-
-
-
-                       </div>`;
-
-
-
-
-
-
+                const backUrl = v.license_back_url || '';
+                const selfieUrl = v.profile_picture || '';
+
+                const formattedDate = v.created_at ? new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
+                const expiryDate = v.license_expiry || '-';
 
                 return `
-
-
-
-                <div id="verif-card-${v.user_id || v.id}" data-user-id="${v.user_id || v.id}" class="stat-card" style="padding: 20px; margin-bottom: 16px; transition: all 0.3s ease;">
-
-
-
-                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
-                        ${v.profile_picture ? `
-                            <img src="${v.profile_picture}" style="width: 54px; height: 54px; border-radius: 16px; object-fit: cover; border: 2px solid #00B14F; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0; cursor:pointer;" onclick="Verifications.viewLicense('${v.profile_picture}', '${name}')">` : `
-                            <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
-                                ${initial}
-                            </div>`}
-
-
-
-                        <div style="flex: 1; min-width:0;">
-
-
-
-                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</h4>
-
-
-
-                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.email ? `<i class="fas fa-user-shield" style="color: #00B14F; font-size: 0.65rem; margin-right: 4px;" title="RA 10173 Protected"></i>${maskEmail(v.email)}` : 'No Email'}</p>
-
-
-
+                <tr id="verif-card-${uId}" data-user-id="${uId}" style="border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'" onclick="if(!event.target.closest('button') && !event.target.closest('img')) Verifications.openDetailModal(${uId});">
+                    <!-- Renter Profile & Info -->
+                    <td style="padding: 14px 16px; vertical-align: middle;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            ${selfieUrl ? `
+                                <img src="${selfieUrl}" style="width: 44px; height: 44px; border-radius: 12px; object-fit: cover; border: 2px solid #00B14F; box-shadow: 0 2px 8px rgba(0,177,79,0.25); flex-shrink: 0; cursor: pointer;" onclick="event.stopPropagation(); Verifications.viewLicense('${selfieUrl}', '${name} - Selfie')">
+                            ` : `
+                                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.1rem; flex-shrink: 0;">
+                                    ${initial}
+                                </div>
+                            `}
+                            <div style="min-width: 0;">
+                                <div style="font-weight: 800; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${name}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${v.email ? `<i class="fas fa-user-shield" style="color: #00B14F; font-size: 0.65rem; margin-right: 4px;" title="RA 10173 Protected"></i>${maskEmail(v.email)}` : 'No email'}
+                                </div>
+                                ${v.phone ? `<div style="font-size: 0.72rem; color: var(--text-muted);"><i class="fas fa-phone" style="font-size: 0.65rem; margin-right: 4px;"></i>${v.phone}</div>` : ''}
+                            </div>
                         </div>
+                    </td>
 
+                    <!-- License Details -->
+                    <td style="padding: 14px 16px; vertical-align: middle;">
+                        <div style="font-weight: 800; font-size: 0.85rem; color: var(--text-main); font-family: monospace; letter-spacing: 0.5px;">
+                            <i class="fas fa-id-card" style="color: var(--primary); margin-right: 6px; font-size: 0.8rem;"></i>${v.license_number || '<span style="color:var(--text-muted);font-weight:500;">Not specified</span>'}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">
+                            Class: <span style="color: var(--text-main); font-weight: 700;">${v.license_type || 'Standard'}</span>
+                        </div>
+                    </td>
 
+                    <!-- Submission & Expiration Dates -->
+                    <td style="padding: 14px 16px; vertical-align: middle;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">
+                            Exp: <span style="${v.license_expiry ? 'color: var(--warning);' : 'color: var(--text-muted);'} font-weight: 800;">${expiryDate}</span>
+                        </div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
+                            Submitted: ${formattedDate}
+                        </div>
+                    </td>
 
-                    </div>
+                    <!-- Photos Thumbnails -->
+                    <td style="padding: 14px 16px; vertical-align: middle;">
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            ${licenseUrl ? `
+                                <img src="${licenseUrl}" title="Front License" style="width: 38px; height: 26px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border); cursor: pointer;" onclick="event.stopPropagation(); Verifications.viewLicense('${licenseUrl}', 'License Front - ${name}')">
+                            ` : '<span style="font-size:0.65rem;color:var(--text-muted);"><i class="fas fa-times-circle" style="color:#ef4444;margin-right:2px;"></i>No Front</span>'}
+                            ${backUrl ? `
+                                <img src="${backUrl}" title="Back License" style="width: 38px; height: 26px; border-radius: 4px; object-fit: cover; border: 1px solid var(--border); cursor: pointer;" onclick="event.stopPropagation(); Verifications.viewLicense('${backUrl}', 'License Back - ${name}')">
+                            ` : ''}
+                        </div>
+                    </td>
 
-
-
-                    ${detailsHtml}
-
-
-
-                    <div style="display: flex; gap: 12px;">
-
-
-
-                        ${actionButtons}
-
-
-
-                    </div>
-
-
-
-                </div>
-
-
-
+                    <!-- Action Column -->
+                    <td style="padding: 14px 16px; vertical-align: middle; text-align: center;">
+                        <button onclick="event.stopPropagation(); Verifications.openDetailModal(${uId});" class="btn-premium" style="padding: 8px 14px; font-size: 0.78rem; border-radius: 10px; background: var(--primary); box-shadow: 0 4px 12px var(--primary-glow); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap;">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                    </td>
+                </tr>
                 `;
-
-
-
             }).join('');
 
-
-
+            // Update Pagination info & buttons
+            if (pageInfo) pageInfo.textContent = `Page ${this.currentPage} of ${totalPages} (${totalRecords} total)`;
+            if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
         },
 
+        openDetailModal(userId) {
+            const user = (this.data || []).find(v => (v.user_id || v.id) == userId);
+            const modal = document.getElementById('verificationDetailModal');
+            const content = document.getElementById('verificationDetailContent');
+            const footer = document.getElementById('verificationDetailFooter');
 
+            if (!modal || !content) return;
+            this.activeDetailUserId = userId;
 
-        viewLicense(url) {
-
-
-
-            if (!url) return alert('No license image uploaded');
-
-
-
-            const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-
-
-
-            
-
-
-
-            // Show in-app preview instead of window.open which fails in Capacitor
-
-
-
-            const modal = document.getElementById('licensePreviewModal');
-
-
-
-            const img = document.getElementById('licensePreviewImg');
-
-
-
-            if (modal && img) {
-
-
-
-                img.src = fullUrl;
-
-
-
+            if (!user) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #ef4444;">Verification record not found.</div>';
                 modal.style.display = 'flex';
-
-
-
-            } else {
-
-
-
-                window.open(fullUrl, '_blank');
-
-
-
+                return;
             }
 
+            const name = user.full_name || 'Unnamed User';
+            const initial = name[0] ? name[0].toUpperCase() : '?';
+            const licenseUrl = user.license_image || user.license_image_url || '';
+            const backUrl = user.license_back_url || '';
+            const selfieUrl = user.profile_picture || '';
+            const uId = user.user_id || user.id;
 
+            content.innerHTML = `
+                <!-- Applicant Header -->
+                <div style="display: flex; align-items: center; gap: 14px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; margin-bottom: 16px;">
+                    ${selfieUrl ? `
+                        <img src="${selfieUrl}" style="width: 56px; height: 56px; border-radius: 14px; object-fit: cover; border: 2px solid #00B14F; box-shadow: 0 4px 12px rgba(0,177,79,0.25); flex-shrink: 0; cursor: pointer;" onclick="Verifications.viewLicense('${selfieUrl}', 'Live Selfie - ${name}')">
+                    ` : `
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.3rem; flex-shrink: 0;">
+                            ${initial}
+                        </div>
+                    `}
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${name}</div>
+                        <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">
+                            ${user.email ? `<i class="fas fa-envelope" style="margin-right: 5px; color: #00B14F;"></i>${user.email}` : 'No Email'}
+                        </div>
+                        ${user.phone ? `<div style="font-size: 0.78rem; color: #64748b; font-weight: 600; margin-top: 2px;"><i class="fas fa-phone" style="margin-right: 5px; color: #00B14F;"></i>${user.phone}</div>` : ''}
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.7rem; font-weight: 800; padding: 5px 10px; background: rgba(245, 158, 11, 0.12); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; text-transform: uppercase;">
+                            Pending Audit
+                        </span>
+                    </div>
+                </div>
 
+                <!-- Photos Inspection Gallery -->
+                <div style="margin-bottom: 18px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #00B14F; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-camera"></i> Document & Verification Photos (Click to Zoom)
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                        <!-- Live Selfie -->
+                        <div style="background: #f8fafc; border: 1.5px solid ${selfieUrl ? '#00B14F' : '#cbd5e1'}; border-radius: 12px; padding: 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; font-weight: 800; color: #00B14F; text-transform: uppercase; margin-bottom: 6px;">Live Selfie</div>
+                            ${selfieUrl ? `
+                                <img src="${selfieUrl}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="Verifications.viewLicense('${selfieUrl}', 'Live Selfie - ${name}')">
+                            ` : `
+                                <div style="height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.75rem; font-weight: 600;">
+                                    <i class="fas fa-user-slash" style="font-size: 1.5rem; margin-bottom: 6px;"></i> No Selfie
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- License Front -->
+                        <div style="background: #f8fafc; border: 1.5px solid ${licenseUrl ? '#cbd5e1' : '#fecaca'}; border-radius: 12px; padding: 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px;">License Front</div>
+                            ${licenseUrl ? `
+                                <img src="${licenseUrl}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="Verifications.viewLicense('${licenseUrl}', 'License Front - ${name}')">
+                            ` : `
+                                <div style="height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ef4444; font-size: 0.75rem; font-weight: 600;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 1.5rem; margin-bottom: 6px;"></i> Missing Front
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- License Back -->
+                        <div style="background: #f8fafc; border: 1.5px solid ${backUrl ? '#cbd5e1' : '#e2e8f0'}; border-radius: 12px; padding: 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px;">License Back</div>
+                            ${backUrl ? `
+                                <img src="${backUrl}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'" onclick="Verifications.viewLicense('${backUrl}', 'License Back - ${name}')">
+                            ` : `
+                                <div style="height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.75rem; font-weight: 600;">
+                                    <i class="fas fa-file-image" style="font-size: 1.5rem; margin-bottom: 6px;"></i> Not Provided
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- License Details Card -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #00B14F; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;">
+                        <i class="fas fa-id-card" style="margin-right: 5px;"></i> Declared License Credentials
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">License Number</div>
+                            <div style="font-size: 0.9rem; font-weight: 800; color: #0f172a; font-family: monospace;">${user.license_number || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Expiry Date</div>
+                            <div style="font-size: 0.9rem; font-weight: 800; color: #0f172a;">${user.license_expiry || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Class / Category</div>
+                            <div style="font-size: 0.9rem; font-weight: 800; color: #0f172a;">${user.license_type || 'Non-Professional'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Date of Birth</div>
+                            <div style="font-size: 0.9rem; font-weight: 800; color: #0f172a;">${user.date_of_birth || '-'}</div>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Complete Address</div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a; line-height: 1.4;">${user.address || user.issuing_country_state || '-'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact Card -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;">
+                        <i class="fas fa-heartbeat" style="color: #ef4444; margin-right: 5px;"></i> In Case of Emergency Contact
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Contact Name</div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">${user.emergency_contact_name || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Phone Number</div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">${user.emergency_contact_phone || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Relationship</div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">${user.emergency_contact_relationship || '-'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup action buttons in modal footer
+            if (footer) {
+                footer.innerHTML = `
+                    <button onclick="Verifications.process(${uId}, 0)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.85rem; font-weight: 800; border-radius: 12px; background: #ef4444; color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-times-circle"></i> Reject Verification
+                    </button>
+                    <button onclick="Verifications.process(${uId}, 2)" class="btn-premium" style="flex: 1.4; padding: 12px; font-size: 0.85rem; font-weight: 800; border-radius: 12px; background: #00B14F; color: white; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas fa-check-circle"></i> Approve & Verify
+                    </button>
+                `;
+            }
+
+            modal.style.display = 'flex';
         },
 
+        closeDetailModal() {
+            const modal = document.getElementById('verificationDetailModal');
+            if (modal) modal.style.display = 'none';
+            this.activeDetailUserId = null;
+        },
 
+        viewLicense(url, title) {
+            if (!url) return alert('No license image uploaded');
+            const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+            const modal = document.getElementById('licensePreviewModal');
+            const img = document.getElementById('licensePreviewImg');
+            if (modal && img) {
+                img.src = fullUrl;
+                modal.style.display = 'flex';
+            } else {
+                window.open(fullUrl, '_blank');
+            }
+        },
 
         async process(userId, status) {
-
-
+            const actionWord = status === 2 ? 'APPROVE' : 'REJECT';
+            if (!confirm(`Are you sure you want to ${actionWord} this renter's license verification?`)) return;
 
             const admin = adminAuth.getUser();
-
-
-
-            if (!confirm(`Are you sure you want to ${status === 2 ? 'APPROVE' : 'REJECT'} this user?`)) return;
-
-
-
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/verify-action`, {
-
-
-
                     method: 'POST',
-
-
-
                     headers: { 'Content-Type': 'application/json' },
-
-
-
-                    body: JSON.stringify({ 
-
-
-
-                        user_id: userId, 
-
-
-
+                    body: JSON.stringify({
+                        user_id: userId,
                         status: status,
-
-
-
                         admin_id: admin ? admin.id : 1
-
-
-
                     })
-
-
-
                 });
 
-
-
                 if (res.ok) {
-
-
-
-                    alert('Action successful!');
-
-
-
+                    alert(`Verification successfully ${status === 2 ? 'approved' : 'rejected'}!`);
+                    this.closeDetailModal();
                     this.refresh();
-
-
-
                 } else {
-
-
-
-                    const d = await res.json();
-
-
-
-                    alert(d.error || 'Failed to update');
-
-
-
+                    const d = await res.json().catch(() => ({}));
+                    alert(d.error || 'Failed to update verification status.');
                 }
-
-
-
-            } catch (err) { alert('Network error: ' + err.message); }
-
-
-
+            } catch (err) {
+                alert('Network error: ' + err.message);
+            }
         }
-
-
-
     };
 
 
