@@ -11936,9 +11936,9 @@ input:checked + .ctrl-slider:before {
 
         const c = window._anpCategorize(n);
         const t = (n.type || '').toLowerCase();
-        const txt = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
+        const fullText = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
 
-        // Extract booking ID if present
+        // Extract booking ID with robust regex
         let bId = n.booking_id || null;
         if (!bId) {
             const m = (n.title || '' + ' ' + (n.message || '')).match(/#(\d+)/);
@@ -11946,73 +11946,96 @@ input:checked + .ctrl-slider:before {
         }
 
         // 1. REFUND REQUESTS
-        if (c.cat === 'refunds') {
+        // Notification says: "Refund request of PHP ... for cancelled booking #721 by ..."
+        if (c.cat === 'refunds' || t.includes('refund') || fullText.includes('refund')) {
             switchTab('bookings');
+            if (bId) window._anpTargetRefundBookingId = bId;
             if (typeof switchBookingTab === 'function') switchBookingTab('refunds');
-            setTimeout(() => {
-                let target = bId ? document.getElementById('refund-card-' + bId) : null;
-                if (!target && bId) {
-                    target = document.querySelector(`[data-booking-id="${bId}"]`);
+
+            // Polling check to pulse the card as soon as Refunds.load() renders
+            let attempts = 0;
+            const checkRefundCard = setInterval(() => {
+                attempts++;
+                const card = bId ? (document.getElementById('refund-card-' + bId) || document.querySelector(`[data-booking-id="${bId}"]`)) : null;
+                if (card) {
+                    clearInterval(checkRefundCard);
+                    window._anpPulseElement(card);
+                } else if (attempts > 15) {
+                    clearInterval(checkRefundCard);
+                    // If card is not in current view or needs modal
+                    if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
+                        Bookings.view(bId);
+                    }
                 }
-                if (target) {
-                    window._anpPulseElement(target);
-                } else if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
-                    Bookings.view(bId);
-                }
-            }, 300);
+            }, 150);
             return;
         }
 
         // 2. EXTENSION REQUESTS
-        if (c.cat === 'extensions') {
+        if (c.cat === 'extensions' || t.includes('extension') || fullText.includes('extension')) {
             switchTab('bookings');
             if (typeof switchBookingTab === 'function') switchBookingTab('extensions');
-            setTimeout(() => {
-                let target = bId ? document.getElementById('ext-req-' + bId) : null;
-                if (!target && bId) {
-                    target = document.querySelector(`[data-booking-id="${bId}"]`) || document.querySelector(`[data-ext-id]`);
+
+            let attempts = 0;
+            const checkExtCard = setInterval(() => {
+                attempts++;
+                const card = bId ? (document.getElementById('ext-req-' + bId) || document.querySelector(`[data-booking-id="${bId}"]`)) : null;
+                if (card) {
+                    clearInterval(checkExtCard);
+                    window._anpPulseElement(card);
+                } else if (attempts > 15) {
+                    clearInterval(checkExtCard);
+                    if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
+                        Bookings.view(bId);
+                    }
                 }
-                if (target) {
-                    window._anpPulseElement(target);
-                } else if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
-                    Bookings.view(bId);
-                }
-            }, 300);
+            }, 150);
             return;
         }
 
-        // 3. RENTER / LICENSE VERIFICATION
-        if (c.cat === 'renters' || t === 'license' || t === 'admin_license_upload') {
+        // 3. RENTER / LICENSE VERIFICATIONS
+        if (c.cat === 'renters' || t === 'license' || t === 'admin_license_upload' || fullText.includes('license')) {
             switchTab('users');
-            if (n.user_id) {
-                setTimeout(() => {
-                    const uCard = document.getElementById('user-card-' + n.user_id);
-                    if (uCard) {
-                        window._anpPulseElement(uCard);
-                    } else if (typeof UserMgmt !== 'undefined' && UserMgmt.openModal) {
-                        UserMgmt.openModal(n.user_id);
-                    }
-                }, 300);
-            }
+            const uId = n.user_id || null;
+            setTimeout(() => {
+                let card = uId ? document.getElementById('user-card-' + uId) : null;
+                if (!card && uId) card = document.getElementById('verif-card-' + uId);
+                if (card) {
+                    window._anpPulseElement(card);
+                } else if (uId && typeof UserMgmt !== 'undefined' && UserMgmt.openModal) {
+                    UserMgmt.openModal(uId);
+                }
+            }, 300);
             return;
         }
 
         // 4. CHAT MESSAGES
         if (c.cat === 'chat') {
-            switchTab('chat');
+            const uId = n.user_id || null;
+            const uName = n.customer_name || n.user_name || null;
+            if (uId && typeof AdminChatWithUser === 'function') {
+                AdminChatWithUser(bId, uId, uName);
+            } else {
+                switchTab('chat');
+            }
             return;
         }
 
-        // 5. BOOKINGS (New, Payment, Cancelled, Alerts, No Show)
+        // 5. BOOKINGS (New, Payment Received, Cancelled, Alerts, No Show)
         if (bId) {
             switchTab('bookings');
-            if (c.cat === 'bookings' || t === 'admin_new_booking') {
-                if (typeof switchBookingTab === 'function') switchBookingTab('new');
-            } else {
-                if (typeof switchBookingTab === 'function') switchBookingTab('all');
+            const isNew = c.cat === 'bookings' || t === 'admin_new_booking';
+            if (typeof switchBookingTab === 'function') {
+                switchBookingTab(isNew ? 'new' : 'all');
             }
-            // Open booking details modal directly for clear inspection
+
+            // Highlight row if rendered, and open detail view
             setTimeout(() => {
+                const row = document.getElementById('booking-row-' + bId);
+                if (row) {
+                    window._anpPulseElement(row);
+                }
+                // Open booking details modal directly for the admin
                 if (typeof Bookings !== 'undefined' && typeof Bookings.view === 'function') {
                     Bookings.view(bId);
                 }
@@ -12020,7 +12043,7 @@ input:checked + .ctrl-slider:before {
             return;
         }
 
-        // Fallback default
+        // Default fallback
         switchTab('bookings');
     };
 
@@ -20319,7 +20342,7 @@ function toggleNewsletterModal(show = true) {
                 const carDisplay = b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`.trim() || 'N/A';
 
                 return `
-                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
+                    <tr id="booking-row-${b.id}" data-booking-id="${b.id}" style="border-bottom: 1px solid var(--border); transition: all 0.25s ease;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
                         <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
                         <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
                             <div>${b.customer_name || 'N/A'}</div>
@@ -20416,7 +20439,7 @@ function toggleNewsletterModal(show = true) {
                 const carDisplay = b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`.trim() || 'N/A';
 
                 return `
-                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
+                    <tr id="booking-row-${b.id}" data-booking-id="${b.id}" style="border-bottom: 1px solid var(--border); transition: all 0.25s ease;" onmouseover="this.style.background='var(--surface-container)'" onmouseout="this.style.background='transparent'">
                         <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
                         <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
                             <div>${b.customer_name || 'N/A'}</div>
@@ -23569,7 +23592,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+                <div id="verif-card-${v.user_id || v.id}" data-user-id="${v.user_id || v.id}" class="stat-card" style="padding: 20px; margin-bottom: 16px; transition: all 0.3s ease;">
 
 
 
@@ -28333,7 +28356,39 @@ function toggleNewsletterModal(show = true) {
             const badge = document.getElementById('refundTabBadge');
             if (badge) { badge.textContent = urgentCount; badge.style.display = urgentCount > 0 ? 'flex' : 'none'; }
 
+            // If a specific target booking was requested, ensure we switch to the filter where it lives
+            if (window._anpTargetRefundBookingId) {
+                const targetId = window._anpTargetRefundBookingId;
+                if (refundPending.some(b => b.id == targetId)) {
+                    this._filter = 'pending';
+                } else if (refunded.some(b => b.id == targetId)) {
+                    this._filter = 'refunded';
+                } else if (needsRefund.some(b => b.id == targetId)) {
+                    this._filter = 'needs';
+                }
+                // sync chip buttons
+                document.querySelectorAll('.rf-chip').forEach(b => {
+                    const active = b.dataset.filter === this._filter;
+                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                    b.style.color       = active ? 'white' : 'var(--text-main)';
+                    b.classList.toggle('rf-chip-active', active);
+                });
+            }
+
             this._renderFiltered();
+
+            // Pulse target refund card if waiting
+            if (window._anpTargetRefundBookingId) {
+                const targetId = window._anpTargetRefundBookingId;
+                window._anpTargetRefundBookingId = null;
+                setTimeout(() => {
+                    const card = document.getElementById('refund-card-' + targetId);
+                    if (card && typeof window._anpPulseElement === 'function') {
+                        window._anpPulseElement(card);
+                    }
+                }, 150);
+            }
         },
 
         _renderFiltered() {
