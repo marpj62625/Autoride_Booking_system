@@ -11043,9 +11043,9 @@ input:checked + .ctrl-slider:before {
     <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
         <div style="flex:1; min-width:200px; position:relative;">
             <i class="fas fa-search" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#64748b; font-size:0.9rem;"></i>
-            <input type="text" id="umSearch" maxlength="50" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 14px 12px 42px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.88rem; font-weight:600; outline:none; box-sizing:border-box;">
+            <input type="text" id="umSearch" maxlength="50" oninput="UserMgmt.onSearch(this.value)" placeholder="Search name, email, phone..." style="width:100%; padding:12px 14px 12px 42px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.88rem; font-weight:600; outline:none; box-sizing:border-box;">
         </div>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <select id="umSort" onchange="UserMgmt.setSort(this.value)" style="padding:11px 14px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.82rem; font-weight:700; outline:none; cursor:pointer;">
                 <option value="date_desc">Registered (Newest)</option>
                 <option value="date_asc">Registered (Oldest)</option>
@@ -11056,6 +11056,15 @@ input:checked + .ctrl-slider:before {
                 <option value="loyalty_desc">Points (Highest)</option>
                 <option value="verified_first">Verified First</option>
             </select>
+            <!-- View Toggle: Modular (Card) vs List View -->
+            <div style="display:flex; background:#e2e8f0; padding:3px; border-radius:50px; gap:2px; border:1.5px solid #cbd5e1;">
+                <button type="button" id="umViewModularBtn" onclick="UserMgmt.setView('modular')" style="padding:7px 12px; border-radius:50px; border:none; background:#00B14F; color:#ffffff; font-size:0.78rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; transition:all 0.15s;" title="Modular View">
+                    <i class="fas fa-th-large"></i> Modular
+                </button>
+                <button type="button" id="umViewListBtn" onclick="UserMgmt.setView('list')" style="padding:7px 12px; border-radius:50px; border:none; background:transparent; color:#64748b; font-size:0.78rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; transition:all 0.15s;" title="List View">
+                    <i class="fas fa-list"></i> List
+                </button>
+            </div>
             <button onclick="UserMgmt.exportCSV()" style="background:rgba(0,177,79,0.1); border:1.5px solid #00B14F; color:#00B14F; width:44px; height:44px; border-radius:50px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;" title="Export CSV"><i class="fas fa-download" style="font-size:0.9rem;"></i></button>
         </div>
     </div>
@@ -11072,7 +11081,32 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading renters...</div></div>
+<div id="umList" class="view-modular"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading renters...</div></div>
+
+    <!-- Renter Management Pagination Bar -->
+    <div id="umPagination" style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#ffffff; border:1.5px solid #e2e8f0; border-radius:14px; margin-top:18px; flex-wrap:wrap; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:0.8rem; color:#64748b; font-weight:700;">Show:</span>
+            <select id="umPageSize" onchange="UserMgmt.setPageSize(this.value)" style="padding:7px 12px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; color:#0f172a; font-size:0.8rem; font-weight:700; cursor:pointer; outline:none;">
+                <option value="6">6 per page</option>
+                <option value="12" selected>12 per page</option>
+                <option value="24">24 per page</option>
+                <option value="50">50 per page</option>
+            </select>
+        </div>
+        
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span id="umPageInfo" style="font-size:0.82rem; color:#0f172a; font-weight:700;">Page 1 of 1 (0 renters)</span>
+            <div style="display:flex; gap:6px;">
+                <button id="umPrevBtn" onclick="UserMgmt.prevPage()" style="padding:7px 14px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; color:#475569; font-size:0.8rem; font-weight:700; cursor:pointer; transition:all 0.2s;" disabled>
+                    <i class="fas fa-chevron-left" style="margin-right:4px;"></i> Prev
+                </button>
+                <button id="umNextBtn" onclick="UserMgmt.nextPage()" style="padding:7px 14px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px; color:#475569; font-size:0.8rem; font-weight:700; cursor:pointer; transition:all 0.2s;" disabled>
+                    Next <i class="fas fa-chevron-right" style="margin-left:4px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
 
 
@@ -34217,6 +34251,53 @@ function toggleNewsletterModal(show = true) {
 
 
         _filter: 'all',
+        currentView: 'modular',
+        currentPage: 1,
+        pageSize: 12,
+
+        setView(v) {
+            this.currentView = v;
+            const modularBtn = document.getElementById('umViewModularBtn');
+            const listBtn = document.getElementById('umViewListBtn');
+            if (modularBtn && listBtn) {
+                if (v === 'modular') {
+                    modularBtn.style.background = '#00B14F';
+                    modularBtn.style.color = '#ffffff';
+                    listBtn.style.background = 'transparent';
+                    listBtn.style.color = '#64748b';
+                } else {
+                    listBtn.style.background = '#00B14F';
+                    listBtn.style.color = '#ffffff';
+                    modularBtn.style.background = 'transparent';
+                    modularBtn.style.color = '#64748b';
+                }
+            }
+            if (typeof applyUserMgmtLayout === 'function') setTimeout(applyUserMgmtLayout, 10);
+            this.applyFilters();
+        },
+
+        setPageSize(size) {
+            this.pageSize = parseInt(size, 10) || 12;
+            this.currentPage = 1;
+            this.applyFilters();
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.applyFilters();
+            }
+        },
+
+        nextPage() {
+            this.currentPage++;
+            this.applyFilters();
+        },
+
+        onSearch(query) {
+            this.currentPage = 1;
+            this.applyFilters();
+        },
 
 
 
@@ -34335,6 +34416,7 @@ function toggleNewsletterModal(show = true) {
 
         setSort(key) {
             this._sortBy = key;
+            this.currentPage = 1;
             const el = document.getElementById('umSort');
             if (el && el.value !== key) el.value = key;
             this.applyFilters();
@@ -34367,6 +34449,7 @@ function toggleNewsletterModal(show = true) {
 
 
             this._filter = f;
+            this.currentPage = 1;
 
 
 
@@ -34455,191 +34538,210 @@ function toggleNewsletterModal(show = true) {
 
 
         _render(list) {
-
-
-
             const el = document.getElementById('umList');
+            const pageInfo = document.getElementById('umPageInfo');
+            const prevBtn = document.getElementById('umPrevBtn');
+            const nextBtn = document.getElementById('umNextBtn');
 
+            if (!el) return;
 
-
-            if (!list.length) {
-
-
-
-                el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No renters found</div>';
-
-
-
-                return;
-
-
-
+            if (this.currentView === 'list') {
+                el.classList.remove('view-modular');
+                el.classList.add('view-list');
+            } else {
+                el.classList.remove('view-list');
+                el.classList.add('view-modular');
             }
 
-
-
-            el.innerHTML = list.map(u => {
-
-
-
-                const verifiedBadge = u.is_verified === 2
-
-
-
-                    ? `<span style="background:rgba(0,177,79,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
-
-
-
-                    : u.is_verified === 1
-
-
-
-                    ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
-
-
-
-                    : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
-
-
-
-                const frozenBadge = u.is_frozen
-
-
-
-                    ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
-
-
-
-                    : '';
-
-                const violationBadge = u.violation_permanently_restricted
-                    ? `<span style="background:rgba(220,38,38,0.2);color:#dc2626;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(220,38,38,0.4);"><i class="fas fa-ban" style="font-size:0.55rem;margin-right:2px;"></i>BANNED</span>`
-                    : (u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date())
-                    ? `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="font-size:0.55rem;margin-right:2px;"></i>SUSPENDED</span>`
-                    : (u.violation_strikes > 0)
-                    ? `<span style="background:rgba(251,146,60,0.15);color:#fb923c;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(251,146,60,0.3);"><i class="fas fa-exclamation-triangle" style="font-size:0.55rem;margin-right:2px;"></i>${u.violation_strikes} STRIKE${(u.violation_strikes || 0) !== 1 ? 'S' : ''}</span>`
-                    : '';
-
-                const regularBadge = u.is_regular_customer
-                    ? `<span style="background:rgba(234,179,8,0.18);color:#eab308;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(234,179,8,0.4);"><i class="fas fa-crown" style="font-size:0.55rem;margin-right:2px;"></i>REGULAR VIP</span>`
-                    : '';
-
-                const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-
-
-
-                let joined = 'N/A';
-
-
-
-                if (u.created_at) {
-
-
-
-                    try {
-
-
-
-                        const dStr = u.created_at.replace(' ', 'T');
-
-
-
-                        const parsedDate = new Date(dStr);
-
-
-
-                        if (!isNaN(parsedDate.getTime())) {
-
-
-
-                            joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
-
-
-
-                        } else {
-
-
-
-                            joined = String(u.created_at).split(' ')[0] || 'N/A';
-
-
-
-                        }
-
-
-
-                    } catch(e) { joined = 'N/A'; }
-
-
-
-                }
-
-
-
-                return `
-                <div id="user-card-${u.id}" data-user-id="${u.id}" onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.3s ease;">
-                    ${u.profile_picture ? `
-                        <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();viewLicenseImage('${u.profile_picture}')" title="Click to enlarge">` : `
-                        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;color:#fff;">${avatar}</div>`}
-
-
-
-                    <div style="flex:1;min-width:0;">
-
-
-
-                        <div style="font-weight:800;font-size:0.88rem;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.full_name || 'No Name'}</div>
-
-
-
-                        <div style="font-size:0.72rem;color:#475569;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px;">
-                            <i class="fas fa-user-shield" style="color:#00B14F;font-size:0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>
-                            <span>${maskEmail(u.email)}</span>
+            const total = list.length;
+            const totalPages = Math.ceil(total / this.pageSize) || 1;
+            if (this.currentPage > totalPages) this.currentPage = totalPages;
+            if (this.currentPage < 1) this.currentPage = 1;
+
+            if (pageInfo) pageInfo.textContent = `Page ${this.currentPage} of ${totalPages} (${total} renter${total !== 1 ? 's' : ''})`;
+            if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = this.currentPage >= totalPages;
+
+            if (!total) {
+                el.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--text-muted);background:#ffffff;border:1.5px solid #e2e8f0;border-radius:16px;"><i class="fas fa-users-slash" style="font-size:2.5rem;opacity:0.3;margin-bottom:12px;display:block;"></i>No renters found matching your filter</div>';
+                return;
+            }
+
+            const startIndex = (this.currentPage - 1) * this.pageSize;
+            const pagedList = list.slice(startIndex, startIndex + this.pageSize);
+
+            if (this.currentView === 'list') {
+                // LIST VIEW TABLE
+                el.innerHTML = `
+                    <div class="um-table-container" style="background:#ffffff; border:1.5px solid #e2e8f0; border-radius:16px; overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.04); margin-bottom:16px;">
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                                <thead>
+                                    <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                                        <th style="padding:13px 16px; font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Renter Profile</th>
+                                        <th style="padding:13px 16px; font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Verification & Status</th>
+                                        <th style="padding:13px 16px; font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Registered Date</th>
+                                        <th style="padding:13px 16px; font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Activity & Spend</th>
+                                        <th style="padding:13px 16px; text-align:center; font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase; letter-spacing:0.5px; width:130px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${pagedList.map(u => {
+                                        const verifiedBadge = u.is_verified === 2
+                                            ? `<span style="background:rgba(0,177,79,0.15);color:#00B14F;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                                            : u.is_verified === 1
+                                            ? `<span style="background:rgba(245,158,11,0.15);color:#d97706;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
+                                            : `<span style="background:rgba(148,163,184,0.15);color:#64748b;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
+
+                                        const frozenBadge = u.is_frozen
+                                            ? `<span style="background:rgba(239,68,68,0.15);color:#ef4444;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
+                                            : '';
+
+                                        const violationBadge = u.violation_permanently_restricted
+                                            ? `<span style="background:rgba(220,38,38,0.2);color:#dc2626;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(220,38,38,0.4);"><i class="fas fa-ban" style="font-size:0.55rem;margin-right:2px;"></i>BANNED</span>`
+                                            : (u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date())
+                                            ? `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="font-size:0.55rem;margin-right:2px;"></i>SUSPENDED</span>`
+                                            : (u.violation_strikes > 0)
+                                            ? `<span style="background:rgba(251,146,60,0.15);color:#fb923c;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(251,146,60,0.3);"><i class="fas fa-exclamation-triangle" style="font-size:0.55rem;margin-right:2px;"></i>${u.violation_strikes} STRIKE${(u.violation_strikes || 0) !== 1 ? 'S' : ''}</span>`
+                                            : '';
+
+                                        const regularBadge = u.is_regular_customer
+                                            ? `<span style="background:rgba(234,179,8,0.18);color:#d97706;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(234,179,8,0.4);"><i class="fas fa-crown" style="font-size:0.55rem;margin-right:2px;"></i>VIP</span>`
+                                            : '';
+
+                                        const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
+
+                                        let joined = 'N/A';
+                                        if (u.created_at) {
+                                            try {
+                                                const dStr = u.created_at.replace(' ', 'T');
+                                                const parsedDate = new Date(dStr);
+                                                if (!isNaN(parsedDate.getTime())) {
+                                                    joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+                                                } else {
+                                                    joined = String(u.created_at).split(' ')[0] || 'N/A';
+                                                }
+                                            } catch(e) { joined = 'N/A'; }
+                                        }
+
+                                        return `
+                                            <tr id="user-card-${u.id}" data-user-id="${u.id}" onclick="UserMgmt.openModal(${u.id})" style="border-bottom:1px solid #e2e8f0; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                                <td style="padding:13px 16px; vertical-align:middle;">
+                                                    <div style="display:flex; align-items:center; gap:12px;">
+                                                        ${u.profile_picture ? `
+                                                            <img src="${u.profile_picture}" style="width:42px; height:42px; border-radius:12px; object-fit:cover; border:2px solid #00B14F; flex-shrink:0; cursor:pointer;" onclick="event.stopPropagation();viewLicenseImage('${u.profile_picture}')" title="Click to enlarge">` : `
+                                                            <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#00B14F,#005339); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; flex-shrink:0; color:#fff;">${avatar}</div>`}
+                                                        <div style="min-width:0;">
+                                                            <div style="font-weight:800; font-size:0.88rem; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
+                                                            <div style="font-size:0.75rem; color:#64748b; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                                                                <i class="fas fa-user-shield" style="color:#00B14F; font-size:0.65rem;" title="Data Privacy Act Protected"></i>
+                                                                <span>${maskEmail(u.email)}</span>
+                                                            </div>
+                                                            ${u.phone ? `<div style="font-size:0.72rem; color:#64748b; margin-top:1px;"><i class="fas fa-phone" style="font-size:0.62rem; margin-right:4px;"></i>${u.phone}</div>` : ''}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="padding:13px 16px; vertical-align:middle;">
+                                                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                                                        ${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}
+                                                    </div>
+                                                </td>
+                                                <td style="padding:13px 16px; vertical-align:middle;">
+                                                    <div style="font-size:0.82rem; font-weight:700; color:#0f172a;">${joined}</div>
+                                                    <div style="font-size:0.7rem; color:#64748b;">Member</div>
+                                                </td>
+                                                <td style="padding:13px 16px; vertical-align:middle;">
+                                                    <div style="font-size:0.82rem; font-weight:800; color:#00B14F;">
+                                                        <i class="fas fa-wallet" style="font-size:0.72rem; margin-right:3px;"></i> ₱${(u.total_spent || 0).toLocaleString()}
+                                                    </div>
+                                                    <div style="font-size:0.72rem; font-weight:700; color:#d97706; margin-top:2px;">
+                                                        <i class="fas fa-star" style="font-size:0.65rem; margin-right:3px;"></i> ${u.loyalty_points || 0} pts
+                                                    </div>
+                                                </td>
+                                                <td style="padding:13px 16px; vertical-align:middle; text-align:center;">
+                                                    <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1); border:1px solid rgba(0,177,79,0.25); color:#00B14F; width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Send Notification">
+                                                            <i class="fas fa-bell" style="font-size:0.82rem;"></i>
+                                                        </button>
+                                                        <button onclick="event.stopPropagation(); UserMgmt.openModal(${u.id})" style="background:#0f172a; border:none; color:#ffffff; padding:7px 12px; border-radius:8px; font-size:0.75rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px;" title="View Profile">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // MODULAR VIEW CARDS
+                el.innerHTML = pagedList.map(u => {
+                    const verifiedBadge = u.is_verified === 2
+                        ? `<span style="background:rgba(0,177,79,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                        : u.is_verified === 1
+                        ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
+                        : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
+
+                    const frozenBadge = u.is_frozen
+                        ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
+                        : '';
+
+                    const violationBadge = u.violation_permanently_restricted
+                        ? `<span style="background:rgba(220,38,38,0.2);color:#dc2626;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(220,38,38,0.4);"><i class="fas fa-ban" style="font-size:0.55rem;margin-right:2px;"></i>BANNED</span>`
+                        : (u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date())
+                        ? `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="font-size:0.55rem;margin-right:2px;"></i>SUSPENDED</span>`
+                        : (u.violation_strikes > 0)
+                        ? `<span style="background:rgba(251,146,60,0.15);color:#fb923c;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(251,146,60,0.3);"><i class="fas fa-exclamation-triangle" style="font-size:0.55rem;margin-right:2px;"></i>${u.violation_strikes} STRIKE${(u.violation_strikes || 0) !== 1 ? 'S' : ''}</span>`
+                        : '';
+
+                    const regularBadge = u.is_regular_customer
+                        ? `<span style="background:rgba(234,179,8,0.18);color:#eab308;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(234,179,8,0.4);"><i class="fas fa-crown" style="font-size:0.55rem;margin-right:2px;"></i>REGULAR VIP</span>`
+                        : '';
+
+                    const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
+
+                    let joined = 'N/A';
+                    if (u.created_at) {
+                        try {
+                            const dStr = u.created_at.replace(' ', 'T');
+                            const parsedDate = new Date(dStr);
+                            if (!isNaN(parsedDate.getTime())) {
+                                joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+                            } else {
+                                joined = String(u.created_at).split(' ')[0] || 'N/A';
+                            }
+                        } catch(e) { joined = 'N/A'; }
+                    }
+
+                    return `
+                    <div id="user-card-${u.id}" data-user-id="${u.id}" onclick="UserMgmt.openModal(${u.id})" class="um-desktop-card" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.3s ease;">
+                        ${u.profile_picture ? `
+                            <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();viewLicenseImage('${u.profile_picture}')" title="Click to enlarge">` : `
+                            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;color:#fff;">${avatar}</div>`}
+
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:800;font-size:0.88rem;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.full_name || 'No Name'}</div>
+                            <div style="font-size:0.72rem;color:#475569;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px;">
+                                <i class="fas fa-user-shield" style="color:#00B14F;font-size:0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>
+                                <span>${maskEmail(u.email)}</span>
+                            </div>
+                            <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}</div>
                         </div>
 
-
-
-                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}</div>
-
-
-
-                    </div>
-
-
-
-                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
-
-
-
-                        <div style="font-size:0.65rem;color:#64748b;font-weight:600;text-align:right;">${joined}</div>
-
-                        <div style="font-size:0.68rem;color:var(--amber);font-weight:700;"><i class="fas fa-star" style="font-size:0.58rem;"></i> ${u.loyalty_points || 0} pts</div>
-                        <div style="font-size:0.68rem;color:#00B14F;font-weight:800;"><i class="fas fa-wallet" style="font-size:0.58rem;"></i> ₱${(u.total_spent || 0).toLocaleString()}</div>
-
-                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);color:#00B14F;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Send Notification">
-
-
-
-                            <i class="fas fa-bell" style="font-size:0.8rem;"></i>
-
-
-
-                        </button>
-
-
-
-                    </div>
-
-
-
-                </div>`;
-
-
-
-            }).join('');
-
-
-
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+                            <div style="font-size:0.65rem;color:#64748b;font-weight:600;text-align:right;">${joined}</div>
+                            <div style="font-size:0.68rem;color:var(--amber);font-weight:700;"><i class="fas fa-star" style="font-size:0.58rem;"></i> ${u.loyalty_points || 0} pts</div>
+                            <div style="font-size:0.68rem;color:#00B14F;font-weight:800;"><i class="fas fa-wallet" style="font-size:0.58rem;"></i> ₱${(u.total_spent || 0).toLocaleString()}</div>
+                            <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);color:#00B14F;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Send Notification">
+                                <i class="fas fa-bell" style="font-size:0.8rem;"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
         },
 
 
@@ -38852,10 +38954,24 @@ function toggleNewsletterModal(show = true) {
             var umList = document.getElementById('umList');
             if (!umList) return;
             umList.classList.add('um-desktop-list');
-            Array.from(umList.children).forEach(function(card) {
-                if (card.style && card.style.display !== 'none') {
-                    card.classList.add('um-desktop-card');
-                }
+            if (typeof UserMgmt !== 'undefined' && UserMgmt.currentView === 'list') {
+                umList.classList.remove('view-modular');
+                umList.classList.add('view-list');
+            } else {
+                umList.classList.remove('view-list');
+                umList.classList.add('view-modular');
+                Array.from(umList.children).forEach(function(card) {
+                    if (card.style && card.style.display !== 'none' && !card.classList.contains('um-table-container')) {
+                        card.classList.add('um-desktop-card');
+                    }
+                });
+            }
+            var tab = document.getElementById('users');
+            if (tab) {
+                tab.style.removeProperty('padding-bottom');
+                tab.classList.add('users-desktop-tab');
+            }
+        }
             });
             // Fix tab: only remove bottom padding (was 100px for mobile nav bar)
             var tab = document.getElementById('users');

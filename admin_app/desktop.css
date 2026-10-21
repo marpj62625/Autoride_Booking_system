@@ -312,11 +312,15 @@
     #users > div[style*="overflow-x:auto"],
     #users > div[style*="overflow-x: auto"] { width: 100% !important; margin-bottom: 18px !important; }
 
-    /* User list grid */
-    #umList.um-desktop-list {
+    /* User list grid (modular view) */
+    #umList.um-desktop-list.view-modular {
         display: grid !important;
         grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
         gap: 16px !important;
+        width: 100% !important;
+    }
+    #umList.um-desktop-list.view-list {
+        display: block !important;
         width: 100% !important;
     }
 
