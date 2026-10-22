@@ -10671,6 +10671,21 @@ def get_detailed_stats():
         cur.execute(exp_query, tuple(exp_params))
         total_expenses = float(cur.fetchone()['total_expenses'] or 0)
 
+        # 6. Total Refunds
+        ref_query = "SELECT COALESCE(SUM(b.refund_amount), 0) as total_refunds FROM bookings b JOIN vehicles v ON b.vehicle_id = v.id WHERE b.payment_status = 'Refunded'"
+        ref_params = []
+        if location_filter:
+            ref_query += " AND v.location = %s"
+            ref_params.append(location_filter)
+        if date_from:
+            ref_query += " AND b.start_date >= %s"
+            ref_params.append(date_from)
+        if date_to:
+            ref_query += " AND b.start_date <= %s"
+            ref_params.append(date_to)
+        cur.execute(ref_query, tuple(ref_params))
+        total_refunds = float(cur.fetchone()['total_refunds'] or 0)
+
         total_revenue = float(basic_stats['total_revenue'] or 0)
         net_profit = total_revenue - total_expenses
 
@@ -10681,6 +10696,7 @@ def get_detailed_stats():
             "fleetDistribution": fleet_dist,
             "topVehicles": top_vehicles,
             "totalExpenses": total_expenses,
+            "totalRefunds": total_refunds,
             "netProfit": net_profit
         })
 
@@ -10790,6 +10806,21 @@ def export_reports_excel():
             fleet_params.append(vehicle_type)
         cur.execute(fleet_query, tuple(fleet_params))
         active_fleet = int(cur.fetchone()['count'] or 0)
+
+        # Refunds
+        xref_query = "SELECT COALESCE(SUM(b.refund_amount), 0) as total_refunds FROM bookings b JOIN vehicles v ON b.vehicle_id = v.id WHERE b.payment_status = 'Refunded'"
+        xref_params = []
+        if location_filter:
+            xref_query += " AND v.location = %s"
+            xref_params.append(location_filter)
+        if date_from:
+            xref_query += " AND b.start_date >= %s"
+            xref_params.append(date_from)
+        if date_to:
+            xref_query += " AND b.start_date <= %s"
+            xref_params.append(date_to)
+        cur.execute(xref_query, tuple(xref_params))
+        total_refunds_excel = float(cur.fetchone()['total_refunds'] or 0)
 
         # 2. Trend Data
         is_year_view = (filter_period == 'year')
@@ -10943,16 +10974,16 @@ def export_reports_excel():
         ws_dash["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
         ws_dash["A1"].fill = PatternFill(start_color="00B14F", end_color="00B14F", fill_type="solid")
         ws_dash["A1"].alignment = Alignment(horizontal="center", vertical="center")
-        ws_dash.merge_cells("A1:L2")
+        ws_dash.merge_cells("A1:N2")
 
         # Subtitle Banner
         date_subtitle = f"Period: {date_from or 'All Time'} to {date_to or 'Present'} | Generated: {datetime.now().strftime('%b %d, %Y %I:%M %p')}"
         ws_dash["A3"] = date_subtitle
         ws_dash["A3"].font = Font(name="Calibri", size=10, italic=True, color="64748B")
         ws_dash["A3"].alignment = Alignment(horizontal="center", vertical="center")
-        ws_dash.merge_cells("A3:L3")
+        ws_dash.merge_cells("A3:N3")
 
-        # 4 Symmetrical Horizontal KPI Cards across Columns A to L (Rows 5-7)
+        # 5 Symmetrical Horizontal KPI Cards across Columns A to N (Rows 5-7)
         margin_pct = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
         kpi_cards = [
             {
@@ -10978,6 +11009,13 @@ def export_reports_excel():
             },
             {
                 "cols": (10, 12),  # J:L
+                "title": "TOTAL REFUNDS",
+                "value": f"PHP {total_refunds_excel:,.2f}",
+                "sub": "Processed Refunds",
+                "val_color": "DC2626"
+            },
+            {
+                "cols": (13, 14),  # M:N
                 "title": "NET PROFIT",
                 "value": f"PHP {net_profit:,.2f}",
                 "sub": f"Operating Margin: {margin_pct:.1f}%",
@@ -14259,6 +14297,7 @@ def get_admin_stats_v2():
         rev_q = "SELECT SUM(total_price) as rev FROM bookings b WHERE b.payment_status IN ('Paid', 'Fully Paid')" + date_filter
         book_q = "SELECT COUNT(*) as count FROM bookings b WHERE 1=1" + date_filter
         v_q = "SELECT COUNT(*) as count FROM vehicles WHERE status = 'Available'"
+        refund_q = "SELECT COALESCE(SUM(refund_amount), 0) as refund_total FROM bookings b WHERE payment_status = 'Refunded'" + date_filter
 
         if location_filter:
             cur.execute(rev_q + " AND b.pickup_location = %s", tuple(params + [location_filter]))
@@ -14269,6 +14308,9 @@ def get_admin_stats_v2():
 
             cur.execute(v_q + " AND location = %s", (location_filter,))
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
+
+            cur.execute(refund_q + " AND b.pickup_location = %s", tuple(params + [location_filter]))
+            stats['total_refunds'] = float(cur.fetchone()['refund_total'] or 0)
         else:
             cur.execute(rev_q, tuple(params))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
@@ -14278,6 +14320,9 @@ def get_admin_stats_v2():
 
             cur.execute(v_q)
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
+
+            cur.execute(refund_q, tuple(params))
+            stats['total_refunds'] = float(cur.fetchone()['refund_total'] or 0)
 
         # 1. Filtered Revenue Trend (matches the active dashboard filter)
         loc_clause = " AND b.pickup_location = %s" if location_filter else ""
@@ -14368,6 +14413,7 @@ def get_admin_stats_v2():
             "summary": stats, 
             "total_revenue": stats['total_revenue'], 
             "total_bookings": stats['total_bookings'],
+            "total_refunds": stats.get('total_refunds', 0),
             "revenueTrend": trend, 
             "fleetDistribution": fleet,
             "bookingsByStatus": booking_breakdown,

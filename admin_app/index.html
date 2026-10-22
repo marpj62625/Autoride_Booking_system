@@ -5461,6 +5461,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
             </div>
 
+            <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">REFUNDS</h5>
+                <div id="dashTotalRefunds" style="font-size:1.1rem;font-weight:800;color:var(--danger,#ef4444);">-</div>
+            </div>
+
 
 
         </div>
@@ -9637,6 +9642,11 @@ input:checked + .ctrl-slider:before {
 
 
 
+            </div>
+
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL REFUNDS</h5>
+                <div class="value" id="repTotalRefunds" style="font-size:1.2rem;font-weight:700;color:var(--danger,#ef4444);">₱0</div>
             </div>
 
 
@@ -28423,6 +28433,7 @@ function toggleNewsletterModal(show = true) {
                 const totalBook = data.totalBookings || 0;
                 const totalExp = data.totalExpenses || 0;
                 const netProf = data.netProfit || 0;
+                const totalRef = data.totalRefunds || 0;
 
                 document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
                 document.getElementById('repActive').textContent = totalBook;
@@ -28431,6 +28442,8 @@ function toggleNewsletterModal(show = true) {
                 document.getElementById('repNetProfit').textContent = '\u20B1' + netProf.toLocaleString();
                 const activeFleetCount = (data.fleetDistribution || []).reduce((sum, item) => sum + (item.count || 0), 0);
                 document.getElementById('repFleet').textContent = activeFleetCount;
+                var elRefRep = document.getElementById('repTotalRefunds');
+                if (elRefRep) elRefRep.textContent = '\u20B1' + totalRef.toLocaleString();
 
                 this.renderRevenueChart(data.revenueTrend || []);
                 this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
@@ -30306,6 +30319,19 @@ function toggleNewsletterModal(show = true) {
                     }
                 });
 
+                var refundObj = { val: 0 };
+                anime({
+                    targets: refundObj,
+                    val: Number(data.total_refunds || 0),
+                    round: 1,
+                    easing: 'easeOutExpo',
+                    duration: 1100,
+                    update: function() {
+                        var el = document.getElementById('dashTotalRefunds');
+                        if (el) el.textContent = '\u20B1' + Number(refundObj.val).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                });
+
                 anime({
                     targets: '#dashboard .stat-card',
                     opacity: [0, 1],
@@ -30317,6 +30343,8 @@ function toggleNewsletterModal(show = true) {
             } else {
                 document.getElementById('dashTotalRevenue').textContent = '\u20B1' + targetRev.toLocaleString('en-PH', {minimumFractionDigits: 2});
                 document.getElementById('dashTotalBookings').textContent = targetBookings;
+                var elR = document.getElementById('dashTotalRefunds');
+                if (elR) elR.textContent = '\u20B1' + Number(data.total_refunds || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
 
 
@@ -30478,7 +30506,7 @@ function toggleNewsletterModal(show = true) {
 
 
             document.getElementById('dashTotalRevenue').textContent = '\u20B1-';
-            var _dIds=['dashTotalRevenue','dashTotalBookings','dashActiveRentals','dashPendingBookings'];
+            var _dIds=['dashTotalRevenue','dashTotalBookings','dashActiveRentals','dashPendingBookings','dashTotalRefunds'];
             _dIds.forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<div style="height:28px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div>';});
 
 
