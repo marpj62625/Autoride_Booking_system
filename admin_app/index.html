@@ -10244,7 +10244,7 @@ input:checked + .ctrl-slider:before {
         }
     </style>
     <div id="vehicleModal" onclick="if(event.target === this) Vehicles.closeModal()">
-        <form id="vehicleForm" style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+        <form id="vehicleForm" novalidate style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
             <input type="hidden" id="editId">
 
             <!-- PINNED HEADER -->
@@ -10405,13 +10405,13 @@ input:checked + .ctrl-slider:before {
                         <!-- Year Model -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Year Model (1990 - Present)</label>
-                            <input type="number" id="vYear" placeholder="e.g. 2023" min="1990" max="2026" inputmode="numeric" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vYear" placeholder="e.g. 2023" min="1990" max="2026" inputmode="numeric" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,4); if(parseInt(this.value, 10) > 2026) this.value = 2026;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Daily Rate -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Daily Rate (₱) <span style="color:#ef4444;">*</span></label>
-                            <input type="number" id="vRate" placeholder="e.g. 2500" required min="500" max="50000" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vRate" placeholder="e.g. 2500" required min="500" max="50000" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value, 10) > 50000) this.value = 50000;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Mileage Type -->
@@ -10426,7 +10426,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Mileage Km/day -->
                         <div id="vMileageKmDiv">
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Limit (km/day)</label>
-                            <input type="number" id="vMileageKm" value="250" min="50" max="1000" placeholder="e.g. 250" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vMileageKm" value="250" min="50" max="1000" placeholder="e.g. 250" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value, 10) > 1000) this.value = 1000;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
@@ -10461,7 +10461,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Odometer -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Odometer (km)</label>
-                            <input type="number" id="vOdometer" placeholder="e.g. 45000" min="0" max="999999" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vOdometer" placeholder="e.g. 45000" min="0" max="999999" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value, 10) > 999999) this.value = 999999;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Fuel Level -->
