@@ -13815,7 +13815,7 @@ def update_vehicle(vehicle_id):
                     except Exception:
                         pass
         cur.execute(
-            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s, gps_device_token=%s, gps_device_name=%s WHERE id=%s",
+            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=COALESCE(%s, status), daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s, gps_device_token=%s, gps_device_name=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), seats, data.get('location'),
              data.get('status'), daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model,

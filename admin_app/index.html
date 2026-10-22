@@ -15456,7 +15456,7 @@ input:checked + .ctrl-slider:before {
                 document.getElementById('vFuel').value = v.fuel_type || 'Gasoline';
                 document.getElementById('vSeats').value = v.seats || 5;
                 document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
-                document.getElementById('vStatus').value = v.status || 'Available';
+                if (document.getElementById('vStatus')) document.getElementById('vStatus').value = v.status || 'Available';
                 document.getElementById('vRate').value = v.daily_rate;
                 document.getElementById('vYear').value = v.year_model || v.year || '';
                 document.getElementById('vMileageType').value = v.mileage_type || 'limited';
@@ -15909,7 +15909,7 @@ input:checked + .ctrl-slider:before {
 
             formData.append('location', document.getElementById('vLocation').value);
 
-            formData.append('status', document.getElementById('vStatus').value);
+            if (document.getElementById('vStatus')) { formData.append('status', document.getElementById('vStatus').value); }
             const rateRaw = document.getElementById('vRate').value;
             formData.append('daily_rate', parseFloat(String(rateRaw).replace(/[^0-9.]/g, '')) || 0);
             formData.append('year_model', document.getElementById('vYear').value || '');
