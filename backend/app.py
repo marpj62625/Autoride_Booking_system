@@ -13835,6 +13835,67 @@ def update_vehicle(vehicle_id):
 @app.route('/api/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/admin/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/admin/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
+
+@app.route('/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
+def bulk_update_vehicle_status():
+    """Bulk update vehicle status for all, filtered, or custom selected vehicles."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    data = request.get_json(silent=True) or request.form or {}
+    new_status = str(data.get('status', '') or '').strip()
+    if not new_status:
+        return jsonify({"error": "Status is required"}), 400
+
+    allowed_veh_statuses = ['Available', 'Booked', 'Rented', 'Maintenance', 'Repair', 'Unavailable', 'Archived']
+    if new_status not in allowed_veh_statuses:
+        return jsonify({"error": f"Invalid status. Allowed: {', '.join(allowed_veh_statuses)}"}), 400
+
+    target_scope = str(data.get('scope', 'custom') or 'custom').strip().lower()
+    vehicle_ids = data.get('vehicle_ids') or []
+
+    try:
+        cur = get_cursor()
+        updated_count = 0
+
+        if target_scope == 'all':
+            cur.execute("UPDATE vehicles SET status = %s WHERE status != 'Archived'", (new_status,))
+            updated_count = cur.rowcount
+        elif target_scope == 'maintenance':
+            cur.execute("UPDATE vehicles SET status = %s WHERE status = 'Maintenance'", (new_status,))
+            updated_count = cur.rowcount
+        elif target_scope == 'unavailable':
+            cur.execute("UPDATE vehicles SET status = %s WHERE status = 'Unavailable'", (new_status,))
+            updated_count = cur.rowcount
+        elif target_scope == 'available':
+            cur.execute("UPDATE vehicles SET status = %s WHERE status = 'Available'", (new_status,))
+            updated_count = cur.rowcount
+        else:
+            # Custom selection by vehicle IDs
+            if not isinstance(vehicle_ids, list) or len(vehicle_ids) == 0:
+                return jsonify({"error": "Please provide a list of vehicle_ids to update"}), 400
+            clean_ids = [int(x) for x in vehicle_ids if str(x).isdigit()]
+            if not clean_ids:
+                return jsonify({"error": "No valid vehicle IDs provided"}), 400
+            cur.execute("UPDATE vehicles SET status = %s WHERE id = ANY(%s)", (new_status, clean_ids))
+            updated_count = cur.rowcount
+
+        commit_db()
+        return jsonify({
+            "message": f"Successfully updated {updated_count} vehicle(s) to {new_status}",
+            "updated_count": updated_count,
+            "status": new_status
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 def update_vehicle_status(vehicle_id):
     is_authorized, err_resp = verify_admin_access()
     if not is_authorized:
