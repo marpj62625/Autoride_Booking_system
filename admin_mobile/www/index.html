@@ -5642,10 +5642,6 @@
 
 
 
-            <button class="veh-chip"                 data-filter="rented"      onclick="Vehicles.setFilter('rented',this)"      style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Rented</button>
-
-
-
             <button class="veh-chip"                 data-filter="maintenance" onclick="Vehicles.setFilter('maintenance',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Maintenance</button>
 
 
@@ -10295,10 +10291,8 @@ input:checked + .ctrl-slider:before {
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Status</label>
                             <select id="vStatus" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Available">Available</option>
-                                <option value="Booked">Booked</option>
-                                <option value="Maintenance">Maintenance</option>
-                                <option value="Repair">Repair</option>
                                 <option value="Unavailable">Unavailable</option>
+                                <option value="Maintenance">Maintenance</option>
                             </select>
                         </div>
 
@@ -15041,11 +15035,8 @@ input:checked + .ctrl-slider:before {
                     const statusDropdownHtml = `
                         <select onchange="Vehicles.quickChangeStatus(${v.id}, this.value)" style="display:inline-block;padding:3px 8px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;border:none;cursor:pointer;outline:none;">
                             <option value="Available" ${v.status === 'Available' ? 'selected' : ''} style="background:#fff;color:#000;">Available</option>
-                            <option value="Booked" ${v.status === 'Booked' ? 'selected' : ''} style="background:#fff;color:#000;">Booked</option>
-                            <option value="Rented" ${v.status === 'Rented' ? 'selected' : ''} style="background:#fff;color:#000;">Rented</option>
-                            <option value="Maintenance" ${v.status === 'Maintenance' ? 'selected' : ''} style="background:#fff;color:#000;">Maintenance</option>
-                            <option value="Repair" ${v.status === 'Repair' ? 'selected' : ''} style="background:#fff;color:#000;">Repair</option>
                             <option value="Unavailable" ${v.status === 'Unavailable' ? 'selected' : ''} style="background:#fff;color:#000;">Unavailable</option>
+                            <option value="Maintenance" ${v.status === 'Maintenance' ? 'selected' : ''} style="background:#fff;color:#000;">Maintenance</option>
                         </select>
                     `;
 
