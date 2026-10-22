@@ -10687,7 +10687,7 @@ def get_detailed_stats():
         total_refunds = float(cur.fetchone()['total_refunds'] or 0)
 
         total_revenue = float(basic_stats['total_revenue'] or 0)
-        net_profit = total_revenue - total_expenses
+        net_profit = total_revenue - total_expenses - total_refunds
 
         return jsonify({
             "totalRevenue": total_revenue,
@@ -10821,6 +10821,7 @@ def export_reports_excel():
             xref_params.append(date_to)
         cur.execute(xref_query, tuple(xref_params))
         total_refunds_excel = float(cur.fetchone()['total_refunds'] or 0)
+        net_profit = total_revenue - total_expenses - total_refunds_excel  # deduct refunds
 
         # 2. Trend Data
         is_year_view = (filter_period == 'year')
