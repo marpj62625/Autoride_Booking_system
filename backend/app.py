@@ -13923,13 +13923,6 @@ def update_vehicle(vehicle_id):
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
-@app.route('/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
-@app.route('/api/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
-@app.route('/api/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
-@app.route('/api/admin/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
-@app.route('/api/admin/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
-
 @app.route('/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/admin/vehicles/bulk-status', methods=['PATCH', 'PUT', 'POST'])
@@ -13990,6 +13983,12 @@ def bulk_update_vehicle_status():
             cur.close()
 
 
+@app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
 def update_vehicle_status(vehicle_id):
     is_authorized, err_resp = verify_admin_access()
     if not is_authorized:
