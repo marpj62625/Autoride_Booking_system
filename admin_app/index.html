@@ -12671,7 +12671,9 @@ input:checked + .ctrl-slider:before {
         window.fetch = async function(resource, init) {
             init = init || {};
             try {
-                const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                const urlStr = typeof resource === 'string' ? resource : (resource && resource.url ? resource.url : '');
+                const isThirdParty = urlStr.includes('blynk.cloud') || urlStr.includes('project-osrm.org') || urlStr.includes('tile.openstreetmap.org') || urlStr.includes('cartocdn.com');
+                const adminUser = (!isThirdParty && typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
                 if (adminUser && adminUser.id) {
                     init.headers = init.headers || {};
                     if (init.headers instanceof Headers) {
@@ -25299,10 +25301,18 @@ function toggleNewsletterModal(show = true) {
             const pingPin = isCar2 ? 'v8' : 'v4';
 
             try {
-                const res = await fetch(
-                    `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&v5&v6&v7&v8&_=${Date.now()}`
-                );
-                if (!res.ok) {
+                let res = null;
+                try {
+                    res = await fetch(
+                        `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&v5&v6&v7&v8&_=${Date.now()}`
+                    );
+                } catch (blynkNetErr) {
+                    // Device offline or unreachable
+                    this._showOffline('Device offline');
+                    this.loadLastKnownLocationFromDB();
+                    return;
+                }
+                if (!res || !res.ok) {
                     this._showOffline('Device offline');
                     this.loadLastKnownLocationFromDB();
                     return;
