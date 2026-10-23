@@ -15820,83 +15820,28 @@ input:checked + .ctrl-slider:before {
         },
 
         snapshotInitialState() {
+            // Reset dirty flag and attach change listeners
+            this._isDirty = false;
             const form = document.getElementById('vehicleForm');
             if (!form) return;
-            const state = {};
-            const elements = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), select, textarea');
-            elements.forEach(el => {
-                if (el.id) state[el.id] = el.value !== undefined ? String(el.value).trim() : '';
-            });
-            this._initialState = state;
-            this._initialEditId = document.getElementById('editId')?.value || '';
-            this._initialNewPhotosCount = (typeof VehiclePhotos !== 'undefined' && VehiclePhotos.selectedFiles) ? VehiclePhotos.selectedFiles.length : 0;
-            this._initialGalleryCount = Array.isArray(this.galleryDetails) ? this.galleryDetails.length : 0;
+            // Use a single listener stored on _dirtyHandler so we can remove/re-add cleanly
+            if (this._dirtyHandler) {
+                form.removeEventListener('input', this._dirtyHandler);
+                form.removeEventListener('change', this._dirtyHandler);
+            }
+            this._dirtyHandler = () => { this._isDirty = true; };
+            form.addEventListener('input', this._dirtyHandler);
+            form.addEventListener('change', this._dirtyHandler);
         },
 
         getDiff() {
-            const form = document.getElementById('vehicleForm');
-            if (!form || !this._initialState) return [];
-            const labels = {
-                'vBrand': 'Brand',
-                'vModel': 'Model',
-                'vPlate': 'Plate Number',
-                'vColor': 'Color',
-                'vType': 'Vehicle Type',
-                'vTrans': 'Transmission',
-                'vFuel': 'Fuel Type',
-                'vSeats': 'Seats',
-                'vLocation': 'Location',
-                'vRate': 'Daily Rate',
-                'vYear': 'Year Model',
-                'vMileageType': 'Mileage Type',
-                'vMileageKm': 'Mileage Limit (km/day)',
-                'vOdometer': 'Odometer',
-                'vFuelLevel': 'Fuel Level',
-                'vNextService': 'Next Service Schedule',
-                'vLtoExpiry': 'LTO Expiry Date',
-                'vGpsDeviceName': 'GPS Device Name',
-                'vGpsDeviceToken': 'GPS Device Token'
-            };
-
-            const diff = [];
-            const elements = form.querySelectorAll('input:not([type="file"]):not([type="hidden"]), select, textarea');
-            elements.forEach(el => {
-                if (!el.id) return;
-                const origVal = this._initialState[el.id] !== undefined ? this._initialState[el.id] : '';
-                const curVal = el.value !== undefined ? String(el.value).trim() : '';
-                if (origVal !== curVal) {
-                    diff.push({
-                        id: el.id,
-                        label: labels[el.id] || el.id,
-                        oldVal: origVal || '(empty)',
-                        newVal: curVal || '(empty)'
-                    });
-                }
-            });
-
-            // Check new uploaded photos
-            const curNewPhotos = (typeof VehiclePhotos !== 'undefined' && VehiclePhotos.selectedFiles) ? VehiclePhotos.selectedFiles.length : 0;
-            if (curNewPhotos !== (this._initialNewPhotosCount || 0)) {
-                diff.push({
-                    id: 'vPhotos',
-                    label: 'New Photos',
-                    oldVal: `${this._initialNewPhotosCount || 0} photo(s)`,
-                    newVal: `${curNewPhotos} photo(s)`
-                });
+            // Returns truthy array if dirty, empty array if clean
+            // Also check VehiclePhotos for new uploads
+            const hasNewPhotos = (typeof VehiclePhotos !== 'undefined' && VehiclePhotos.selectedFiles && VehiclePhotos.selectedFiles.length > 0);
+            if (this._isDirty || hasNewPhotos) {
+                return [{ id: '_dirty', label: 'Form fields', oldVal: '', newVal: '' }];
             }
-
-            // Check gallery items modified/deleted
-            const curGalleryCount = Array.isArray(this.galleryDetails) ? this.galleryDetails.length : 0;
-            if (curGalleryCount !== (this._initialGalleryCount || 0)) {
-                diff.push({
-                    id: 'vGallery',
-                    label: 'Existing Gallery',
-                    oldVal: `${this._initialGalleryCount || 0} photo(s)`,
-                    newVal: `${curGalleryCount} photo(s)`
-                });
-            }
-
-            return diff;
+            return [];
         },
 
         onBackdropClick() {
@@ -15919,20 +15864,11 @@ input:checked + .ctrl-slider:before {
             }
 
             const countEl = document.getElementById('vehicleUnsavedCount');
-            if (countEl) countEl.textContent = diff.length;
+            if (countEl) countEl.textContent = '!';
 
             const listEl = document.getElementById('vehicleUnsavedList');
             if (listEl) {
-                listEl.innerHTML = diff.map(d => `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border, #f1f5f9); font-size: 0.78rem;">
-                        <span style="font-weight: 700; color: var(--text-main, #334155); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.label}</span>
-                        <div style="display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 0.75rem;">
-                            <span style="background: rgba(239,68,68,0.12); color: #dc2626; padding: 2px 6px; border-radius: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${d.oldVal}">${d.oldVal}</span>
-                            <span style="color: var(--text-muted, #94a3b8);">&rarr;</span>
-                            <span style="background: rgba(16,185,129,0.12); color: #059669; padding: 2px 6px; border-radius: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${d.newVal}">${d.newVal}</span>
-                        </div>
-                    </div>
-                `).join('');
+                listEl.innerHTML = '<div style="padding:8px 0;color:var(--text-muted,#94a3b8);font-size:0.85rem;">Vehicle form has unsaved changes.</div>';
             }
 
             const unsavedModal = document.getElementById('vehicleUnsavedModal');
