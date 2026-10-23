@@ -10242,11 +10242,37 @@ input:checked + .ctrl-slider:before {
                     </select>
                 </div>
                 <div id="staffAssignedVehicleGroup" style="display: none; margin-bottom: 24px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Assigned Owned Vehicle <span style="color:var(--danger)">*</span></label>
-                    <select id="staffAssignedVehicle" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
-                        <option value="">-- Select Owned Vehicle --</option>
-                    </select>
-                    <small style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Consignor will ONLY be able to view this vehicle across Fleet Calendar, GPS, and Bookings.</small>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-car" style="color: var(--primary);"></i> Assigned Owned Vehicles <span style="color:var(--danger)">*</span>
+                        </label>
+                        <span id="staffVehSelectedCount" style="font-size: 0.72rem; color: #f59e0b; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); padding: 2px 8px; border-radius: 20px; font-weight: 700;">
+                            0 Selected
+                        </span>
+                    </div>
+
+                    <!-- Search & Quick Selection Bar -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <div style="position: relative; flex: 1;">
+                            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted);"></i>
+                            <input type="text" id="staffVehSearchInput" placeholder="Search vehicle or plate..." oninput="Staff.filterVehicleChecklist(this.value)" style="width: 100%; padding: 8px 10px 8px 30px; font-size: 0.78rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                        </div>
+                        <button type="button" onclick="Staff.toggleSelectAllVehicles(true)" style="padding: 6px 10px; font-size: 0.72rem; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); cursor: pointer; font-weight: 600; white-space: nowrap;">
+                            Select All
+                        </button>
+                        <button type="button" onclick="Staff.toggleSelectAllVehicles(false)" style="padding: 6px 10px; font-size: 0.72rem; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 600; white-space: nowrap;">
+                            Clear
+                        </button>
+                    </div>
+
+                    <!-- Scrollable Vehicle Checklist Box -->
+                    <div id="staffAssignedVehicleContainer" style="max-height: 190px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box;">
+                        <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.78rem;">Loading vehicles...</div>
+                    </div>
+
+                    <small style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 6px; line-height: 1.3;">
+                        <i class="fas fa-info-circle" style="color: var(--primary);"></i> Consignor will <b>ONLY</b> see and monitor the selected vehicle(s) across Fleet Calendar, GPS Tracking, and Bookings.
+                    </small>
                 </div>
                 <div style="display: flex; gap: 12px;">
                     <button type="button" onclick="Staff.closeModal()" class="btn-outline" style="flex: 1; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">Cancel</button>
@@ -12854,6 +12880,26 @@ input:checked + .ctrl-slider:before {
         } catch(_) { return false; }
     }
     window.isConsignor = isConsignor;
+
+    function getConsignorVehicleIds() {
+        try {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return [];
+            const set = new Set();
+            if (user.assigned_vehicle_ids) {
+                String(user.assigned_vehicle_ids).split(',').forEach(x => {
+                    const id = parseInt(x.trim(), 10);
+                    if (id) set.add(id);
+                });
+            }
+            if (user.assigned_vehicle_id) {
+                const singleId = parseInt(user.assigned_vehicle_id, 10);
+                if (singleId) set.add(singleId);
+            }
+            return Array.from(set);
+        } catch(_) { return []; }
+    }
+    window.getConsignorVehicleIds = getConsignorVehicleIds;
 
     function applyRolePermissions() {
         const isSuper = isSuperAdmin();
@@ -17250,10 +17296,10 @@ async edit(id) { this.openModal(id); },
                 let fetchedBookings = await cRes.json();
                 if (typeof isConsignor === 'function' && isConsignor()) {
                     const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-                    const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
-                    if (assignedId) {
-                        fetchedVehicles = (fetchedVehicles || []).filter(v => v.id === assignedId);
-                        fetchedBookings = (fetchedBookings || []).filter(b => parseInt(b.vehicle_id, 10) === assignedId);
+                    const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
+                    if (assignedIds.length > 0) {
+                        fetchedVehicles = (fetchedVehicles || []).filter(v => assignedIds.includes(v.id));
+                        fetchedBookings = (fetchedBookings || []).filter(b => assignedIds.includes(parseInt(b.vehicle_id, 10)));
                     } else {
                         fetchedVehicles = [];
                         fetchedBookings = [];
@@ -20414,9 +20460,9 @@ function toggleNewsletterModal(show = true) {
                 let fetchedBookings = await listRes.json();
                 if (typeof isConsignor === 'function' && isConsignor()) {
                     const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-                    const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
-                    if (assignedId) {
-                        fetchedBookings = (fetchedBookings || []).filter(b => parseInt(b.vehicle_id, 10) === assignedId);
+                    const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
+                    if (assignedIds.length > 0) {
+                        fetchedBookings = (fetchedBookings || []).filter(b => assignedIds.includes(parseInt(b.vehicle_id, 10)));
                     } else {
                         fetchedBookings = [];
                     }
@@ -24913,9 +24959,9 @@ function toggleNewsletterModal(show = true) {
                         <span style="font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; background: ${s.role === 'super_admin' ? 'var(--primary-glow)' : (s.role === 'consignor' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(251,191,36,0.12)')}; color: ${s.role === 'super_admin' ? 'var(--primary)' : (s.role === 'consignor' ? '#f59e0b' : '#f59e0b')}; font-weight: 700; text-transform: uppercase; border: 1px solid ${s.role === 'super_admin' ? 'rgba(0,177,79,0.2)' : (s.role === 'consignor' ? 'rgba(245,158,11,0.3)' : 'rgba(251,191,36,0.2)')};">
                             ${s.role === 'consignor' ? 'Consignor' : s.role.replace('_', ' ')}
                         </span>
-                        ${s.role === 'consignor' && (s.assigned_vehicle_name || s.assigned_vehicle_id) ? `
-                            <span style="font-size: 0.72rem; color: #fde68a; background: rgba(15,23,42,0.6); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(245,158,11,0.3); display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
-                                <i class="fas fa-car" style="color: #f59e0b;"></i> ${escapeHtml(s.assigned_vehicle_name || 'Vehicle #' + s.assigned_vehicle_id)} ${s.assigned_vehicle_plate ? `(${escapeHtml(s.assigned_vehicle_plate)})` : ''}
+                        ${s.role === 'consignor' ? `
+                            <span style="font-size: 0.72rem; color: #fde68a; background: rgba(15,23,42,0.6); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(245,158,11,0.3); display: inline-flex; align-items: center; gap: 5px; margin-top: 4px;">
+                                <i class="fas fa-car" style="color: #f59e0b;"></i> ${(s.assigned_vehicle_ids && String(s.assigned_vehicle_ids).split(',').filter(Boolean).length > 1) ? `${String(s.assigned_vehicle_ids).split(',').filter(Boolean).length} Vehicles Assigned` : escapeHtml(s.assigned_vehicle_name || 'Vehicle #' + (s.assigned_vehicle_id || ''))} ${(s.assigned_vehicle_plate && (!s.assigned_vehicle_ids || String(s.assigned_vehicle_ids).split(',').filter(Boolean).length <= 1)) ? `(${escapeHtml(s.assigned_vehicle_plate)})` : ''}
                             </span>
                         ` : ''}
                     </div>
@@ -25071,27 +25117,122 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
-        async populateVehicleDropdown(selectedId = null) {
-            const select = document.getElementById('staffAssignedVehicle');
-            if (!select) return;
+        async populateVehicleDropdown(selectedIds = []) {
+            const container = document.getElementById('staffAssignedVehicleContainer');
+            if (!container) return;
             try {
                 let res = await fetch(`${API_BASE}/api/vehicles`);
                 if (!res.ok) res = await fetch(`${API_BASE}/vehicles`);
                 if (res.ok) {
                     const list = await res.json();
-                    let html = '<option value="">-- Select Owned Vehicle --</option>';
-                    (list || []).forEach(v => {
-                        const isSel = selectedId && (String(v.id) === String(selectedId));
-                        const name = v.name || `${v.brand || ''} ${v.model || ''}`.trim() || `Vehicle #${v.id}`;
-                        const plate = v.plate_number ? `(${v.plate_number})` : '';
-                        html += `<option value="${v.id}" ${isSel ? 'selected' : ''}>${escapeHtml(name)} ${plate}</option>`;
-                    });
-                    select.innerHTML = html;
-                    if (selectedId) select.value = String(selectedId);
+                    this._allVehiclesCache = list || [];
+                    this.renderVehicleChecklist(this._allVehiclesCache, selectedIds);
                 }
             } catch(e) {
                 console.error('[Staff] populateVehicleDropdown error:', e);
+                container.innerHTML = '<div style="padding:15px;text-align:center;color:#ef4444;font-size:0.75rem;">Failed to load vehicles.</div>';
             }
+        },
+
+        renderVehicleChecklist(list, selectedIds = []) {
+            const container = document.getElementById('staffAssignedVehicleContainer');
+            if (!container) return;
+
+            // Normalize selectedIds to array of numbers/strings
+            let targetSet = new Set();
+            if (Array.isArray(selectedIds)) {
+                selectedIds.forEach(id => targetSet.add(String(id)));
+            } else if (selectedIds) {
+                String(selectedIds).split(',').forEach(id => {
+                    if (id.trim()) targetSet.add(String(id.trim()));
+                });
+            }
+
+            if (!list || list.length === 0) {
+                container.innerHTML = '<div style="padding:15px;text-align:center;color:var(--text-muted);font-size:0.75rem;">No vehicles found.</div>';
+                this.updateSelectedVehCount();
+                return;
+            }
+
+            container.innerHTML = list.map(v => {
+                const isChecked = targetSet.has(String(v.id));
+                const name = v.name || `${v.brand || ''} ${v.model || ''}`.trim() || `Vehicle #${v.id}`;
+                const plate = v.plate_number ? `${v.plate_number}` : 'No Plate';
+                return `
+                    <label class="staff-veh-item" data-name="${escapeHtml(name.toLowerCase())}" data-plate="${escapeHtml(plate.toLowerCase())}" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgba(0,177,79,0.08)' : 'transparent'}; border: 1px solid ${isChecked ? 'rgba(0,177,79,0.25)' : 'transparent'}; user-select: none;">
+                        <input type="checkbox" value="${v.id}" class="staff-veh-checkbox" ${isChecked ? 'checked' : ''} onchange="Staff.onVehCheckboxChange(this)" style="width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${escapeHtml(name)}
+                            </div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                ${escapeHtml(plate)} ${v.year_model ? '&bull; ' + v.year_model : ''}
+                            </div>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            this.updateSelectedVehCount();
+        },
+
+        onVehCheckboxChange(cb) {
+            const row = cb.closest('.staff-veh-item');
+            if (row) {
+                if (cb.checked) {
+                    row.style.background = 'rgba(0,177,79,0.08)';
+                    row.style.borderColor = 'rgba(0,177,79,0.25)';
+                } else {
+                    row.style.background = 'transparent';
+                    row.style.borderColor = 'transparent';
+                }
+            }
+            this.updateSelectedVehCount();
+        },
+
+        updateSelectedVehCount() {
+            const countEl = document.getElementById('staffVehSelectedCount');
+            const checkedBoxes = document.querySelectorAll('.staff-veh-checkbox:checked');
+            if (countEl) {
+                countEl.textContent = `${checkedBoxes.length} Selected`;
+                countEl.style.color = checkedBoxes.length > 0 ? 'var(--primary)' : '#f59e0b';
+                countEl.style.background = checkedBoxes.length > 0 ? 'rgba(0,177,79,0.12)' : 'rgba(245,158,11,0.12)';
+                countEl.style.borderColor = checkedBoxes.length > 0 ? 'rgba(0,177,79,0.25)' : 'rgba(245,158,11,0.25)';
+            }
+        },
+
+        filterVehicleChecklist(query) {
+            const q = (query || '').toLowerCase().trim();
+            document.querySelectorAll('.staff-veh-item').forEach(item => {
+                const name = item.getAttribute('data-name') || '';
+                const plate = item.getAttribute('data-plate') || '';
+                if (!q || name.includes(q) || plate.includes(q)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        },
+
+        toggleSelectAllVehicles(selectAll) {
+            document.querySelectorAll('.staff-veh-checkbox').forEach(cb => {
+                // only affect visible items in search filter
+                const item = cb.closest('.staff-veh-item');
+                if (item && item.style.display !== 'none') {
+                    cb.checked = selectAll;
+                    Staff.onVehCheckboxChange(cb);
+                }
+            });
+            this.updateSelectedVehCount();
+        },
+
+        getSelectedVehicleIds() {
+            const list = [];
+            document.querySelectorAll('.staff-veh-checkbox:checked').forEach(cb => {
+                const id = parseInt(cb.value, 10);
+                if (id) list.push(id);
+            });
+            return list;
         },
 
 
@@ -25171,11 +25312,14 @@ function toggleNewsletterModal(show = true) {
 
             const role = roleEl.value;
             if (!role) { showInlineError(roleEl, 'Role is required'); hasError = true; }
-            const assignedVehEl = document.getElementById('staffAssignedVehicle');
-            const assignedVehicleId = (assignedVehEl && role === 'consignor') ? assignedVehEl.value : null;
-            if (role === 'consignor' && !assignedVehicleId) {
-                showInlineError(assignedVehEl, 'Please assign a vehicle to this consignor');
-                hasError = true;
+            let selectedVehIds = [];
+            if (role === 'consignor') {
+                selectedVehIds = this.getSelectedVehicleIds();
+                const containerEl = document.getElementById('staffAssignedVehicleContainer');
+                if (selectedVehIds.length === 0) {
+                    showInlineError(containerEl, 'Please select at least one owned vehicle for this consignor');
+                    hasError = true;
+                }
             }
 
             if (hasError) return;
@@ -25209,7 +25353,8 @@ function toggleNewsletterModal(show = true) {
                     email: email,
                     password: password,
                     role: role,
-                    assigned_vehicle_id: assignedVehicleId ? parseInt(assignedVehicleId, 10) : null
+                    assigned_vehicle_id: (selectedVehIds && selectedVehIds.length > 0) ? selectedVehIds[0] : null,
+                    assigned_vehicle_ids: (selectedVehIds && selectedVehIds.length > 0) ? selectedVehIds : []
                 };
 
                 const res = await fetch(url, {
@@ -25294,8 +25439,8 @@ function toggleNewsletterModal(show = true) {
                     let data = await res.json();
                     if (typeof isConsignor === 'function' && isConsignor()) {
                         const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-                        const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
-                        data = assignedId ? (data || []).filter(v => v.id === assignedId) : [];
+                        const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
+                        data = (assignedIds.length > 0) ? (data || []).filter(v => assignedIds.includes(v.id)) : [];
                     }
                     this.fleetVehicles = data || [];
                 }
@@ -25425,8 +25570,8 @@ function toggleNewsletterModal(show = true) {
                     let list = await res.json();
                     if (typeof isConsignor === 'function' && isConsignor()) {
                         const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-                        const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
-                        list = assignedId ? (list || []).filter(v => v.id === assignedId) : [];
+                        const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
+                        list = (assignedIds.length > 0) ? (list || []).filter(v => assignedIds.includes(v.id)) : [];
                     }
                     this.fleetVehicles = list || [];
                     this._updateHeaderDeviceLabel();

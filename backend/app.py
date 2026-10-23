@@ -772,6 +772,7 @@ def migrate_settings_v2():
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_location VARCHAR(100)")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'customer'")
 
@@ -13059,13 +13060,14 @@ def admin_login():
         cur = get_cursor()
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             commit_db()
         except Exception:
             pass
 
         # Only allow is_verified = 1 (Active)
 
-        cur.execute("SELECT id, full_name, email, role, assigned_location, assigned_vehicle_id, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin', 'consignor')", (email,))
+        cur.execute("SELECT id, full_name, email, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin', 'consignor')", (email,))
         admin_row = cur.fetchone()
         user = None
         if admin_row:
@@ -13130,6 +13132,7 @@ def list_admins():
         cur = get_cursor()
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             commit_db()
         except Exception:
             pass
@@ -13145,7 +13148,7 @@ def list_admins():
 
 
         cur.execute("""
-            SELECT u.id, u.full_name, u.email, u.role, u.is_verified, u.assigned_location, u.assigned_vehicle_id,
+            SELECT u.id, u.full_name, u.email, u.role, u.is_verified, u.assigned_location, u.assigned_vehicle_id, u.assigned_vehicle_ids,
                    v.name as assigned_vehicle_name, v.plate_number as assigned_vehicle_plate
             FROM users u
             LEFT JOIN vehicles v ON v.id = u.assigned_vehicle_id
@@ -13187,10 +13190,27 @@ def update_admin(user_id):
 
     assigned_location = data.get('assigned_location')
     assigned_vehicle_id = data.get('assigned_vehicle_id')
-    try:
-        assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
-    except (ValueError, TypeError):
-        assigned_vehicle_id = None
+    assigned_vehicle_ids_raw = data.get('assigned_vehicle_ids')
+    assigned_vehicle_ids_list = []
+    if isinstance(assigned_vehicle_ids_raw, list):
+        for _vid in assigned_vehicle_ids_raw:
+            try: assigned_vehicle_ids_list.append(int(_vid))
+            except (ValueError, TypeError): pass
+    elif assigned_vehicle_ids_raw:
+        for _vid in str(assigned_vehicle_ids_raw).split(','):
+            try: assigned_vehicle_ids_list.append(int(_vid.strip()))
+            except (ValueError, TypeError): pass
+    
+    if assigned_vehicle_ids_list:
+        assigned_vehicle_ids = ','.join(str(x) for x in assigned_vehicle_ids_list)
+        assigned_vehicle_id = assigned_vehicle_ids_list[0]
+    else:
+        try:
+            assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
+            assigned_vehicle_ids = str(assigned_vehicle_id) if assigned_vehicle_id else None
+        except (ValueError, TypeError):
+            assigned_vehicle_id = None
+            assigned_vehicle_ids = None
 
     if name is not None and len(str(name).strip()) > 50:
         return jsonify({"error": "Admin name cannot exceed 50 characters."}), 400
@@ -13207,6 +13227,7 @@ def update_admin(user_id):
         cur = get_cursor()
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             commit_db()
         except Exception:
             pass
@@ -13235,11 +13256,11 @@ def update_admin(user_id):
 
         if password:
             hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, password=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s WHERE id=%s", (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, password=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s, assigned_vehicle_ids=%s WHERE id=%s", (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, user_id))
 
         else:
 
-            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s WHERE id=%s", (_admin_first, _admin_last, email, role, assigned_location, assigned_vehicle_id, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s, assigned_vehicle_ids=%s WHERE id=%s", (_admin_first, _admin_last, email, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, user_id))
 
         
 
@@ -13529,10 +13550,27 @@ def create_admin():
 
     assigned_location = data.get('assigned_location')
     assigned_vehicle_id = data.get('assigned_vehicle_id')
-    try:
-        assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
-    except (ValueError, TypeError):
-        assigned_vehicle_id = None
+    assigned_vehicle_ids_raw = data.get('assigned_vehicle_ids')
+    assigned_vehicle_ids_list = []
+    if isinstance(assigned_vehicle_ids_raw, list):
+        for _vid in assigned_vehicle_ids_raw:
+            try: assigned_vehicle_ids_list.append(int(_vid))
+            except (ValueError, TypeError): pass
+    elif assigned_vehicle_ids_raw:
+        for _vid in str(assigned_vehicle_ids_raw).split(','):
+            try: assigned_vehicle_ids_list.append(int(_vid.strip()))
+            except (ValueError, TypeError): pass
+    
+    if assigned_vehicle_ids_list:
+        assigned_vehicle_ids = ','.join(str(x) for x in assigned_vehicle_ids_list)
+        assigned_vehicle_id = assigned_vehicle_ids_list[0]
+    else:
+        try:
+            assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
+            assigned_vehicle_ids = str(assigned_vehicle_id) if assigned_vehicle_id else None
+        except (ValueError, TypeError):
+            assigned_vehicle_id = None
+            assigned_vehicle_ids = None
 
     if not name or len(name) > 50:
         return jsonify({"error": "Admin name is required (max 50 characters)."}), 400
@@ -13548,6 +13586,7 @@ def create_admin():
         cur = get_cursor()
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             commit_db()
         except Exception:
             pass
@@ -13570,10 +13609,10 @@ def create_admin():
         _admin_first = _admin_name_parts[0] if _admin_name_parts else name
         _admin_last = _admin_name_parts[1] if len(_admin_name_parts) > 1 else ''
         cur.execute("""
-            INSERT INTO users (first_name, last_name, email, password, role, assigned_location, assigned_vehicle_id, is_email_verified, is_verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, True, 1)
+            INSERT INTO users (first_name, last_name, email, password, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, is_email_verified, is_verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, True, 1)
             RETURNING id
-        """, (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id))
+        """, (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids))
 
         new_id = cur.fetchone()['id']
 
