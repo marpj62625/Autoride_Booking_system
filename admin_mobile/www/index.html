@@ -4728,6 +4728,37 @@
             width: 100% !important;
             margin: 0 auto !important;
         }
+        
+        /* Strict Consignor navigation scoping */
+        html.role-consignor .drawer-item,
+        body.role-consignor .drawer-item {
+            display: none !important;
+        }
+        html.role-consignor .drawer-item[data-tab="fleet-calendar"],
+        body.role-consignor .drawer-item[data-tab="fleet-calendar"],
+        html.role-consignor .drawer-item[data-tab="gps"],
+        body.role-consignor .drawer-item[data-tab="gps"],
+        html.role-consignor #consignorProfileDrawerLink,
+        body.role-consignor #consignorProfileDrawerLink,
+        html.role-consignor .drawer-item[onclick*="adminAuth.logout"],
+        body.role-consignor .drawer-item[onclick*="adminAuth.logout"],
+        html.role-consignor .drawer-item[onclick*="toggleDrawer(false)"],
+        body.role-consignor .drawer-item[onclick*="toggleDrawer(false)"] {
+            display: flex !important;
+        }
+        html.role-consignor .nav-item,
+        body.role-consignor .nav-item {
+            display: none !important;
+        }
+        html.role-consignor .nav-item[data-tab="fleet-calendar"],
+        body.role-consignor .nav-item[data-tab="fleet-calendar"],
+        html.role-consignor .nav-item[data-tab="gps"],
+        body.role-consignor .nav-item[data-tab="gps"],
+        html.role-consignor .nav-item[data-tab="settings"],
+        body.role-consignor .nav-item[data-tab="settings"] {
+            display: flex !important;
+        }
+    
         </style>
 
 
@@ -12826,6 +12857,8 @@ input:checked + .ctrl-slider:before {
                     if (targetTab === 'dashboard') {
                         refreshDashboard();
                     }
+                } else if (typeof isConsignor === 'function' && isConsignor()) {
+                    switchTab((targetTab === 'gps' || targetTab === 'settings') ? targetTab : 'fleet-calendar');
                 } else {
                     switchTab(targetTab !== 'dashboard' ? targetTab : 'vehicles');
                 }
@@ -12896,6 +12929,32 @@ input:checked + .ctrl-slider:before {
                 const singleId = parseInt(user.assigned_vehicle_id, 10);
                 if (singleId) set.add(singleId);
             }
+            // Self-healing: if consignor has no cached vehicle IDs, trigger a silent profile refresh from server
+            if (set.size === 0 && !window._consignorSyncing && user.id) {
+                window._consignorSyncing = true;
+                const apiBase = (typeof API_URL !== 'undefined') ? API_URL : ((typeof API_BASE !== 'undefined') ? API_BASE : '');
+                fetch(`${apiBase}/admin/list?requester_id=${user.id}`).then(r => r.json()).then(list => {
+                    if (Array.isArray(list)) {
+                        const me = list.find(a => a.id === user.id);
+                        if (me && (me.assigned_vehicle_ids || me.assigned_vehicle_id)) {
+                            user.assigned_vehicle_ids = me.assigned_vehicle_ids;
+                            user.assigned_vehicle_id = me.assigned_vehicle_id;
+                            const stored = localStorage.getItem('admin_user');
+                            if (stored) {
+                                try {
+                                    const parsed = JSON.parse(stored);
+                                    if (parsed.user) parsed.user = Object.assign({}, parsed.user, me);
+                                    else Object.assign(parsed, me);
+                                    localStorage.setItem('admin_user', JSON.stringify(parsed));
+                                } catch(_) {}
+                            }
+                            if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                                FleetCalendar.refresh();
+                            }
+                        }
+                    }
+                }).catch(() => {}).finally(() => { window._consignorSyncing = false; });
+            }
             return Array.from(set);
         } catch(_) { return []; }
     }
@@ -12944,20 +13003,25 @@ input:checked + .ctrl-slider:before {
         const nlDrawer = document.getElementById('nlDrawerLink');
         if (nlDrawer) nlDrawer.style.display = isSuper ? 'flex' : 'none';
 
-        // Consignor restricted view
+        // Consignor restricted view (ONLY fleet-calendar, gps, and profile/settings)
         if (typeof isConsignor === 'function' && isConsignor()) {
-            const allowedTabs = ['fleet-calendar', 'gps', 'bookings', 'profile', 'settings'];
-            document.querySelectorAll('.drawer-item[data-tab], .nav-item[data-tab]').forEach(el => {
+            // Hide all standard drawer items by default, only show permitted ones
+            document.querySelectorAll('.drawer-item').forEach(el => {
                 const tab = el.getAttribute('data-tab');
-                if (!allowedTabs.includes(tab)) {
-                    el.style.display = 'none';
-                }
+                const id = el.id || '';
+                const onclickStr = el.getAttribute('onclick') || '';
+                const isPermitted = (tab === 'fleet-calendar' || tab === 'gps' || id === 'consignorProfileDrawerLink' || onclickStr.includes('adminAuth.logout') || onclickStr.includes('toggleDrawer(false)'));
+                el.style.setProperty('display', isPermitted ? 'flex' : 'none', 'important');
             });
-            document.querySelectorAll('[data-tab="settings"], #settingsDrawerLink, a[href*="settings"]').forEach(el => {
-                el.style.display = 'none';
+            // Bottom nav bar items: only fleet-calendar, gps, settings
+            document.querySelectorAll('.nav-item').forEach(el => {
+                const tab = el.getAttribute('data-tab');
+                const isPermitted = (tab === 'fleet-calendar' || tab === 'gps' || tab === 'settings');
+                el.style.setProperty('display', isPermitted ? 'flex' : 'none', 'important');
             });
-            document.querySelectorAll('button[onclick*="openConfigModal"]').forEach(el => {
-                el.style.display = 'none';
+            // Hide all config buttons / settings options not for consignors
+            document.querySelectorAll('button[onclick*="openConfigModal"], #archiveDrawerLink, #nlDrawerLink').forEach(el => {
+                el.style.setProperty('display', 'none', 'important');
             });
         }
         const nlConfig = document.getElementById('mobileNewsletterConfig');
@@ -20022,9 +20086,9 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        // Guard restricted tabs for Consignor role
+        // Guard restricted tabs for Consignor role (Strictly no bookings, reports, etc.)
         if (typeof isConsignor === 'function' && isConsignor()) {
-            const allowed = ['fleet-calendar', 'gps', 'bookings', 'profile', 'settings'];
+            const allowed = ['fleet-calendar', 'gps', 'settings'];
             if (!allowed.includes(tabId)) {
                 console.warn(`[Access Guard] Tab '${tabId}' is restricted for Consignor. Redirecting to fleet-calendar.`);
                 tabId = 'fleet-calendar';

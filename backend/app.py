@@ -13098,7 +13098,9 @@ def admin_login():
                 "full_name": user['full_name'],
                 "email": user.get('email') or email,
                 "role": user['role'],
-                "assigned_location": user['assigned_location']
+                "assigned_location": user['assigned_location'],
+                "assigned_vehicle_id": user.get('assigned_vehicle_id'),
+                "assigned_vehicle_ids": user.get('assigned_vehicle_ids')
             }), 200
 
         else:
