@@ -4713,7 +4713,15 @@
         body.role-consignor #superAdminPermissionsCard,
         html.role-consignor #superAdminProfileEditPill,
         body.role-consignor #superAdminProfileEditPill,
-        html.role-consignor button[onclick*="openConfigModal"] {
+        html.role-consignor button[onclick*="openConfigModal"],
+        html.role-consignor button[onclick*="WalkinBooking.openModal"],
+        body.role-consignor button[onclick*="WalkinBooking.openModal"],
+        html.role-consignor button[onclick*="FleetCalendar.openHistoryModal"],
+        body.role-consignor button[onclick*="FleetCalendar.openHistoryModal"],
+        html.role-consignor #fleetHistoryModal,
+        body.role-consignor #fleetHistoryModal,
+        html.role-consignor #walkinBookingModal,
+        body.role-consignor #walkinBookingModal {
             display: none !important;
         }
         html.role-consignor .settings-layout-container,
@@ -13355,6 +13363,10 @@ input:checked + .ctrl-slider:before {
             document.querySelectorAll('button[onclick*="openConfigModal"], #archiveDrawerLink, #nlDrawerLink').forEach(el => {
                 el.style.setProperty('display', 'none', 'important');
             });
+            // Hide Walk-in Booking and Audit History buttons for Consignors
+            document.querySelectorAll('button[onclick*="WalkinBooking.openModal"], button[onclick*="FleetCalendar.openHistoryModal"]').forEach(el => {
+                el.style.setProperty('display', 'none', 'important');
+            });
         }
         const nlConfig = document.getElementById('mobileNewsletterConfig');
         if (nlConfig) nlConfig.style.display = isSuper ? 'block' : 'none';
@@ -18870,6 +18882,10 @@ input:checked + .ctrl-slider:before {
         historyTotalPages: 1,
 
         openHistoryModal() {
+            if (typeof isConsignor === 'function' && isConsignor()) {
+                if (typeof showToast === 'function') showToast('Access restricted for Consignors.', 'error');
+                return;
+            }
             const modal = document.getElementById('fleetHistoryModal');
             if (!modal) return;
             modal.style.display = 'flex';
@@ -35262,6 +35278,10 @@ function toggleNewsletterModal(show = true) {
         },
 
         async openModal(preselectedVehicleId = null) {
+            if (typeof isConsignor === 'function' && isConsignor()) {
+                if (typeof showToast === 'function') showToast('Access restricted for Consignors.', 'error');
+                return;
+            }
             const modal = document.getElementById('walkinBookingModal');
             if (!modal) return;
 
