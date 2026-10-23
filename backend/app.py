@@ -5729,6 +5729,17 @@ def get_vehicle_gps_config(vehicle_id):
 def update_vehicle_gps_config(vehicle_id):
     """Update GPS tracker device configuration for a vehicle."""
     data = request.get_json(silent=True) or {}
+    req_admin_id = request.headers.get('X-Admin-Id') or request.args.get('requester_id')
+    if req_admin_id:
+        try:
+            _chk_cur = get_cursor()
+            _chk_cur.execute("SELECT role FROM users WHERE id = %s", (int(req_admin_id),))
+            _r_row = _chk_cur.fetchone()
+            _chk_cur.close()
+            if _r_row and (_r_row.get('role') or '').lower() == 'consignor':
+                return jsonify({"error": "Unauthorized. Consignors are not permitted to modify GPS tracker configurations."}), 403
+        except Exception:
+            pass
     token = (data.get('gps_device_token') or '').strip()
     name = (data.get('gps_device_name') or '').strip()
     server = (data.get('gps_server') or 'sgp1.blynk.cloud').strip()
@@ -13161,8 +13172,15 @@ def update_admin(user_id):
     password = data.get('password')
 
     role = data.get('role')
+    if role and role not in ['admin', 'super_admin', 'consignor']:
+        role = 'admin'
 
     assigned_location = data.get('assigned_location')
+    assigned_vehicle_id = data.get('assigned_vehicle_id')
+    try:
+        assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
+    except (ValueError, TypeError):
+        assigned_vehicle_id = None
 
     if name is not None and len(str(name).strip()) > 50:
         return jsonify({"error": "Admin name cannot exceed 50 characters."}), 400
@@ -13491,8 +13509,15 @@ def create_admin():
     password = data.get('password') or ''
 
     role = data.get('role', 'admin')
+    if role not in ['admin', 'super_admin', 'consignor']:
+        role = 'admin'
 
     assigned_location = data.get('assigned_location')
+    assigned_vehicle_id = data.get('assigned_vehicle_id')
+    try:
+        assigned_vehicle_id = int(assigned_vehicle_id) if assigned_vehicle_id else None
+    except (ValueError, TypeError):
+        assigned_vehicle_id = None
 
     if not name or len(name) > 50:
         return jsonify({"error": "Admin name is required (max 50 characters)."}), 400

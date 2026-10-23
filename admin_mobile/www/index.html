@@ -4704,7 +4704,31 @@
             }
         }
 
-</style>
+
+        /* Consignor Profile View (Hides Settings & System Configs) */
+        html.role-consignor .settings-col-right,
+        body.role-consignor .settings-col-right,
+        html.role-consignor #superAdminEditProfileCard,
+        body.role-consignor #superAdminEditProfileCard,
+        html.role-consignor #superAdminPermissionsCard,
+        body.role-consignor #superAdminPermissionsCard,
+        html.role-consignor #superAdminProfileEditPill,
+        body.role-consignor #superAdminProfileEditPill,
+        html.role-consignor button[onclick*="openConfigModal"] {
+            display: none !important;
+        }
+        html.role-consignor .settings-layout-container,
+        body.role-consignor .settings-layout-container {
+            display: flex !important;
+            justify-content: center !important;
+        }
+        html.role-consignor .settings-col-left,
+        body.role-consignor .settings-col-left {
+            max-width: 460px !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+        }
+        </style>
 
 
 
@@ -5216,7 +5240,8 @@
 
 
                         <a href="javascript:void(0);" class="drawer-item" id="archiveDrawerLink" onclick="toggleArchiveMaintenanceModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-archive"></i> Archive & Maintenance</a>
-<a href="javascript:void(0);" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
+<a href="javascript:void(0);" class="drawer-item" id="consignorProfileDrawerLink" data-tab="settings" onclick="navTo('settings')" style="display: none;"><i class="fas fa-user-circle"></i> Profile</a>
+            <a href="javascript:void(0);" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
 
 
 
@@ -10211,9 +10236,17 @@ input:checked + .ctrl-slider:before {
                 </div>
                 <div style="margin-bottom: 24px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Role</label>
-                    <select id="staffRole" required style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <select id="staffRole" onchange="Staff.onRoleChange(this.value)" required style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                         <option value="admin">Staff Admin</option>
+                        <option value="consignor">Consignor (Vehicle Owner)</option>
                     </select>
+                </div>
+                <div id="staffAssignedVehicleGroup" style="display: none; margin-bottom: 24px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Assigned Owned Vehicle <span style="color:var(--danger)">*</span></label>
+                    <select id="staffAssignedVehicle" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                        <option value="">-- Select Owned Vehicle --</option>
+                    </select>
+                    <small style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Consignor will ONLY be able to view this vehicle across Fleet Calendar, GPS, and Bookings.</small>
                 </div>
                 <div style="display: flex; gap: 12px;">
                     <button type="button" onclick="Staff.closeModal()" class="btn-outline" style="flex: 1; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">Cancel</button>
@@ -12824,6 +12857,21 @@ input:checked + .ctrl-slider:before {
 
     function applyRolePermissions() {
         const isSuper = isSuperAdmin();
+        const consignor = (typeof isConsignor === 'function') && isConsignor();
+        if (consignor) {
+            const profileLink = document.getElementById('consignorProfileDrawerLink');
+            if (profileLink) profileLink.style.display = 'flex';
+            const sTitle = document.querySelector('#settings .page-title');
+            if (sTitle) sTitle.textContent = 'My Profile';
+            const sSub = document.querySelector('#settings .settings-page-header p');
+            if (sSub) sSub.textContent = 'View your consignor account and assigned vehicle details';
+            
+            document.documentElement.classList.add('role-consignor');
+            document.body && document.body.classList.add('role-consignor');
+        } else {
+            document.documentElement.classList.remove('role-consignor');
+            document.body && document.body.classList.remove('role-consignor');
+        }
         if (isSuper) {
             document.documentElement.classList.remove('role-staff');
             document.body && document.body.classList.remove('role-staff');
@@ -12849,6 +12897,23 @@ input:checked + .ctrl-slider:before {
 
         const nlDrawer = document.getElementById('nlDrawerLink');
         if (nlDrawer) nlDrawer.style.display = isSuper ? 'flex' : 'none';
+
+        // Consignor restricted view
+        if (typeof isConsignor === 'function' && isConsignor()) {
+            const allowedTabs = ['fleet-calendar', 'gps', 'bookings', 'profile', 'settings'];
+            document.querySelectorAll('.drawer-item[data-tab], .nav-item[data-tab]').forEach(el => {
+                const tab = el.getAttribute('data-tab');
+                if (!allowedTabs.includes(tab)) {
+                    el.style.display = 'none';
+                }
+            });
+            document.querySelectorAll('[data-tab="settings"], #settingsDrawerLink, a[href*="settings"]').forEach(el => {
+                el.style.display = 'none';
+            });
+            document.querySelectorAll('button[onclick*="openConfigModal"]').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
         const nlConfig = document.getElementById('mobileNewsletterConfig');
         if (nlConfig) nlConfig.style.display = isSuper ? 'block' : 'none';
 
@@ -17181,8 +17246,21 @@ async edit(id) { this.openModal(id); },
                     fetch(`${API_BASE}/api/admin/fleet-bookings?start=${startStr}&end=${endStr}`),
                     fetch(`${API_BASE}/api/admin/blackout-dates`)
                 ]);
-                this.vehicles = await vRes.json();
-                this.bookings = await cRes.json();
+                let fetchedVehicles = await vRes.json();
+                let fetchedBookings = await cRes.json();
+                if (typeof isConsignor === 'function' && isConsignor()) {
+                    const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                    const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
+                    if (assignedId) {
+                        fetchedVehicles = (fetchedVehicles || []).filter(v => v.id === assignedId);
+                        fetchedBookings = (fetchedBookings || []).filter(b => parseInt(b.vehicle_id, 10) === assignedId);
+                    } else {
+                        fetchedVehicles = [];
+                        fetchedBookings = [];
+                    }
+                }
+                this.vehicles = fetchedVehicles;
+                this.bookings = fetchedBookings;
                 this.blackouts = await bRes.json();
                 this.render();
             } catch (e) {
@@ -19898,13 +19976,21 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        // Guard restricted tabs for non-superadmin
-        if (typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+        // Guard restricted tabs for Consignor role
+        if (typeof isConsignor === 'function' && isConsignor()) {
+            const allowed = ['fleet-calendar', 'gps', 'bookings', 'profile', 'settings'];
+            if (!allowed.includes(tabId)) {
+                console.warn(`[Access Guard] Tab '${tabId}' is restricted for Consignor. Redirecting to fleet-calendar.`);
+                tabId = 'fleet-calendar';
+            }
+        } else if (typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+            // Guard restricted tabs for non-superadmin
             if (tabId === 'dashboard' || tabId === 'staff' || tabId === 'activity') {
                 console.warn(`[Access Guard] Tab '${tabId}' is restricted to Super Admin. Redirecting to vehicles.`);
                 tabId = 'vehicles';
             }
         }
+        
         if (typeof applyRolePermissions === 'function') applyRolePermissions();
 
         // Stop ActiveNow timers when leaving bookings tab
@@ -20324,7 +20410,18 @@ function toggleNewsletterModal(show = true) {
                 }
 
                 if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
-                this.data = await listRes.json();
+                // Bookings refresh consignor scope
+                let fetchedBookings = await listRes.json();
+                if (typeof isConsignor === 'function' && isConsignor()) {
+                    const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                    const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
+                    if (assignedId) {
+                        fetchedBookings = (fetchedBookings || []).filter(b => parseInt(b.vehicle_id, 10) === assignedId);
+                    } else {
+                        fetchedBookings = [];
+                    }
+                }
+                this.data = fetchedBookings;
 
                 // Always update the overview count cards from the actual bookings list
                 this.updateOverviewCounts(this.data, statsData);
@@ -24818,9 +24915,14 @@ function toggleNewsletterModal(show = true) {
                             </h4>
                             <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 0 0;">${s.email}</p>
                         </div>
-                        <span style="font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; background: ${s.role === 'super_admin' ? 'var(--primary-glow)' : 'rgba(251,191,36,0.12)'}; color: ${s.role === 'super_admin' ? 'var(--primary)' : '#f59e0b'}; font-weight: 700; text-transform: uppercase; border: 1px solid ${s.role === 'super_admin' ? 'rgba(0,177,79,0.2)' : 'rgba(251,191,36,0.2)'};">
-                            ${s.role.replace('_', ' ')}
+                        <span style="font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; background: ${s.role === 'super_admin' ? 'var(--primary-glow)' : (s.role === 'consignor' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(251,191,36,0.12)')}; color: ${s.role === 'super_admin' ? 'var(--primary)' : (s.role === 'consignor' ? '#f59e0b' : '#f59e0b')}; font-weight: 700; text-transform: uppercase; border: 1px solid ${s.role === 'super_admin' ? 'rgba(0,177,79,0.2)' : (s.role === 'consignor' ? 'rgba(245,158,11,0.3)' : 'rgba(251,191,36,0.2)')};">
+                            ${s.role === 'consignor' ? 'Consignor' : s.role.replace('_', ' ')}
                         </span>
+                        ${s.role === 'consignor' && (s.assigned_vehicle_name || s.assigned_vehicle_id) ? `
+                            <span style="font-size: 0.72rem; color: #fde68a; background: rgba(15,23,42,0.6); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(245,158,11,0.3); display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
+                                <i class="fas fa-car" style="color: #f59e0b;"></i> ${escapeHtml(s.assigned_vehicle_name || 'Vehicle #' + s.assigned_vehicle_id)} ${s.assigned_vehicle_plate ? `(${escapeHtml(s.assigned_vehicle_plate)})` : ''}
+                            </span>
+                        ` : ''}
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px;">
                         <span style="font-size: 0.8rem; color: ${s.is_verified === 1 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600; display: flex; align-items: center; gap: 6px;">
@@ -24879,6 +24981,8 @@ function toggleNewsletterModal(show = true) {
 
 
             document.getElementById('staffForm').reset();
+            const roleEl = document.getElementById('staffRole'); if (roleEl) roleEl.value = 'admin';
+            this.onRoleChange('admin');
 
 
 
@@ -25038,6 +25142,12 @@ function toggleNewsletterModal(show = true) {
 
             const role = roleEl.value;
             if (!role) { showInlineError(roleEl, 'Role is required'); hasError = true; }
+            const assignedVehEl = document.getElementById('staffAssignedVehicle');
+            const assignedVehicleId = (assignedVehEl && role === 'consignor') ? assignedVehEl.value : null;
+            if (role === 'consignor' && !assignedVehicleId) {
+                showInlineError(assignedVehEl, 'Please assign a vehicle to this consignor');
+                hasError = true;
+            }
 
             if (hasError) return;
 
@@ -25069,7 +25179,8 @@ function toggleNewsletterModal(show = true) {
                     name: name,
                     email: email,
                     password: password,
-                    role: role
+                    role: role,
+                    assigned_vehicle_id: assignedVehicleId ? parseInt(assignedVehicleId, 10) : null
                 };
 
                 const res = await fetch(url, {
@@ -25150,7 +25261,13 @@ function toggleNewsletterModal(show = true) {
                 let res = await fetch(`${API_BASE}/api/admin/gps-locations`);
                 if (!res.ok) res = await fetch(`${API_BASE}/admin/gps-locations`);
                 if (res.ok) {
-                    const data = await res.json();
+                    // GPS loadFleetVehicles consignor scope
+                    let data = await res.json();
+                    if (typeof isConsignor === 'function' && isConsignor()) {
+                        const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                        const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
+                        data = assignedId ? (data || []).filter(v => v.id === assignedId) : [];
+                    }
                     this.fleetVehicles = data || [];
                 }
             } catch (e) {
@@ -25158,7 +25275,7 @@ function toggleNewsletterModal(show = true) {
             }
 
             // Fallback: If fleetVehicles has fewer than 2 vehicles, fetch from /api/vehicles to guarantee full fleet
-            if (!this.fleetVehicles || this.fleetVehicles.length <= 1) {
+            if ((!this.fleetVehicles || this.fleetVehicles.length <= 1) && (typeof isConsignor !== "function" || !isConsignor())) {
                 try {
                     let vRes = await fetch(`${API_BASE}/api/vehicles`);
                     if (!vRes.ok) vRes = await fetch(`${API_BASE}/vehicles`);
@@ -25275,7 +25392,13 @@ function toggleNewsletterModal(show = true) {
             try {
                 const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
                 if (res.ok) {
-                    const list = await res.json();
+                    // GPS loadLastKnownLocationFromDB consignor scope
+                    let list = await res.json();
+                    if (typeof isConsignor === 'function' && isConsignor()) {
+                        const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                        const assignedId = curUser ? parseInt(curUser.assigned_vehicle_id, 10) : null;
+                        list = assignedId ? (list || []).filter(v => v.id === assignedId) : [];
+                    }
                     this.fleetVehicles = list || [];
                     this._updateHeaderDeviceLabel();
                     const veh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId);
@@ -26005,9 +26128,13 @@ function toggleNewsletterModal(show = true) {
 
         async openConfigModal(vehicleId = null) {
             const modal = document.getElementById('gpsConfigModal');
+            if (typeof isConsignor === 'function' && isConsignor()) {
+                if (typeof showNotification === 'function') showNotification('Consignors are not permitted to configure GPS devices.', 'error');
+                return;
+            }
             if (!modal) return;
 
-            if (!this.fleetVehicles || this.fleetVehicles.length <= 1) {
+            if ((!this.fleetVehicles || this.fleetVehicles.length <= 1) && (typeof isConsignor !== "function" || !isConsignor())) {
                 await this.loadFleetVehicles();
             }
 
