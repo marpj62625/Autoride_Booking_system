@@ -8094,7 +8094,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
                             <input type="number" id="walkinBasePrice" min="0" max="500000" maxlength="7" step="any" readonly
-                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-container, #f1f5f9); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: not-allowed;" title="Base price is automatically calculated (Daily Rate x Rental Days)">
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-container, #f1f5f9); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: not-allowed;" title="Base Price is fixed to the selected vehicle's daily rate">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Driver / Delivery (₱)</label>
@@ -34094,9 +34094,10 @@ function toggleNewsletterModal(show = true) {
                 dailyRate = opt ? Number(opt.dataset.rate || 0) : 0;
             }
 
+            // Fixed Base Price: shows the daily rate of the vehicle and does NOT multiply by days
             const basePriceInput = document.getElementById('walkinBasePrice');
             if (basePriceInput) {
-                basePriceInput.value = dailyRate * days;
+                basePriceInput.value = dailyRate;
             }
 
             // Driver fee calculation if With Driver selected
@@ -34114,6 +34115,7 @@ function toggleNewsletterModal(show = true) {
         },
 
         recalculateTotal() {
+            const days = this.getDays();
             const baseInput = document.getElementById('walkinBasePrice');
             const extraInput = document.getElementById('walkinExtraFee');
             const discInput = document.getElementById('walkinDiscount');
@@ -34134,10 +34136,11 @@ function toggleNewsletterModal(show = true) {
                 if (Number(discInput.value) < 0) discInput.value = 0;
             }
 
-            const base = Math.min(500000, Math.max(0, Number(baseInput?.value || 0)));
+            const dailyRate = Math.min(500000, Math.max(0, Number(baseInput?.value || 0)));
+            const rentalCost = dailyRate * days;
             const extra = Math.min(50000, Math.max(0, Number(extraInput?.value || 0)));
             const disc = Math.min(50000, Math.max(0, Number(discInput?.value || 0)));
-            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
+            const total = Math.min(550000, Math.max(0, (rentalCost + extra) - disc));
 
             const display = document.getElementById('walkinTotalDisplay');
             if (display) display.textContent = `₱${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -34157,10 +34160,12 @@ function toggleNewsletterModal(show = true) {
 
         onPaymentStatusChange() {
             const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
-            const base = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const days = this.getDays();
+            const dailyRate = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const rentalCost = dailyRate * days;
             const extra = Math.min(50000, Math.max(0, Number(document.getElementById('walkinExtraFee')?.value || 0)));
             const disc = Math.min(50000, Math.max(0, Number(document.getElementById('walkinDiscount')?.value || 0)));
-            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
+            const total = Math.min(550000, Math.max(0, (rentalCost + extra) - disc));
 
             const amountInput = document.getElementById('walkinAmountPaid');
             if (amountInput) {
@@ -34176,10 +34181,12 @@ function toggleNewsletterModal(show = true) {
         },
 
         recalculateBalance() {
-            const base = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const days = this.getDays();
+            const dailyRate = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const rentalCost = dailyRate * days;
             const extra = Math.min(50000, Math.max(0, Number(document.getElementById('walkinExtraFee')?.value || 0)));
             const disc = Math.min(50000, Math.max(0, Number(document.getElementById('walkinDiscount')?.value || 0)));
-            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
+            const total = Math.min(550000, Math.max(0, (rentalCost + extra) - disc));
 
             const amountInput = document.getElementById('walkinAmountPaid');
             if (amountInput) {
