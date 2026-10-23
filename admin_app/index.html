@@ -10279,7 +10279,7 @@ input:checked + .ctrl-slider:before {
             background: var(--primary, #00B14F);
         }
     </style>
-    <div id="vehicleModal" onclick="if(event.target === this) Vehicles.closeModal()">
+    <div id="vehicleModal" onclick="if(event.target === this) Vehicles.onBackdropClick()">
         <form id="vehicleForm" novalidate style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
             <input type="hidden" id="editId">
 
@@ -16133,7 +16133,21 @@ input:checked + .ctrl-slider:before {
 
 
 
-        closeModal() { document.getElementById('vehicleModal').style.display = 'none'; },
+        closeModal() {
+            document.getElementById('vehicleModal').style.display = 'none';
+        },
+
+        onBackdropClick() {
+            const editId = document.getElementById('editId')?.value;
+            const isEdit = Boolean(editId && editId.trim() !== '');
+            const message = isEdit
+                ? "Do you want to discard your changes? Any unsaved edits will be lost."
+                : "Do you want to discard this new vehicle entry? Are you sure you want to leave?";
+
+            if (confirm(message)) {
+                this.closeModal();
+            }
+        },
 
 
 
