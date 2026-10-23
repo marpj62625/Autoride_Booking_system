@@ -12812,6 +12812,16 @@ input:checked + .ctrl-slider:before {
     }
     window.isSuperAdmin = isSuperAdmin;
 
+    function isConsignor() {
+        try {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return false;
+            const r = (user.role || '').toLowerCase().trim();
+            return r === 'consignor';
+        } catch(_) { return false; }
+    }
+    window.isConsignor = isConsignor;
+
     function applyRolePermissions() {
         const isSuper = isSuperAdmin();
         if (isSuper) {
@@ -24898,6 +24908,10 @@ function toggleNewsletterModal(show = true) {
 
 
                 document.getElementById('staffRole').value = s.role;
+                this.onRoleChange(s.role);
+                if (s.role === 'consignor' && s.assigned_vehicle_id) {
+                    this.populateVehicleDropdown(s.assigned_vehicle_id);
+                }
 
 
 

@@ -771,6 +771,7 @@ def migrate_settings_v2():
         cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS assigned_location VARCHAR(100)")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_location VARCHAR(100)")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'customer'")
 
@@ -13048,7 +13049,7 @@ def admin_login():
 
         # Only allow is_verified = 1 (Active)
 
-        cur.execute("SELECT id, full_name, email, role, assigned_location, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin')", (email,))
+        cur.execute("SELECT id, full_name, email, role, assigned_location, assigned_vehicle_id, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin', 'consignor')", (email,))
         admin_row = cur.fetchone()
         user = None
         if admin_row:
@@ -13122,7 +13123,14 @@ def list_admins():
 
 
 
-        cur.execute("SELECT id, full_name, email, role, is_verified, assigned_location FROM users WHERE role IN ('admin', 'super_admin') ORDER BY id DESC")
+        cur.execute("""
+            SELECT u.id, u.full_name, u.email, u.role, u.is_verified, u.assigned_location, u.assigned_vehicle_id,
+                   v.name as assigned_vehicle_name, v.plate_number as assigned_vehicle_plate
+            FROM users u
+            LEFT JOIN vehicles v ON v.id = u.assigned_vehicle_id
+            WHERE u.role IN ('admin', 'super_admin', 'consignor')
+            ORDER BY u.id DESC
+        """)
 
         admins = cur.fetchall()
 
@@ -13194,11 +13202,11 @@ def update_admin(user_id):
 
         if password:
             hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, password=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s WHERE id=%s", (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id, user_id))
 
         else:
 
-            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, role=%s, assigned_location=%s WHERE id=%s", (_admin_first, _admin_last, email, role, assigned_location, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, role=%s, assigned_location=%s, assigned_vehicle_id=%s WHERE id=%s", (_admin_first, _admin_last, email, role, assigned_location, assigned_vehicle_id, user_id))
 
         
 
@@ -13517,10 +13525,10 @@ def create_admin():
         _admin_first = _admin_name_parts[0] if _admin_name_parts else name
         _admin_last = _admin_name_parts[1] if len(_admin_name_parts) > 1 else ''
         cur.execute("""
-            INSERT INTO users (first_name, last_name, email, password, role, assigned_location, is_email_verified, is_verified)
-            VALUES (%s, %s, %s, %s, %s, %s, True, 1)
+            INSERT INTO users (first_name, last_name, email, password, role, assigned_location, assigned_vehicle_id, is_email_verified, is_verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, True, 1)
             RETURNING id
-        """, (_admin_first, _admin_last, email, hashed_pw, role, assigned_location))
+        """, (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, assigned_vehicle_id))
 
         new_id = cur.fetchone()['id']
 
