@@ -10639,7 +10639,7 @@ input:checked + .ctrl-slider:before {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 16px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" min="0" max="999999" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
+                        <input type="number" id="inspectMileage" min="0" max="9999999999" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
@@ -20942,6 +20942,10 @@ function toggleNewsletterModal(show = true) {
                         <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
                     </div>`}
                 </div>` : ''}
+                <div style="background:#f0f9ff;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #bae6fd;">
+                    <div style="font-size:0.65rem;color:#0369a1;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:5px;"><i class="fas fa-camera" style="color:#0284c7;"></i> Pickup / Return Inspection Photos</div>
+                    <div id="bookingInspectionPhotos_${b.id}"><div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:8px 0;"><i class="fas fa-spinner fa-spin" style="margin-right:5px;"></i>Loading inspection photos...</div></div>
+                </div>
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
             </div>`;
 
@@ -20949,7 +20953,53 @@ function toggleNewsletterModal(show = true) {
             modal.style.display = 'flex';
             if (typeof modalOpen === 'function') modalOpen();
             setTimeout(() => { Bookings.loadPenalties(b.id); }, 50);
+            setTimeout(() => { Bookings.loadInspectionPhotos(b.id); }, 80);
         },
+        async loadInspectionPhotos(bookingId) {
+            const container = document.getElementById('bookingInspectionPhotos_' + bookingId);
+            if (!container) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/inspections/${bookingId}`);
+                const inspections = await res.json();
+                if (!res.ok || !Array.isArray(inspections) || inspections.length === 0) {
+                    container.innerHTML = '<div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:6px 0;"><i class="fas fa-image" style="margin-right:5px;"></i>No inspection records yet.</div>';
+                    return;
+                }
+                let html = '';
+                inspections.forEach(insp => {
+                    const typeLabel = insp.type === 'pickup' ? '📦 Pickup Inspection' : '🔁 Return Inspection';
+                    const typeColor = insp.type === 'pickup' ? '#0369a1' : '#7c3aed';
+                    const typeBg    = insp.type === 'pickup' ? '#e0f2fe' : '#ede9fe';
+                    const typeBorder= insp.type === 'pickup' ? '#bae6fd' : '#ddd6fe';
+                    const photos = Array.isArray(insp.photos) ? insp.photos : [];
+                    html += `<div style="background:#fff;border:1px solid ${typeBorder};border-radius:10px;padding:10px;margin-bottom:10px;">`;
+                    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">`;
+                    html += `<span style="font-size:0.72rem;font-weight:800;color:${typeColor};background:${typeBg};padding:3px 10px;border-radius:20px;">${typeLabel}</span>`;
+                    html += `<span style="font-size:0.65rem;color:#94a3b8;">${new Date(insp.created_at).toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</span>`;
+                    html += `</div>`;
+                    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:0.72rem;color:#374151;margin-bottom:8px;">`;
+                    html += `<span><i class="fas fa-tachometer-alt" style="color:#0369a1;margin-right:3px;"></i><b>${parseFloat(insp.mileage||0).toLocaleString('en-PH')} km</b></span>`;
+                    html += `<span style="color:#94a3b8;">|</span>`;
+                    html += `<span><i class="fas fa-gas-pump" style="color:#d97706;margin-right:3px;"></i><b>${insp.fuel_level||'N/A'}</b></span>`;
+                    if (insp.notes) html += `<span style="color:#94a3b8;">|</span><span style="color:#64748b;font-style:italic;">${insp.notes}</span>`;
+                    html += `</div>`;
+                    if (photos.length > 0) {
+                        html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;">`;
+                        photos.forEach(p => {
+                            html += `<img src="${API_BASE}${p}" style="width:100%;height:75px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${API_BASE}${p}','_blank')" onerror="this.style.display='none'">`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div style="font-size:0.72rem;color:#94a3b8;text-align:center;padding:4px 0;"><i class="fas fa-image" style="margin-right:4px;"></i>No photos uploaded</div>`;
+                    }
+                    html += `</div>`;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:6px 0;">Could not load inspection photos.</div>';
+            }
+        },
+
         async triggerRefund(id) {
             const b = (this.data && this.data.find(x => x.id == id || x.booking_id == id)) 
                  || (typeof FleetCalendar !== 'undefined' && FleetCalendar.bookings && FleetCalendar.bookings.find(x => x.id == id || x.booking_id == id)) 
