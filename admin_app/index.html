@@ -10579,7 +10579,7 @@ input:checked + .ctrl-slider:before {
                     <i class="fas fa-plus-circle" style="margin-right:6px;"></i> Save &amp; Add Another
                 </button>
                 <div style="display:flex;gap:10px;">
-                    <button type="button" onclick="Vehicles.closeModal()" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--border);border-radius:10px;color:var(--text-secondary);font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)';" onmouseout="this.style.borderColor='var(--border)';">
+                    <button type="button" onclick="Vehicles.onBackdropClick()" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--border);border-radius:10px;color:var(--text-secondary);font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)';" onmouseout="this.style.borderColor='var(--border)';">
                         Cancel
                     </button>
                     <button type="submit" id="submitBtnText" style="flex:2;padding:12px;background:#00B14F;border:none;border-radius:10px;color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(0,177,79,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
@@ -12339,9 +12339,21 @@ input:checked + .ctrl-slider:before {
             cancelSysConfigUnsavedPrompt(e);
             return;
         }
+        if (e.target && e.target.id === 'vehicleModal') {
+            if (typeof Vehicles !== 'undefined' && Vehicles.onBackdropClick) {
+                Vehicles.onBackdropClick();
+            }
+            return;
+        }
+        if (e.target && e.target.id === 'vehicleUnsavedModal') {
+            if (typeof Vehicles !== 'undefined' && Vehicles.cancelUnsavedPrompt) {
+                Vehicles.cancelUnsavedPrompt();
+            }
+            return;
+        }
 
         const modalBackdropIds = [
-            'inspectionModal', 'bookingDetailsModal', 'vehicleModal', 'umModal',
+            'inspectionModal', 'bookingDetailsModal', 'umModal',
             'licensePreviewModal', 'receiptPreviewModal', 'changePasswordModal',
             'blackoutsModal', 'exitConfirmModal', 'pushNotifModal', 'superAdminProfileModal',
             'staffModal', 'archiveMaintenanceModal', 'vehicleDetailModal',
@@ -12364,7 +12376,7 @@ input:checked + .ctrl-slider:before {
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
-            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal') return;
+            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
@@ -12393,6 +12405,14 @@ input:checked + .ctrl-slider:before {
                     cancelSysConfigUnsavedPrompt(e);
                     return;
                 }
+                if (topModal.id === 'vehicleUnsavedModal') {
+                    if (typeof Vehicles !== 'undefined' && Vehicles.cancelUnsavedPrompt) Vehicles.cancelUnsavedPrompt();
+                    return;
+                }
+                if (topModal.id === 'vehicleModal') {
+                    if (typeof Vehicles !== 'undefined' && Vehicles.onBackdropClick) Vehicles.onBackdropClick();
+                    return;
+                }
                 topModal.style.display = 'none';
             }
         }
@@ -12416,6 +12436,14 @@ input:checked + .ctrl-slider:before {
             }
             if (topModal.id === 'sysConfigUnsavedModal') {
                 cancelSysConfigUnsavedPrompt();
+                return true;
+            }
+            if (topModal.id === 'vehicleUnsavedModal') {
+                if (typeof Vehicles !== 'undefined' && Vehicles.cancelUnsavedPrompt) Vehicles.cancelUnsavedPrompt();
+                return true;
+            }
+            if (topModal.id === 'vehicleModal') {
+                if (typeof Vehicles !== 'undefined' && Vehicles.onBackdropClick) Vehicles.onBackdropClick();
                 return true;
             }
             topModal.style.display = 'none';
