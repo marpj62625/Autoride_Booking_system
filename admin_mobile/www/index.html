@@ -10678,7 +10678,7 @@ input:checked + .ctrl-slider:before {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 16px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" min="0" max="9999999999" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
+                        <input type="number" id="inspectMileage" min="0" max="9999999999" maxlength="10" oninput="if(this.value.length>10)this.value=this.value.slice(0,10)" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
@@ -32311,6 +32311,9 @@ function toggleNewsletterModal(show = true) {
                 mileageEl.dataset.minAllowed = minMileage;
                 mileageEl.dataset.minLabel = minLabel;
                 mileageEl.oninput = function() {
+                    if (this.value && this.value.length > 10) {
+                        this.value = this.value.slice(0, 10);
+                    }
                     const val = parseFloat(this.value);
                     const min = parseFloat(this.dataset.minAllowed || 0);
                     const lbl = this.dataset.minLabel || 'minimum';
@@ -32613,6 +32616,10 @@ function toggleNewsletterModal(show = true) {
 
             if (mileageEl && (!mileageEl.value.trim() || isNaN(enteredMileage) || enteredMileage < 0)) {
                 showInlineError(mileageEl, 'Valid positive mileage is required');
+                hasError = true;
+            } else if (mileageEl && (enteredMileage > 9999999999 || mileageEl.value.trim().length > 10)) {
+                showInlineError(mileageEl, 'Mileage cannot exceed 10 digits (max: 9,999,999,999)');
+                showNotification('Mileage limit is 10 digits (max: 9,999,999,999)', 'error');
                 hasError = true;
             } else if (mileageEl && enteredMileage < minAllowed) {
                 showInlineError(mileageEl, `Mileage (${enteredMileage.toLocaleString()} km) cannot be lower than ${minLabel.toLowerCase()} (${minAllowed.toLocaleString()} km)`);
