@@ -13940,8 +13940,32 @@ def update_vehicle_rate(vehicle_id):
             return jsonify({"error": "Daily rate must be between 0 and 1,000,000 PHP"}), 400
         
         cur = get_cursor()
+        cur.execute("SELECT brand, model, plate_number, daily_rate FROM vehicles WHERE id = %s", (vehicle_id,))
+        v_row = cur.fetchone() or {}
+        old_rate = float(v_row.get('daily_rate') or 0.0)
+        v_title = f"{v_row.get('brand') or ''} {v_row.get('model') or ''} ({v_row.get('plate_number') or f'ID {vehicle_id}'})".strip()
+
         cur.execute("UPDATE vehicles SET daily_rate = %s WHERE id = %s", (daily_rate, vehicle_id))
         commit_db()
+
+        requester_id = data.get('admin_id') or data.get('requester_id')
+        try:
+            admin_name = 'Admin'
+            if requester_id:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (requester_id,))
+                u_row = cur.fetchone()
+                if u_row: admin_name = u_row['full_name']
+            log_activity(
+                admin_id=requester_id or 1,
+                admin_name=admin_name,
+                action='UPDATE_VEHICLE_RATE',
+                target_type='FLEET_CALENDAR',
+                target_id=vehicle_id,
+                details=f"Updated daily rate of {v_title} from ₱{old_rate:,.2f} to ₱{daily_rate:,.2f}/day on Fleet Calendar"
+            )
+        except Exception as _log_e:
+            print(f"[LOG_ERR] update_vehicle_rate: {_log_e}")
+
         return jsonify({"message": "Vehicle daily rate updated successfully", "daily_rate": daily_rate}), 200
     except ValueError:
         return jsonify({"error": "Invalid rate value"}), 400
@@ -18098,6 +18122,24 @@ def add_admin_blackout_date():
         )
         new_id = cur.fetchone()['id']
         commit_db()
+
+        try:
+            admin_name = 'Admin'
+            if created_by:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (created_by,))
+                u_row = cur.fetchone()
+                if u_row: admin_name = u_row['full_name']
+            log_activity(
+                admin_id=created_by or 1,
+                admin_name=admin_name,
+                action='ADD_FLEET_BLACKOUT',
+                target_type='FLEET_CALENDAR',
+                target_id=new_id,
+                details=f"Blocked fleet dates {start_date} to {end_date} (Vehicles: {affected_vehicles}). Reason: {reason}"
+            )
+        except Exception as _log_e:
+            print(f"[LOG_ERR] add_admin_blackout_date: {_log_e}")
+
         return jsonify({'message': 'Blackout date added', 'id': new_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -18107,10 +18149,34 @@ def add_admin_blackout_date():
 @app.route('/admin/blackout-dates/<int:b_id>', methods=['DELETE'])
 @app.route('/api/admin/blackout-dates/<int:b_id>', methods=['DELETE'])
 def delete_admin_blackout_date(b_id):
+    data = request.get_json(silent=True) or {}
+    requester_id = data.get('admin_id') or request.args.get('admin_id')
     try:
         cur = get_cursor()
+        cur.execute("SELECT start_date, end_date, reason, affected_vehicles FROM blackout_dates WHERE id = %s", (b_id,))
+        bo_row = cur.fetchone() or {}
+        bo_info = f"{bo_row.get('start_date')} to {bo_row.get('end_date')} (Reason: {bo_row.get('reason') or 'N/A'})"
+
         cur.execute("DELETE FROM blackout_dates WHERE id = %s", (b_id,))
         commit_db()
+
+        try:
+            admin_name = 'Admin'
+            if requester_id:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (requester_id,))
+                u_row = cur.fetchone()
+                if u_row: admin_name = u_row['full_name']
+            log_activity(
+                admin_id=requester_id or 1,
+                admin_name=admin_name,
+                action='DELETE_FLEET_BLACKOUT',
+                target_type='FLEET_CALENDAR',
+                target_id=b_id,
+                details=f"Removed blackout period #{b_id}: {bo_info}"
+            )
+        except Exception as _log_e:
+            print(f"[LOG_ERR] delete_admin_blackout_date: {_log_e}")
+
         return jsonify({'message': 'Blackout date deleted'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -18242,6 +18308,53 @@ def get_fleet_bookings():
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+@app.route('/admin/fleet-calendar/activity-logs', methods=['GET'])
+@app.route('/api/admin/fleet-calendar/activity-logs', methods=['GET'])
+def get_fleet_calendar_activity_logs():
+    """Returns audit history of all changes made on Fleet Calendar with admin identity."""
+    try:
+        cur = get_cursor()
+        try:
+            page = max(1, int(request.args.get('page', 1) or 1))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            limit = max(1, min(100, int(request.args.get('limit', 50) or 50)))
+        except (ValueError, TypeError):
+            limit = 50
+        search_query = (request.args.get('q') or request.args.get('search') or '').strip().lower()[:50]
+
+        where_clauses = [
+            "(target_type = 'FLEET_CALENDAR' OR action IN ('UPDATE_FLEET_PRICING', 'UPDATE_BOOKING_PRICING', 'UPDATE_VEHICLE_RATE', 'IMPORT_FLEET_BOOKINGS_EXCEL', 'ADD_FLEET_BLACKOUT', 'DELETE_FLEET_BLACKOUT'))"
+        ]
+        params = []
+
+        if search_query:
+            where_clauses.append("(LOWER(admin_name) LIKE %s OR LOWER(action) LIKE %s OR LOWER(COALESCE(details, '')) LIKE %s)")
+            params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}"
+
+        cur.execute(f"SELECT COUNT(*) as total FROM activity_logs {where_sql}", tuple(params))
+        total = cur.fetchone()['total']
+
+        offset = (page - 1) * limit
+        cur.execute(f"SELECT * FROM activity_logs {where_sql} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [limit, offset]))
+        logs = cur.fetchall()
+
+        return jsonify({
+            "logs": logs,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": max(1, (total + limit - 1) // limit)
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 
 @app.route('/admin/fleet-calendar/export-excel', methods=['GET'])
 @app.route('/api/admin/fleet-calendar/export-excel', methods=['GET'])
@@ -18537,10 +18650,10 @@ def update_booking_quick_pricing(booking_id):
             log_activity(
                 admin_id=requester_id or 1,
                 admin_name=admin_name,
-                action='UPDATE_BOOKING_PRICING',
-                target_type='BOOKING',
+                action='UPDATE_FLEET_PRICING',
+                target_type='FLEET_CALENDAR',
                 target_id=booking_id,
-                details=f"Updated Booking #{booking_id}: Total ₱{total_price:,.2f}, Paid ₱{amount_paid:,.2f}, Bal ₱{balance_amount:,.2f}, Status: {payment_status}, Color: {calendar_color or 'default'}"
+                details=f"Updated Booking #{booking_id} on Fleet Calendar: Total ₱{total_price:,.2f}, Paid ₱{amount_paid:,.2f}, Bal ₱{balance_amount:,.2f}, Status: {payment_status}, Color: {calendar_color or 'default'}"
             )
         except Exception:
             pass
