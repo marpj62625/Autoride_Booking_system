@@ -20942,10 +20942,11 @@ function toggleNewsletterModal(show = true) {
                         <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
                     </div>`}
                 </div>` : ''}
+                ${st === 'completed' ? `
                 <div style="background:#f0f9ff;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #bae6fd;">
                     <div style="font-size:0.65rem;color:#0369a1;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:5px;"><i class="fas fa-camera" style="color:#0284c7;"></i> Pickup / Return Inspection Photos</div>
                     <div id="bookingInspectionPhotos_${b.id}"><div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:8px 0;"><i class="fas fa-spinner fa-spin" style="margin-right:5px;"></i>Loading inspection photos...</div></div>
-                </div>
+                </div>` : ''}
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
             </div>`;
 
@@ -20953,7 +20954,7 @@ function toggleNewsletterModal(show = true) {
             modal.style.display = 'flex';
             if (typeof modalOpen === 'function') modalOpen();
             setTimeout(() => { Bookings.loadPenalties(b.id); }, 50);
-            setTimeout(() => { Bookings.loadInspectionPhotos(b.id); }, 80);
+            if (st === 'completed') setTimeout(() => { Bookings.loadInspectionPhotos(b.id); }, 80);
         },
         async loadInspectionPhotos(bookingId) {
             const container = document.getElementById('bookingInspectionPhotos_' + bookingId);
@@ -20991,7 +20992,7 @@ function toggleNewsletterModal(show = true) {
                         photos.forEach(p => {
                             // Use p directly if it is already a full URL, otherwise prepend API_BASE
                             const imgSrc = (typeof p === 'string' && p.startsWith('http')) ? p : `${API_BASE}${p}`;
-                            html += `<img src="${imgSrc}" style="width:100%;height:75px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${imgSrc}','_blank')" onerror="this.style.display='none'">`;
+                            html += `<img src="${imgSrc}" style="width:100%;height:75px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="Bookings.previewInspectionPhoto('${imgSrc}', 'Inspection Photo - Booking #${bookingId}')" onerror="this.style.display='none'">`;
                         });
                         html += `</div>`;
                     } else {
@@ -21002,6 +21003,21 @@ function toggleNewsletterModal(show = true) {
                 container.innerHTML = html;
             } catch(e) {
                 container.innerHTML = '<div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:6px 0;">Could not load inspection photos.</div>';
+            }
+        },
+
+        previewInspectionPhoto(url, title) {
+            if (!url) return;
+            const modal = document.getElementById('licensePreviewModal');
+            const img = document.getElementById('licensePreviewImg');
+            if (modal && img) {
+                img.src = url;
+                const titleEl = modal.querySelector('h3');
+                if (titleEl) titleEl.textContent = title || 'Inspection Photo Preview';
+                modal.style.zIndex = '11000'; // Ensure it appears above bookingDetailsModal (which is 10000)
+                modal.style.display = 'flex';
+            } else {
+                window.open(url, '_blank');
             }
         },
 
