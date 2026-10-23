@@ -24850,13 +24850,8 @@ function toggleNewsletterModal(show = true) {
 
 
                 const res = await fetch(`${API_BASE}/api/admin/list?requester_id=${user.id}`);
-
-
-
-                this.data = await res.json();
-
-
-
+                const json = await res.json().catch(() => []);
+                this.data = Array.isArray(json) ? json : [];
                 this.render();
 
 
@@ -24889,7 +24884,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            if (this.data.length === 0) {
+            if (!Array.isArray(this.data) || this.data.length === 0) {
 
 
 
@@ -25063,6 +25058,40 @@ function toggleNewsletterModal(show = true) {
 
 
 
+        },
+
+        onRoleChange(role) {
+            const group = document.getElementById('staffAssignedVehicleGroup');
+            if (!group) return;
+            if (role === 'consignor') {
+                group.style.display = 'block';
+                this.populateVehicleDropdown();
+            } else {
+                group.style.display = 'none';
+            }
+        },
+
+        async populateVehicleDropdown(selectedId = null) {
+            const select = document.getElementById('staffAssignedVehicle');
+            if (!select) return;
+            try {
+                let res = await fetch(`${API_BASE}/api/vehicles`);
+                if (!res.ok) res = await fetch(`${API_BASE}/vehicles`);
+                if (res.ok) {
+                    const list = await res.json();
+                    let html = '<option value="">-- Select Owned Vehicle --</option>';
+                    (list || []).forEach(v => {
+                        const isSel = selectedId && (String(v.id) === String(selectedId));
+                        const name = v.name || `${v.brand || ''} ${v.model || ''}`.trim() || `Vehicle #${v.id}`;
+                        const plate = v.plate_number ? `(${v.plate_number})` : '';
+                        html += `<option value="${v.id}" ${isSel ? 'selected' : ''}>${escapeHtml(name)} ${plate}</option>`;
+                    });
+                    select.innerHTML = html;
+                    if (selectedId) select.value = String(selectedId);
+                }
+            } catch(e) {
+                console.error('[Staff] populateVehicleDropdown error:', e);
+            }
         },
 
 

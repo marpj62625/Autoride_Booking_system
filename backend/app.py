@@ -13057,6 +13057,11 @@ def admin_login():
     try:
 
         cur = get_cursor()
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            commit_db()
+        except Exception:
+            pass
 
         # Only allow is_verified = 1 (Active)
 
@@ -13123,6 +13128,11 @@ def list_admins():
     try:
 
         cur = get_cursor()
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            commit_db()
+        except Exception:
+            pass
 
         cur.execute("SELECT role FROM users WHERE id=%s", (requester_id,))
 
@@ -13195,6 +13205,11 @@ def update_admin(user_id):
     try:
 
         cur = get_cursor()
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            commit_db()
+        except Exception:
+            pass
 
         cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
 
@@ -13531,6 +13546,11 @@ def create_admin():
     try:
 
         cur = get_cursor()
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            commit_db()
+        except Exception:
+            pass
 
         # Verify requester is Super Admin
 
