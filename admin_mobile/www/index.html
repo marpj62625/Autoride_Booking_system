@@ -29880,7 +29880,7 @@ function toggleNewsletterModal(show = true) {
                     res = await fetch(`${API_BASE}/api/admin/settings`);
                 }
                 const data = await res.json();
-                this._allData = Array.isArray(data) ? data : [];
+                this._allData = Array.isArray(data) ? data.filter(s => s && s.key && !s.key.startsWith('qrph_img_')) : [];
                 this.render();
             } catch (err) {
                 if (list) list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
@@ -30481,9 +30481,22 @@ function toggleNewsletterModal(show = true) {
         snapshotInitialValues() {
             this._initialValues = {};
             const curInputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
+            const numConfig = (typeof SETTINGS_NUM_CONFIG !== 'undefined') ? SETTINGS_NUM_CONFIG : {};
             curInputs.forEach(i => {
                 if (i.dataset && i.dataset.key) {
-                    this._initialValues[i.dataset.key] = String(i.value !== undefined ? i.value : '');
+                    const key = i.dataset.key;
+                    let v = String(i.value !== undefined ? i.value : '').trim();
+                    if (numConfig[key]) {
+                        const nc = numConfig[key];
+                        let n = Number(v);
+                        if (!isNaN(n) && v !== '') {
+                            if (n > nc.max) n = nc.max;
+                            if (n < nc.min) n = nc.min;
+                            const isDec = String(nc.step).includes('.');
+                            v = isDec ? n.toFixed((String(nc.step).split('.')[1] || '0').length) : String(Math.round(n));
+                        }
+                    }
+                    this._initialValues[key] = v;
                 }
             });
         },
@@ -30497,6 +30510,7 @@ function toggleNewsletterModal(show = true) {
             inputs.forEach(i => {
                 if (!i.dataset || !i.dataset.key) return;
                 const key = i.dataset.key;
+                if (key.startsWith('qrph_img_')) return;
                 const initialVal = (this._initialValues && this._initialValues[key] !== undefined) ? String(this._initialValues[key]) : '';
                 let currentVal = String(i.value !== undefined ? i.value : '');
 

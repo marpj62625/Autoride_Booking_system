@@ -14650,7 +14650,7 @@ def handle_admin_settings():
 
             cur = get_cursor()
 
-            cur.execute("SELECT key, value, description FROM settings ORDER BY key ASC")
+            cur.execute("SELECT key, value, description FROM settings WHERE key NOT LIKE 'qrph_img_%' ORDER BY key ASC")
 
             settings = cur.fetchall()
 
