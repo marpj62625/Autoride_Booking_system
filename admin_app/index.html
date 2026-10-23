@@ -4713,6 +4713,52 @@
 
 
     <link rel="stylesheet" href="desktop.css">
+    <!-- Leaflet CSS and JS for GPS Route Trail & Last Track Pin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+    /* Golden GPS Trail & Last Track Pin Styles matching reference */
+    .gps-golden-pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        filter: drop-shadow(0 4px 10px rgba(245, 158, 11, 0.6));
+        animation: gpsPinBounce 2.4s ease-in-out infinite;
+        cursor: pointer;
+    }
+    .gps-golden-pin svg {
+        width: 38px;
+        height: 38px;
+        transition: transform 0.2s ease;
+    }
+    .gps-golden-pin:hover svg {
+        transform: scale(1.18);
+    }
+    .gps-start-dot {
+        width: 14px;
+        height: 14px;
+        background: #f59e0b;
+        border: 3px solid #09101d;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.9);
+        display: block;
+    }
+    @keyframes gpsPinBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-7px); }
+    }
+    .gps-trail-popup .leaflet-popup-content-wrapper {
+        background: rgba(15, 23, 42, 0.95);
+        color: #ffffff;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        backdrop-filter: blur(6px);
+    }
+    .gps-trail-popup .leaflet-popup-tip {
+        background: rgba(15, 23, 42, 0.95);
+    }
+    </style>
 </head>
 
 
@@ -10090,8 +10136,11 @@ input:checked + .ctrl-slider:before {
                     <button type="button" onclick="GPS.openGoogleMaps()" class="btn-premium" style="flex: 1; min-width: 140px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <i class="fas fa-location-arrow"></i> Google Maps
                     </button>
+                    <button type="button" id="btnToggleTrailView" onclick="GPS.toggleTrailView()" class="btn-premium" style="flex: 1; min-width: 150px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);">
+                        <i class="fas fa-map-marked-alt"></i> <span id="trailViewBtnText">Show GPS Route Trail</span>
+                    </button>
                     <button type="button" onclick="GPS.openTripHistoryModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fas fa-route"></i> Trip History
+                        <i class="fas fa-list-ul"></i> Trip Logs
                     </button>
                     <button type="button" onclick="GPS.openConfigModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <i class="fas fa-satellite-dish"></i> GPS Device
@@ -10102,6 +10151,23 @@ input:checked + .ctrl-slider:before {
 
         <div class="chart-card" style="padding:0;overflow:hidden;height:min(580px, calc(100vh - 200px));min-height:460px;position:relative;margin-bottom:24px;border-radius:16px;">
             <div id="gpsMapWrapper" style="position:relative; width:100%; height:100%;">
+                <!-- Dedicated Leaflet GPS Trail Map (Active during Trail View) -->
+                <div id="gpsTrailLeafletMap" style="display:none; position:absolute; inset:0; z-index:15; width:100%; height:100%; background:#09101d;"></div>
+                
+                <!-- Floating Route Control Bar on Trail Map -->
+                <div id="gpsTrailControlBar" style="display:none; position:absolute; top:12px; left:12px; z-index:20; background:rgba(15,23,42,0.92); border:1px solid rgba(245, 158, 11, 0.4); backdrop-filter:blur(8px); padding:8px 14px; border-radius:12px; display:none; align-items:center; gap:12px; box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; box-shadow:0 0 8px #f59e0b; display:inline-block;"></span>
+                        <span id="gpsTrailStatusTitle" style="font-size:0.78rem; font-weight:800; color:#fde68a; letter-spacing:0.3px;">GPS HISTORY TRAIL ACTIVE</span>
+                    </div>
+                    <span id="gpsTrailBreadcrumbsCount" style="font-size:0.72rem; color:var(--text-muted); padding-left:8px; border-left:1px solid rgba(255,255,255,0.15);">0 points</span>
+                    <button type="button" onclick="GPS.fitTrailBounds()" title="Fit entire route on screen" style="padding:4px 10px; font-size:0.72rem; font-weight:700; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:white; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-compress-arrows-alt"></i> Fit Route
+                    </button>
+                    <button type="button" onclick="GPS.toggleTrailView(false)" title="Return to Live Blynk Tracker" style="padding:4px 10px; font-size:0.72rem; font-weight:800; background:#f59e0b; border:none; color:#0f172a; border-radius:6px; cursor:pointer;">
+                        <i class="fas fa-times"></i> Close Trail
+                    </button>
+                </div>
                 <iframe id="blynkMapFrame" src="about:blank" data-src="https://car-rental-inlaguna.vercel.app/" loading="lazy" style="width:100%;height:100%;border:none;display:block;pointer-events:none;" allow="geolocation" allowfullscreen></iframe>
                 <div id="gpsMapTouchOverlay" style="position:absolute; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.08); cursor:pointer;" onclick="if(window.GPS)GPS.toggleMapInteractive(true)">
                     <div style="background:rgba(15,23,42,0.85); color:white; padding:8px 16px; border-radius:20px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:6px; box-shadow:0 4px 12px rgba(0,0,0,0.3); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,0.15);">
@@ -25410,14 +25476,27 @@ function toggleNewsletterModal(show = true) {
                         return;
                     }
 
-                    container.innerHTML = logs.map(l => `
-                        <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                    container.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:10px;margin-bottom:6px;">
+                            <span style="font-size:0.78rem;font-weight:700;color:#f59e0b;"><i class="fas fa-route" style="margin-right:6px;"></i> ${logs.length} recorded route trail points available</span>
+                            <button type="button" onclick="GPS.closeTripHistoryModal(); GPS.toggleTrailView(true);" style="padding:6px 14px;font-size:0.75rem;font-weight:800;background:#f59e0b;color:#0f172a;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 6px rgba(245,158,11,0.3);">
+                                <i class="fas fa-eye"></i> View Trail on Map
+                            </button>
+                        </div>
+                    ` + logs.map((l, idx) => `
+                        <div onclick="GPS.focusHistoryPoint(${l.latitude}, ${l.longitude}, '${escapeHtml(l.address || 'Recorded Point').replace(/'/g, "\\'")}', '${l.created_at}')" title="Click to view and pin this point on map"
+                             style="cursor:pointer;background:var(--surface-card);border:1px solid ${idx === 0 ? '#f59e0b' : 'var(--border)'};border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,0.04);transition:all 0.15s;"
+                             onmouseover="this.style.background='var(--surface-solid)'; this.style.borderColor='#f59e0b';"
+                             onmouseout="this.style.background='var(--surface-card)'; this.style.borderColor='${idx === 0 ? '#f59e0b' : 'var(--border)'}';">
                             <div style="display:flex;align-items:center;gap:14px;">
-                                <div style="width:38px;height:38px;border-radius:10px;background:rgba(0,177,79,0.12);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1rem;flex-shrink:0;">
-                                    <i class="fas fa-map-pin"></i>
+                                <div style="width:38px;height:38px;border-radius:10px;background:${idx === 0 ? 'rgba(245,158,11,0.2)' : 'rgba(0,177,79,0.12)'};display:flex;align-items:center;justify-content:center;color:${idx === 0 ? '#f59e0b' : 'var(--primary)'};font-size:1.1rem;flex-shrink:0;">
+                                    <i class="${idx === 0 ? 'fas fa-map-marker-alt' : 'fas fa-circle'}" style="${idx === 0 ? '' : 'font-size:0.6rem;'}"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size:0.92rem;font-weight:800;color:var(--text-main);line-height:1.35;">${escapeHtml(l.address || 'Recorded Coordinate Point')}</div>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <div style="font-size:0.92rem;font-weight:800;color:var(--text-main);line-height:1.35;">${escapeHtml(l.address || 'Recorded Coordinate Point')}</div>
+                                        ${idx === 0 ? '<span style="font-size:0.68rem;font-weight:800;background:#f59e0b;color:#0f172a;padding:2px 7px;border-radius:6px;text-transform:uppercase;">LAST TRACK</span>' : ''}
+                                    </div>
                                     <div style="font-family:monospace;font-size:0.76rem;color:var(--text-muted);margin-top:3px;">
                                         ${parseFloat(l.latitude).toFixed(6)}, ${parseFloat(l.longitude).toFixed(6)}
                                         ${l.speed ? ` • <span style="color:var(--primary);font-weight:700;">${l.speed} km/h</span>` : ''}
@@ -25425,7 +25504,7 @@ function toggleNewsletterModal(show = true) {
                                 </div>
                             </div>
                             <div style="text-align:right;margin-left:auto;">
-                                <div style="font-size:0.8rem;font-weight:800;color:var(--primary);">${new Date(l.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
+                                <div style="font-size:0.8rem;font-weight:800;color:${idx === 0 ? '#f59e0b' : 'var(--primary)'};">${new Date(l.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
                                 <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">${new Date(l.created_at).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'})}</div>
                             </div>
                         </div>
@@ -25442,6 +25521,245 @@ function toggleNewsletterModal(show = true) {
         closeTripHistoryModal() {
             const modal = document.getElementById('gpsTripHistoryModal');
             if (modal) modal.style.display = 'none';
+        },
+
+        // ==================== GPS TRAIL & LAST TRACK PIN ENGINE ====================
+        _trailMap: null,
+        _trailPolyline: null,
+        _trailStartMarker: null,
+        _trailLastPinMarker: null,
+        _isTrailActive: false,
+        _trailLogs: [],
+
+        createGoldenPinIcon() {
+            if (typeof L === 'undefined') return null;
+            return L.divIcon({
+                className: 'gps-golden-pin',
+                html: `
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#fef08a" />
+                                <stop offset="50%" stop-color="#f59e0b" />
+                                <stop offset="100%" stop-color="#b45309" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M12 2C7.58 2 4 5.58 4 10C4 15.25 12 22 12 22C12 22 20 15.25 20 10C20 5.58 16.42 2 12 2ZM12 13C10.34 13 9 11.66 9 10C9 8.34 10.34 7 12 7C13.66 7 15 8.34 15 10C15 11.66 13.66 13 12 13Z" fill="url(#goldGrad)" stroke="#78350f" stroke-width="0.8"/>
+                    </svg>
+                `,
+                iconSize: [38, 38],
+                iconAnchor: [19, 36],
+                popupAnchor: [0, -34]
+            });
+        },
+
+        createStartDotIcon() {
+            if (typeof L === 'undefined') return null;
+            return L.divIcon({
+                className: '',
+                html: '<span class="gps-start-dot"></span>',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+                popupAnchor: [0, -8]
+            });
+        },
+
+        async toggleTrailView(forceState = null) {
+            const desired = forceState !== null ? Boolean(forceState) : !this._isTrailActive;
+            const trailMapEl = document.getElementById('gpsTrailLeafletMap');
+            const controlBar = document.getElementById('gpsTrailControlBar');
+            const btnText = document.getElementById('trailViewBtnText');
+            const blynkFrame = document.getElementById('blynkMapFrame');
+            const touchOverlay = document.getElementById('gpsMapTouchOverlay');
+            const lockBtn = document.getElementById('gpsMapLockBtn');
+
+            if (!trailMapEl) return;
+
+            if (desired) {
+                this._isTrailActive = true;
+                trailMapEl.style.display = 'block';
+                if (controlBar) controlBar.style.display = 'inline-flex';
+                if (btnText) btnText.textContent = 'Hide GPS Route Trail';
+                if (blynkFrame) blynkFrame.style.display = 'none';
+                if (touchOverlay) touchOverlay.style.display = 'none';
+                if (lockBtn) lockBtn.style.display = 'none';
+
+                await this.renderTrailOnMap();
+            } else {
+                this._isTrailActive = false;
+                trailMapEl.style.display = 'none';
+                if (controlBar) controlBar.style.display = 'none';
+                if (btnText) btnText.textContent = 'Show GPS Route Trail';
+                if (blynkFrame) blynkFrame.style.display = 'block';
+                if (touchOverlay) touchOverlay.style.display = 'flex';
+            }
+        },
+
+        async renderTrailOnMap() {
+            const vehId = this.selectedVehicleId || (this.fleetVehicles[0] ? this.fleetVehicles[0].id : 12);
+            if (!vehId) return;
+
+            if (typeof L === 'undefined') {
+                showNotification("Map library loading, please wait...", "info");
+                return;
+            }
+
+            const mapEl = document.getElementById('gpsTrailLeafletMap');
+            if (!mapEl) return;
+
+            // Initialize Leaflet map if not yet created
+            if (!this._trailMap) {
+                this._trailMap = L.map('gpsTrailLeafletMap', {
+                    zoomControl: true,
+                    attributionControl: false
+                }).setView([14.2800, 121.4167], 14);
+
+                // Premium dark matter tile layer matching the golden theme in reference image
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                    subdomains: 'abcd'
+                }).addTo(this._trailMap);
+            }
+
+            // Invalidate size in case container was hidden
+            setTimeout(() => { if (this._trailMap) this._trailMap.invalidateSize(); }, 150);
+
+            // Fetch recent GPS breadcrumb trail
+            try {
+                const res = await fetch(`${API_BASE}/api/vehicles/${vehId}/gps-history?limit=100`);
+                if (!res.ok) throw new Error("Could not load vehicle trail logs");
+                const data = await res.json();
+                const logs = data.logs || [];
+                this._trailLogs = logs;
+
+                const countEl = document.getElementById('gpsTrailBreadcrumbsCount');
+                if (countEl) countEl.textContent = `${logs.length} points recorded`;
+
+                // Clear previous layers
+                if (this._trailPolyline) { this._trailMap.removeLayer(this._trailPolyline); this._trailPolyline = null; }
+                if (this._trailStartMarker) { this._trailMap.removeLayer(this._trailStartMarker); this._trailStartMarker = null; }
+                if (this._trailLastPinMarker) { this._trailMap.removeLayer(this._trailLastPinMarker); this._trailLastPinMarker = null; }
+
+                if (logs.length === 0) {
+                    // Fallback to vehicle's current single coordinate if no logs
+                    const curVeh = this.fleetVehicles.find(v => v.id === vehId) || {};
+                    const lat = parseFloat(curVeh.latitude || this.lat);
+                    const lng = parseFloat(curVeh.longitude || this.lng);
+                    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                        this._trailLastPinMarker = L.marker([lat, lng], { icon: this.createGoldenPinIcon() })
+                            .addTo(this._trailMap)
+                            .bindPopup(`
+                                <div class="gps-trail-popup" style="font-size:0.8rem;line-height:1.4;">
+                                    <strong style="color:#f59e0b;font-size:0.88rem;"><i class="fas fa-map-marker-alt"></i> Last Known Location</strong><br>
+                                    ${escapeHtml(curVeh.last_address || 'Current Position')}<br>
+                                    <span style="font-family:monospace;color:#94a3b8;font-size:0.74rem;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
+                                </div>
+                            `).openPopup();
+                        this._trailMap.setView([lat, lng], 15);
+                    }
+                    return;
+                }
+
+                // Chronological order: Oldest to Newest
+                // logs is returned newest-first, so reverse for path line
+                const chronological = [...logs].reverse();
+                const latLngs = chronological.map(l => [parseFloat(l.latitude), parseFloat(l.longitude)])
+                    .filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
+
+                if (latLngs.length === 0) return;
+
+                // 1. Draw Golden Accent Polyline matching user reference
+                this._trailPolyline = L.polyline(latLngs, {
+                    color: '#f59e0b',
+                    weight: 5,
+                    opacity: 0.95,
+                    smoothFactor: 1.0,
+                    lineJoin: 'round',
+                    lineCap: 'round'
+                }).addTo(this._trailMap);
+
+                // 2. Start Point Dot (First recorded coordinate)
+                const startPoint = latLngs[0];
+                const startLog = chronological[0];
+                this._trailStartMarker = L.marker(startPoint, { icon: this.createStartDotIcon() })
+                    .addTo(this._trailMap)
+                    .bindPopup(`
+                        <div class="gps-trail-popup" style="font-size:0.78rem;line-height:1.4;">
+                            <strong style="color:#f59e0b;"><i class="fas fa-play-circle"></i> Trip Origin</strong><br>
+                            ${escapeHtml(startLog.address || 'Starting Point')}<br>
+                            <span style="font-size:0.72rem;color:#94a3b8;">${new Date(startLog.created_at).toLocaleString()}</span>
+                        </div>
+                    `);
+
+                // 3. Last Track Pin (Most recent coordinate - golden drop pin)
+                const lastPoint = latLngs[latLngs.length - 1];
+                const newestLog = logs[0];
+                this._trailLastPinMarker = L.marker(lastPoint, { icon: this.createGoldenPinIcon() })
+                    .addTo(this._trailMap)
+                    .bindPopup(`
+                        <div class="gps-trail-popup" style="font-size:0.82rem;line-height:1.45;">
+                            <div style="font-weight:800;color:#fde68a;font-size:0.9rem;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                                <i class="fas fa-map-pin" style="color:#f59e0b;"></i> Last Recorded Position
+                            </div>
+                            <div style="color:#ffffff;font-weight:600;">${escapeHtml(newestLog.address || 'Current Position')}</div>
+                            <div style="font-family:monospace;font-size:0.74rem;color:#cbd5e1;margin-top:2px;">
+                                ${parseFloat(newestLog.latitude).toFixed(6)}, ${parseFloat(newestLog.longitude).toFixed(6)}
+                                ${newestLog.speed ? ` • <span style="color:#f59e0b;font-weight:700;">${newestLog.speed} km/h</span>` : ''}
+                            </div>
+                            <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;">
+                                ${new Date(newestLog.created_at).toLocaleString()}
+                            </div>
+                        </div>
+                    `)
+                    .openPopup();
+
+                // 4. Auto-fit bounds so whole path is clearly visible
+                this.fitTrailBounds();
+
+            } catch (err) {
+                console.error("[GPS] renderTrailOnMap error:", err);
+                showNotification("Failed to render trail: " + err.message, "error");
+            }
+        },
+
+        fitTrailBounds() {
+            if (!this._trailMap) return;
+            if (this._trailPolyline) {
+                const bounds = this._trailPolyline.getBounds();
+                if (bounds && bounds.isValid()) {
+                    this._trailMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+                    return;
+                }
+            }
+            if (this._trailLastPinMarker) {
+                this._trailMap.setView(this._trailLastPinMarker.getLatLng(), 16);
+            }
+        },
+
+        focusHistoryPoint(lat, lng, address, timestamp) {
+            lat = parseFloat(lat);
+            lng = parseFloat(lng);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            this.closeTripHistoryModal();
+            this.toggleTrailView(true);
+
+            setTimeout(() => {
+                if (this._trailMap) {
+                    this._trailMap.setView([lat, lng], 17);
+                    L.popup({ className: 'gps-trail-popup' })
+                        .setLatLng([lat, lng])
+                        .setContent(`
+                            <div style="font-size:0.8rem;line-height:1.4;">
+                                <strong style="color:#f59e0b;"><i class="fas fa-map-pin"></i> Selected History Point</strong><br>
+                                ${escapeHtml(address)}<br>
+                                <span style="font-family:monospace;color:#94a3b8;font-size:0.74rem;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span><br>
+                                <span style="font-size:0.72rem;color:#94a3b8;">${new Date(timestamp).toLocaleString()}</span>
+                            </div>
+                        `)
+                        .openOn(this._trailMap);
+                }
+            }, 300);
         },
 
         async openConfigModal(vehicleId = null) {
