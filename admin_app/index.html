@@ -13268,24 +13268,21 @@ input:checked + .ctrl-slider:before {
             if (set.size === 0 && !window._consignorSyncing && user.id) {
                 window._consignorSyncing = true;
                 const apiBase = (typeof API_URL !== 'undefined') ? API_URL : ((typeof API_BASE !== 'undefined') ? API_BASE : '');
-                fetch(`${apiBase}/admin/list?requester_id=${user.id}`).then(r => r.json()).then(list => {
-                    if (Array.isArray(list)) {
-                        const me = list.find(a => a.id === user.id);
-                        if (me && (me.assigned_vehicle_ids || me.assigned_vehicle_id)) {
-                            user.assigned_vehicle_ids = me.assigned_vehicle_ids;
-                            user.assigned_vehicle_id = me.assigned_vehicle_id;
-                            const stored = localStorage.getItem('admin_user');
-                            if (stored) {
-                                try {
-                                    const parsed = JSON.parse(stored);
-                                    if (parsed.user) parsed.user = Object.assign({}, parsed.user, me);
-                                    else Object.assign(parsed, me);
-                                    localStorage.setItem('admin_user', JSON.stringify(parsed));
-                                } catch(_) {}
-                            }
-                            if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
-                                FleetCalendar.refresh();
-                            }
+                fetch(`${apiBase}/admin/me?user_id=${user.id}`).then(r => r.json()).then(me => {
+                    if (me && (me.assigned_vehicle_ids || me.assigned_vehicle_id)) {
+                        user.assigned_vehicle_ids = me.assigned_vehicle_ids;
+                        user.assigned_vehicle_id = me.assigned_vehicle_id;
+                        const stored = localStorage.getItem('admin_user');
+                        if (stored) {
+                            try {
+                                const parsed = JSON.parse(stored);
+                                if (parsed.user) parsed.user = Object.assign({}, parsed.user, me);
+                                else Object.assign(parsed, me);
+                                localStorage.setItem('admin_user', JSON.stringify(parsed));
+                            } catch(_) {}
+                        }
+                        if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                            FleetCalendar.refresh();
                         }
                     }
                 }).catch(() => {}).finally(() => { window._consignorSyncing = false; });
@@ -25038,8 +25035,8 @@ function toggleNewsletterModal(show = true) {
 
                 document.getElementById('staffRole').value = s.role;
                 this.onRoleChange(s.role);
-                if (s.role === 'consignor' && s.assigned_vehicle_id) {
-                    this.populateVehicleDropdown(s.assigned_vehicle_id);
+                if (s.role === 'consignor' && (s.assigned_vehicle_ids || s.assigned_vehicle_id)) {
+                    this.populateVehicleDropdown(s.assigned_vehicle_ids || s.assigned_vehicle_id);
                 }
 
 

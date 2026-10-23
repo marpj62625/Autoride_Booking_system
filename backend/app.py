@@ -13119,6 +13119,45 @@ def admin_login():
 
 
 
+@app.route('/admin/me', methods=['GET'])
+@app.route('/api/admin/me', methods=['GET'])
+def get_admin_me():
+    user_id = request.args.get('user_id') or request.args.get('requester_id')
+    try:
+        user_id = int(user_id) if user_id else None
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
+
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    try:
+        cur = get_cursor()
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            commit_db()
+        except Exception:
+            pass
+
+        cur.execute("""
+            SELECT u.id, u.full_name, u.email, u.role, u.is_verified, u.assigned_location, 
+                   u.assigned_vehicle_id, u.assigned_vehicle_ids,
+                   v.name as assigned_vehicle_name, v.plate_number as assigned_vehicle_plate
+            FROM users u
+            LEFT JOIN vehicles v ON v.id = u.assigned_vehicle_id
+            WHERE u.id = %s
+        """, (user_id,))
+        me = cur.fetchone()
+        if not me:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(me), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/admin/list', methods=['GET'])
 @app.route('/api/admin/list', methods=['GET'])
 def list_admins():
