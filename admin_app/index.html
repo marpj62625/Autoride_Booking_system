@@ -10318,7 +10318,7 @@ input:checked + .ctrl-slider:before {
         }
     </style>
     <div id="vehicleModal" onclick="if(event.target === this) Vehicles.onBackdropClick()">
-        <form id="vehicleForm" novalidate style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+        <form id="vehicleForm" novalidate oninput="Vehicles._isDirty=true" onchange="Vehicles._isDirty=true" style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
             <input type="hidden" id="editId">
 
             <!-- PINNED HEADER -->
@@ -16206,18 +16206,8 @@ input:checked + .ctrl-slider:before {
         },
 
         snapshotInitialState() {
-            // Reset dirty flag and attach change listeners
+            // Reset dirty flag — the vehicleForm HTML tag has oninput/onchange="Vehicles._isDirty=true"
             this._isDirty = false;
-            const form = document.getElementById('vehicleForm');
-            if (!form) return;
-            // Use a single listener stored on _dirtyHandler so we can remove/re-add cleanly
-            if (this._dirtyHandler) {
-                form.removeEventListener('input', this._dirtyHandler);
-                form.removeEventListener('change', this._dirtyHandler);
-            }
-            this._dirtyHandler = () => { this._isDirty = true; };
-            form.addEventListener('input', this._dirtyHandler);
-            form.addEventListener('change', this._dirtyHandler);
         },
 
         getDiff() {
