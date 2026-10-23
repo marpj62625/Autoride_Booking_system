@@ -7920,18 +7920,30 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px;">Guest Customer Details</span>
                         <span style="font-size: 0.7rem; color: #10b981; font-weight: 700;"><i class="fas fa-shield-alt"></i> Recorded in admin booking only</span>
                     </div>
-                    <div class="walkin-sub-grid-2" style="gap: 12px; margin-bottom: 10px;">
+                    <!-- Split Name Grid: First, Middle, Last (No Spaces) & Phone -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px;">
                         <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Full Name <span style="color:#ef4444;">*</span></label>
-                            <input type="text" id="walkinCustName" placeholder="e.g. Juan Dela Cruz" required maxlength="50" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0,50)"
+                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">First Name <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="walkinCustFName" placeholder="e.g. Juan" required maxlength="30" oninput="this.value=this.value.replace(/\s+/g,'').replace(/[^A-Za-z\u00C0-\u00FF.'-]/g,''); WalkinBooking.syncCustFullName();"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
-                            <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="color:#ef4444;">*</span></label>
-                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)"
+                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Middle Name</label>
+                            <input type="text" id="walkinCustMName" placeholder="e.g. Santos" maxlength="30" oninput="this.value=this.value.replace(/\s+/g,'').replace(/[^A-Za-z\u00C0-\u00FF.'-]/g,''); WalkinBooking.syncCustFullName();"
+                                   style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Last Name <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="walkinCustLName" placeholder="e.g. DelaCruz" required maxlength="30" oninput="this.value=this.value.replace(/\s+/g,'').replace(/[^A-Za-z\u00C0-\u00FF.'-]/g,''); WalkinBooking.syncCustFullName();"
+                                   style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="color:#ef4444;">*</span></label>
+                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11); WalkinBooking.validateEmergencyPhone();"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
+                    <input type="hidden" id="walkinCustName">
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Address / Residence</label>
                         <input type="text" id="walkinCustAddress" placeholder="e.g. 123 Rizal St., San Fernando, La Union" maxlength="100" oninput="this.value=this.value.replace(/([A-Za-z\u00C0-\u00FF0-9])\1\1+/gi,'$1$1').slice(0,100)"
@@ -7945,13 +7957,23 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Phone</label>
-                            <input type="tel" id="walkinEmergPhone" placeholder="Phone" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)"
+                            <input type="tel" id="walkinEmergPhone" placeholder="Phone" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11); WalkinBooking.validateEmergencyPhone();"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            <div id="walkinEmergPhoneErr" style="display:none; color:#ef4444; font-size:0.68rem; font-weight:700; margin-top:2px;">Cannot be the same as customer phone</div>
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Relationship</label>
-                            <input type="text" id="walkinEmergRel" placeholder="e.g. Spouse / Sibling" maxlength="30"
-                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            <select id="walkinEmergRel" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
+                                <option value="">Select relationship...</option>
+                                <option value="Spouse">Spouse</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Sibling">Sibling</option>
+                                <option value="Child">Child</option>
+                                <option value="Relative">Relative</option>
+                                <option value="Friend">Friend</option>
+                                <option value="Colleague">Colleague</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -8054,8 +8076,10 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Pickup Location</label>
-                            <input type="text" id="walkinPickupLocation" value="Main Office / Counter Garage" maxlength="60"
-                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            <select id="walkinPickupLocation" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
+                                <option value="Tanauan/Sto. Tomas, Batangas" selected>Tanauan/Sto. Tomas, Batangas</option>
+                                <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -8069,8 +8093,8 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     <div class="walkin-pricing-grid" style="gap: 10px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
-                            <input type="number" id="walkinBasePrice" min="0" max="500000" maxlength="7" step="any" oninput="if(this.value.length>7)this.value=this.value.slice(0,7);if(Number(this.value)>500000)this.value=500000;if(Number(this.value)<0)this.value=0;WalkinBooking.recalculateTotal()"
-                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            <input type="number" id="walkinBasePrice" min="0" max="500000" maxlength="7" step="any" readonly
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-container, #f1f5f9); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: not-allowed;" title="Base price is automatically calculated (Daily Rate x Rental Days)">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Driver / Delivery (₱)</label>
@@ -33750,7 +33774,34 @@ function toggleNewsletterModal(show = true) {
 
     // ==================== WALKIN BOOKING CONTROLLER ====================
     const WalkinBooking = {
-        mode: 'guest', // 'guest' or 'registered'
+        mode: 'guest',
+
+        syncCustFullName() {
+            const f = (document.getElementById('walkinCustFName')?.value || '').trim();
+            const m = (document.getElementById('walkinCustMName')?.value || '').trim();
+            const l = (document.getElementById('walkinCustLName')?.value || '').trim();
+            const hidden = document.getElementById('walkinCustName');
+            if (hidden) {
+                hidden.value = [f, m, l].filter(Boolean).join(' ');
+            }
+        },
+
+        validateEmergencyPhone() {
+            const custP = (document.getElementById('walkinCustPhone')?.value || '').trim();
+            const emergP = (document.getElementById('walkinEmergPhone')?.value || '').trim();
+            const errEl = document.getElementById('walkinEmergPhoneErr');
+            const emergInput = document.getElementById('walkinEmergPhone');
+
+            if (custP && emergP && custP === emergP) {
+                if (errEl) errEl.style.display = 'block';
+                if (emergInput) emergInput.style.borderColor = '#ef4444';
+                return false;
+            } else {
+                if (errEl) errEl.style.display = 'none';
+                if (emergInput) emergInput.style.borderColor = 'var(--border, #cbd5e1)';
+                return true;
+            }
+        }, // 'guest' or 'registered'
         vehicles: [],
         customers: [],
         selectedCustomer: null,
@@ -33900,7 +33951,7 @@ function toggleNewsletterModal(show = true) {
                 sel.innerHTML = '<option value="">Select an available vehicle...</option>';
                 this.vehicles.forEach(v => {
                     const statusStr = (v.status || 'Available');
-                    const isOperational = !['maintenance', 'repair', 'sold'].includes(statusStr.toLowerCase());
+                    const isOperational = (statusStr.toLowerCase() === 'available');
                     if (isOperational) {
                         const opt = document.createElement('option');
                         opt.value = v.id;
@@ -34208,8 +34259,32 @@ function toggleNewsletterModal(show = true) {
                     emergPhone = (document.getElementById('walkinEmergPhone')?.value || '').trim();
                     emergRel = (document.getElementById('walkinEmergRel')?.value || '').trim();
 
+                    // Synchronize split names
+                    this.syncCustFullName();
+                    custName = (document.getElementById('walkinCustName')?.value || '').trim();
+
+                    const fName = (document.getElementById('walkinCustFName')?.value || '').trim();
+                    const lName = (document.getElementById('walkinCustLName')?.value || '').trim();
+                    if (!fName || !lName) {
+                        alert('Customer First Name and Last Name are required.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                        return;
+                    }
+
+                    if (!custPhone) {
+                        alert('Customer Phone Number is required.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                        return;
+                    }
+
+                    if (emergPhone && custPhone && emergPhone === custPhone) {
+                        this.validateEmergencyPhone();
+                        alert('Emergency phone number cannot be the same as the customer phone number.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                        return;
+                    }
+
                     if (!custName || !custPhone) {
-                        alert('Customer Full Name and Phone Number are required.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
