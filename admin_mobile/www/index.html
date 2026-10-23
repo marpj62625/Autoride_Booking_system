@@ -4735,6 +4735,19 @@
     .gps-golden-pin:hover svg {
         transform: scale(1.18);
     }
+    .gps-focus-pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        filter: drop-shadow(0 0 12px #3b82f6);
+        animation: gpsFocusPulse 1.5s infinite;
+        cursor: pointer;
+    }
+    @keyframes gpsFocusPulse {
+        0% { transform: scale(1); filter: drop-shadow(0 0 8px #3b82f6); }
+        50% { transform: scale(1.25); filter: drop-shadow(0 0 18px #60a5fa); }
+        100% { transform: scale(1); filter: drop-shadow(0 0 8px #3b82f6); }
+    }
     .gps-start-dot {
         width: 14px;
         height: 14px;
@@ -25618,6 +25631,7 @@ function toggleNewsletterModal(show = true) {
         _trailPolyline: null,
         _trailStartMarker: null,
         _trailLastPinMarker: null,
+        _trailFocusMarker: null,
         _isTrailActive: false,
         _trailLogs: [],
 
@@ -25864,20 +25878,50 @@ function toggleNewsletterModal(show = true) {
 
             setTimeout(() => {
                 if (this._trailMap) {
-                    this._trailMap.setView([lat, lng], 17);
-                    L.popup({ className: 'gps-trail-popup' })
-                        .setLatLng([lat, lng])
-                        .setContent(`
-                            <div style="font-size:0.8rem;line-height:1.4;">
-                                <strong style="color:#f59e0b;"><i class="fas fa-map-pin"></i> Selected History Point</strong><br>
-                                ${escapeHtml(address)}<br>
-                                <span style="font-family:monospace;color:#94a3b8;font-size:0.74rem;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span><br>
-                                <span style="font-size:0.72rem;color:#94a3b8;">${new Date(timestamp).toLocaleString()}</span>
+                    // Remove previous focus marker if exists
+                    if (this._trailFocusMarker) {
+                        this._trailMap.removeLayer(this._trailFocusMarker);
+                        this._trailFocusMarker = null;
+                    }
+
+                    // Create glowing focus target marker
+                    const focusIcon = L.divIcon({
+                        className: 'gps-focus-pin',
+                        html: `
+                            <div style="width:34px;height:34px;border-radius:50%;background:#2563eb;border:3px solid #ffffff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px #3b82f6;color:white;font-size:1rem;">
+                                <i class="fas fa-crosshairs"></i>
+                            </div>
+                        `,
+                        iconSize: [34, 34],
+                        iconAnchor: [17, 17],
+                        popupAnchor: [0, -18]
+                    });
+
+                    this._trailFocusMarker = L.marker([lat, lng], { icon: focusIcon, zIndexOffset: 2000 })
+                        .addTo(this._trailMap)
+                        .bindPopup(`
+                            <div class="gps-trail-popup" style="font-size:0.82rem;line-height:1.45;min-width:210px;">
+                                <div style="font-weight:800;color:#60a5fa;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                                    <i class="fas fa-crosshairs"></i> Selected History Point
+                                </div>
+                                <div style="font-weight:700;color:#ffffff;">${escapeHtml(address)}</div>
+                                <div style="font-family:monospace;color:#cbd5e1;font-size:0.74rem;margin-top:3px;">
+                                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                                </div>
+                                <div style="font-size:0.72rem;color:#94a3b8;margin-top:4px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;">
+                                    ${new Date(timestamp).toLocaleString()}
+                                </div>
                             </div>
                         `)
-                        .openOn(this._trailMap);
+                        .openPopup();
+
+                    // Smooth animated fly-to camera movement
+                    this._trailMap.flyTo([lat, lng], 18, {
+                        animate: true,
+                        duration: 1.2
+                    });
                 }
-            }, 300);
+            }, 350);
         },
 
         async openConfigModal(vehicleId = null) {
