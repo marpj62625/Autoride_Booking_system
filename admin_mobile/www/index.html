@@ -39300,9 +39300,14 @@ function toggleNewsletterModal(show = true) {
             const res = await fetch(API_BASE + '/api/admin/smtp/test-send?email=' + encodeURIComponent(recipient));
             const d = await res.json();
             if (res.ok && d.success) {
-                if (fb) fb.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check"></i> ${d.message}</span>`;
+                if (fb) fb.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check"></i> ${d.message || 'Test email sent successfully!'}</span>`;
             } else {
-                if (fb) fb.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-times"></i> ${d.error || 'Failed to send'}</span>`;
+                let errDetail = d.error || d.message || 'Failed to send';
+                if (d.traces && Array.isArray(d.traces)) {
+                    const failTrace = d.traces.filter(t => t.includes('failed') || t.includes('error') || t.includes('Error')).pop();
+                    if (failTrace) errDetail = failTrace;
+                }
+                if (fb) fb.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-times"></i> ${errDetail}</span>`;
             }
         } catch (e) {
             if (fb) fb.innerHTML = `<span style="color:#ef4444;">Error: ${e.message}</span>`;
