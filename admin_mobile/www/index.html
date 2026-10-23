@@ -20967,11 +20967,14 @@ function toggleNewsletterModal(show = true) {
                 }
                 let html = '';
                 inspections.forEach(insp => {
-                    const typeLabel = insp.type === 'pickup' ? '📦 Pickup Inspection' : '🔁 Return Inspection';
-                    const typeColor = insp.type === 'pickup' ? '#0369a1' : '#7c3aed';
-                    const typeBg    = insp.type === 'pickup' ? '#e0f2fe' : '#ede9fe';
-                    const typeBorder= insp.type === 'pickup' ? '#bae6fd' : '#ddd6fe';
-                    const photos = Array.isArray(insp.photos) ? insp.photos : [];
+                    // DB column is inspection_type, not type
+                    const iType = (insp.inspection_type || insp.type || '').toLowerCase();
+                    const typeLabel = iType === 'pickup' ? '📦 Pickup Inspection' : '🔁 Return Inspection';
+                    const typeColor = iType === 'pickup' ? '#0369a1' : '#7c3aed';
+                    const typeBg    = iType === 'pickup' ? '#e0f2fe' : '#ede9fe';
+                    const typeBorder= iType === 'pickup' ? '#bae6fd' : '#ddd6fe';
+                    // Photos are full Supabase URLs — do not prepend API_BASE
+                    const photos = Array.isArray(insp.photos) ? insp.photos : (typeof insp.photos === 'string' && insp.photos ? (() => { try { return JSON.parse(insp.photos); } catch(e){ return []; } })() : []);
                     html += `<div style="background:#fff;border:1px solid ${typeBorder};border-radius:10px;padding:10px;margin-bottom:10px;">`;
                     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">`;
                     html += `<span style="font-size:0.72rem;font-weight:800;color:${typeColor};background:${typeBg};padding:3px 10px;border-radius:20px;">${typeLabel}</span>`;
@@ -20986,7 +20989,9 @@ function toggleNewsletterModal(show = true) {
                     if (photos.length > 0) {
                         html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;">`;
                         photos.forEach(p => {
-                            html += `<img src="${API_BASE}${p}" style="width:100%;height:75px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${API_BASE}${p}','_blank')" onerror="this.style.display='none'">`;
+                            // Use p directly if it is already a full URL, otherwise prepend API_BASE
+                            const imgSrc = (typeof p === 'string' && p.startsWith('http')) ? p : `${API_BASE}${p}`;
+                            html += `<img src="${imgSrc}" style="width:100%;height:75px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #e2e8f0;" onclick="window.open('${imgSrc}','_blank')" onerror="this.style.display='none'">`;
                         });
                         html += `</div>`;
                     } else {

@@ -8735,8 +8735,8 @@ def submit_inspection():
 
         try:
             new_mileage = float(str(mileage).strip())
-            if new_mileage < 0 or new_mileage > 999999:
-                return jsonify({"error": "Mileage must be between 0 and 999,999 km."}), 400
+            if new_mileage < 0 or new_mileage > 9999999999:
+                return jsonify({"error": "Mileage must be between 0 and 9,999,999,999 km."}), 400
         except (ValueError, TypeError):
             return jsonify({"error": "Invalid mileage number format."}), 400
 
