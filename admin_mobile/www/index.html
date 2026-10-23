@@ -25748,8 +25748,36 @@ function toggleNewsletterModal(show = true) {
 
                 if (latLngs.length === 0) return;
 
-                // 1. Draw Golden Accent Polyline matching user reference
-                this._trailPolyline = L.polyline(latLngs, {
+                // 1. Draw Golden Accent Polyline matching user reference (with smart Road-Snapping via OSRM)
+                let routeCoords = latLngs;
+                try {
+                    // Sample waypoints to avoid URL length limit (max 25 waypoints)
+                    const step = Math.max(1, Math.floor(latLngs.length / 25));
+                    const sampled = [];
+                    for (let i = 0; i < latLngs.length; i += step) {
+                        sampled.push(latLngs[i]);
+                    }
+                    if (sampled[sampled.length - 1] !== latLngs[latLngs.length - 1]) {
+                        sampled.push(latLngs[latLngs.length - 1]);
+                    }
+
+                    // Format: lng,lat;lng,lat
+                    const osrmCoords = sampled.map(pt => pt[1] + ',' + pt[0]).join(';');
+                    const osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + osrmCoords + '?overview=full&geometries=geojson';
+                    
+                    const osrmRes = await fetch(osrmUrl);
+                    if (osrmRes.ok) {
+                        const osrmData = await osrmRes.json();
+                        if (osrmData.routes && osrmData.routes.length > 0 && osrmData.routes[0].geometry) {
+                            // GeoJSON coordinates are [lng, lat], convert to [lat, lng] for Leaflet
+                            routeCoords = osrmData.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                        }
+                    }
+                } catch (osrmErr) {
+                    console.warn('[GPS] OSRM road-snapping fallback to raw coordinates:', osrmErr);
+                }
+
+                this._trailPolyline = L.polyline(routeCoords, {
                     color: '#f59e0b',
                     weight: 5,
                     opacity: 0.95,
