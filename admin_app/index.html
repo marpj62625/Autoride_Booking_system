@@ -25615,9 +25615,9 @@ function toggleNewsletterModal(show = true) {
                 }).setView([14.2800, 121.4167], 14);
 
                 // Premium dark matter tile layer matching the golden theme in reference image
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
-                    subdomains: 'abcd'
+                    attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(this._trailMap);
             }
 
