@@ -10423,7 +10423,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Daily Rate -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Daily Rate (₱) <span style="color:#ef4444;">*</span></label>
-                            <input type="number" id="vRate" placeholder="e.g. 2500" required min="500" max="50000" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value, 10) > 50000) this.value = 50000;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vRate" placeholder="e.g. 2500" required min="500" max="999999" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(parseInt(this.value, 10) > 999999) this.value = 999999;" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Mileage Type -->
