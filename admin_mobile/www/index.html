@@ -8046,6 +8046,10 @@
                                 style="width: 100%; padding: 9px 12px; font-size: 0.84rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             <option value="">Select an available vehicle...</option>
                         </select>
+                        <div id="walkinVehicleLoadWarning" style="display: none; font-size: 0.72rem; color: #d97706; margin-top: 5px; font-weight: 700; align-items: center; gap: 6px;">
+                            <i class="fas fa-exclamation-circle"></i> <span id="walkinVehicleLoadWarningText">Vehicles failed to load.</span>
+                            <button type="button" onclick="WalkinBooking.loadVehicles()" style="background: none; border: none; color: #2563eb; text-decoration: underline; cursor: pointer; font-weight: 800; font-size: 0.72rem; padding: 0;">Retry</button>
+                        </div>
                     </div>
 
                     <!-- Schedule Dates & Times -->
@@ -8188,6 +8192,12 @@
                             Balance: ₱0.00
                         </div>
                     </div>
+                </div>
+
+                <!-- In-modal Error Feedback Banner -->
+                <div id="walkinErrorAlert" style="display: none; padding: 10px 14px; border-radius: 8px; background: #fef2f2; border: 1.5px solid #f87171; color: #dc2626; font-size: 0.82rem; font-weight: 700; margin-bottom: 14px; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 1rem; color: #ef4444; flex-shrink: 0;"></i>
+                    <span id="walkinErrorAlertText" style="flex: 1;"></span>
                 </div>
 
                 <!-- Footer Buttons -->
@@ -35487,23 +35497,44 @@ function toggleNewsletterModal(show = true) {
         },
 
         async loadVehicles(preselectedId = null) {
+            const warnEl = document.getElementById('walkinVehicleLoadWarning');
+            const warnText = document.getElementById('walkinVehicleLoadWarningText');
+            const sel = document.getElementById('walkinVehicleSelect');
+
             try {
-                const res = await fetch(`${API_BASE}/api/vehicles`);
-                if (!res.ok) throw new Error('Failed to load vehicles');
-                const list = await res.json();
+                let list = null;
+                try {
+                    const res = await fetch(`${API_BASE}/api/vehicles`);
+                    if (res.ok) {
+                        list = await res.json();
+                    }
+                } catch (netErr) {
+                    console.warn('Network fetch for vehicles failed, trying FleetCalendar fallback:', netErr);
+                }
+
+                // Fallback to FleetCalendar vehicles if available
+                if (!list && window.FleetCalendar && Array.isArray(window.FleetCalendar.vehicles) && window.FleetCalendar.vehicles.length > 0) {
+                    list = window.FleetCalendar.vehicles;
+                }
+
+                if (!list) {
+                    throw new Error('Could not connect to server to load vehicles.');
+                }
+
                 this.vehicles = Array.isArray(list) ? list : (list.vehicles || []);
+                if (warnEl) warnEl.style.display = 'none';
 
-                const sel = document.getElementById('walkinVehicleSelect');
                 if (!sel) return;
-
                 sel.innerHTML = '<option value="">Select an available vehicle...</option>';
+                let availableCount = 0;
                 this.vehicles.forEach(v => {
                     const statusStr = (v.status || 'Available');
                     const isOperational = (statusStr.toLowerCase() === 'available');
                     if (isOperational) {
+                        availableCount++;
                         const opt = document.createElement('option');
                         opt.value = v.id;
-                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day [${statusStr}]`;
+                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day`;
                         opt.dataset.rate = v.daily_rate || 0;
                         if (preselectedId && String(v.id) === String(preselectedId)) {
                             opt.selected = true;
@@ -35511,8 +35542,36 @@ function toggleNewsletterModal(show = true) {
                         sel.appendChild(opt);
                     }
                 });
+
+                if (availableCount === 0 && this.vehicles.length > 0) {
+                    this.vehicles.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.id;
+                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - [${v.status || 'Booked'}]`;
+                        opt.dataset.rate = v.daily_rate || 0;
+                        sel.appendChild(opt);
+                    });
+                }
             } catch (err) {
                 console.error('Error loading vehicles for walk-in:', err);
+                if (warnEl) {
+                    warnEl.style.display = 'flex';
+                    if (warnText) warnText.textContent = 'Could not load vehicle units: ' + (err.message || 'Network disconnected');
+                }
+                if (window.FleetCalendar && Array.isArray(window.FleetCalendar.vehicles) && window.FleetCalendar.vehicles.length > 0) {
+                    this.vehicles = window.FleetCalendar.vehicles;
+                    if (sel) {
+                        sel.innerHTML = '<option value="">Select an available vehicle...</option>';
+                        this.vehicles.forEach(v => {
+                            const opt = document.createElement('option');
+                            opt.value = v.id;
+                            opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day`;
+                            opt.dataset.rate = v.daily_rate || 0;
+                            sel.appendChild(opt);
+                        });
+                        if (warnEl) warnEl.style.display = 'none';
+                    }
+                }
             }
         },
 
@@ -35758,8 +35817,31 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
+        showError(msg) {
+            const alertBox = document.getElementById('walkinErrorAlert');
+            const alertText = document.getElementById('walkinErrorAlertText');
+            if (alertBox) {
+                if (alertText) alertText.textContent = msg;
+                alertBox.style.display = 'flex';
+                alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            if (typeof showNotification === 'function') {
+                showNotification(msg, 'error');
+            } else {
+                alert(msg);
+            }
+        },
+
+        clearError() {
+            const alertBox = document.getElementById('walkinErrorAlert');
+            if (alertBox) alertBox.style.display = 'none';
+            const vSel = document.getElementById('walkinVehicleSelect');
+            if (vSel) vSel.style.borderColor = 'var(--border, #cbd5e1)';
+        },
+
         async submit(e) {
             if (e && e.preventDefault) e.preventDefault();
+            this.clearError();
 
             const submitBtn = document.getElementById('walkinSubmitBtn');
             const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
@@ -35771,7 +35853,9 @@ function toggleNewsletterModal(show = true) {
             try {
                 const vehicleId = document.getElementById('walkinVehicleSelect')?.value;
                 if (!vehicleId) {
-                    alert('Please select a vehicle unit.');
+                    const vSel = document.getElementById('walkinVehicleSelect');
+                    if (vSel) vSel.style.borderColor = '#ef4444';
+                    this.showError('Please select an available vehicle unit.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
@@ -35782,7 +35866,7 @@ function toggleNewsletterModal(show = true) {
                 const endTime = document.getElementById('walkinEndTime')?.value || '08:00';
 
                 if (!startDate || !endDate) {
-                    alert('Please select both start date and end date.');
+                    this.showError('Please select both pickup (start) date and return (end) date.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
@@ -35791,7 +35875,7 @@ function toggleNewsletterModal(show = true) {
                 const userId = isExisting ? (document.getElementById('walkinCustUserId')?.value || null) : null;
 
                 if (isExisting && !userId) {
-                    alert('Please search and select a registered customer profile.');
+                    this.showError('Please search and select a registered customer profile.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
@@ -35807,6 +35891,7 @@ function toggleNewsletterModal(show = true) {
                     custName = this.selectedCustomer.full_name || 'Customer';
                     custPhone = this.selectedCustomer.phone || '';
                 } else {
+                    this.syncCustFullName();
                     custName = (document.getElementById('walkinCustName')?.value || '').trim();
                     custPhone = (document.getElementById('walkinCustPhone')?.value || '').trim();
                     custAddress = (document.getElementById('walkinCustAddress')?.value || '').trim();
@@ -35814,32 +35899,29 @@ function toggleNewsletterModal(show = true) {
                     emergPhone = (document.getElementById('walkinEmergPhone')?.value || '').trim();
                     emergRel = (document.getElementById('walkinEmergRel')?.value || '').trim();
 
-                    // Synchronize split names
-                    this.syncCustFullName();
-                    custName = (document.getElementById('walkinCustName')?.value || '').trim();
-
                     const fName = (document.getElementById('walkinCustFName')?.value || '').trim();
                     const lName = (document.getElementById('walkinCustLName')?.value || '').trim();
                     if (!fName || !lName) {
-                        alert('Customer First Name and Last Name are required.');
+                        this.showError('Customer First Name and Last Name are required.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
 
                     if (!custPhone) {
-                        alert('Customer Phone Number is required.');
+                        this.showError('Customer Phone Number is required.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
 
                     if (emergPhone && custPhone && emergPhone === custPhone) {
                         this.validateEmergencyPhone();
-                        alert('Emergency phone number cannot be the same as the customer phone number.');
+                        this.showError('Emergency phone number cannot be the same as customer phone number.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
 
                     if (!custName || !custPhone) {
+                        this.showError('Please fill in customer name and contact details.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
@@ -35851,22 +35933,22 @@ function toggleNewsletterModal(show = true) {
                 const rawAmountPaid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
 
                 if (isNaN(rawBasePrice) || rawBasePrice < 0 || rawBasePrice > 500000) {
-                    alert('Base price must be between ₱0 and ₱500,000.');
+                    this.showError('Base price must be between ₱0 and ₱500,000.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
                 if (isNaN(rawExtraFee) || rawExtraFee < 0 || rawExtraFee > 50000) {
-                    alert('Driver/Delivery fee must be between ₱0 and ₱50,000.');
+                    this.showError('Driver/Delivery fee must be between ₱0 and ₱50,000.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
                 if (isNaN(rawDiscount) || rawDiscount < 0 || rawDiscount > 50000) {
-                    alert('Discount must be between ₱0 and ₱50,000.');
+                    this.showError('Discount must be between ₱0 and ₱50,000.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
                 if (isNaN(rawAmountPaid) || rawAmountPaid < 0 || rawAmountPaid > 500000) {
-                    alert('Amount collected must be between ₱0 and ₱500,000.');
+                    this.showError('Amount collected must be between ₱0 and ₱500,000.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
                 }
@@ -35932,15 +36014,32 @@ function toggleNewsletterModal(show = true) {
                     headers['Authorization'] = `Bearer ${token}`;
                 }
 
-                const res = await fetch(`${API_BASE}/api/admin/bookings/walkin`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
-                });
+                let res;
+                try {
+                    res = await fetch(`${API_BASE}/api/admin/bookings/walkin`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(payload)
+                    });
+                } catch (netErr) {
+                    throw new Error('Connection failed: Please check your internet connection and try again.');
+                }
 
-                const result = await res.json();
-                if (!res.ok) {
-                    throw new Error(result.error || 'Failed to create walk-in booking');
+                let result = {};
+                try {
+                    result = await res.json();
+                } catch (jsonErr) {
+                    try {
+                        const rawText = await res.text();
+                        result = { error: rawText || `Server returned error (${res.status})` };
+                    } catch (txtErr) {
+                        result = { error: `Server error (${res.status})` };
+                    }
+                }
+
+                if (!res.ok || !result.success) {
+                    const errMsg = result.error || result.message || `Failed to create walk-in booking (Status ${res.status})`;
+                    throw new Error(errMsg);
                 }
 
                 // Success!
@@ -35952,7 +36051,7 @@ function toggleNewsletterModal(show = true) {
                     alert('Walk-in booking created successfully!');
                 }
 
-                // Refresh views
+                // Refresh views immediately
                 if (window.FleetCalendar && typeof window.FleetCalendar.refresh === 'function') {
                     window.FleetCalendar.refresh();
                 }
@@ -35965,7 +36064,7 @@ function toggleNewsletterModal(show = true) {
 
             } catch (err) {
                 console.error('Error submitting walk-in booking:', err);
-                alert(`Error: ${err.message}`);
+                this.showError(err.message || 'An unexpected error occurred while creating booking.');
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;

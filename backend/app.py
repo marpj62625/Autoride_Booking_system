@@ -8135,12 +8135,12 @@ def create_walkin_booking():
 
         if not customer_name:
             return jsonify({"error": "Customer name is required"}), 400
-        if len(customer_name) > 50:
-            return jsonify({"error": "Customer name cannot exceed 50 characters"}), 400
+        if len(customer_name) > 100:
+            return jsonify({"error": "Customer name cannot exceed 100 characters"}), 400
         if len(customer_phone) > 15:
             return jsonify({"error": "Customer phone cannot exceed 15 characters"}), 400
-        if len(customer_address) > 100:
-            return jsonify({"error": "Customer address cannot exceed 100 characters"}), 400
+        if len(customer_address) > 250:
+            return jsonify({"error": "Customer address cannot exceed 250 characters"}), 400
         if len(emergency_name) > 50:
             return jsonify({"error": "Emergency contact name cannot exceed 50 characters"}), 400
         if len(emergency_phone) > 15:
@@ -8248,7 +8248,12 @@ def create_walkin_booking():
             destination, rental_purpose, addons
         ))
         created_row = cur.fetchone()
-        new_booking_id = created_row['id'] if created_row else None
+        new_booking_id = (created_row.get('booking_id') or created_row.get('id')) if created_row else None
+        if new_booking_id:
+            try:
+                cur.execute("UPDATE bookings SET id = %s WHERE booking_id = %s AND id IS NULL", (new_booking_id, new_booking_id))
+            except Exception as _sync_err:
+                print(f"WARN sync id with booking_id: {_sync_err}")
 
         # Record counter payment if money was collected
         if new_booking_id and amount_paid > 0:
