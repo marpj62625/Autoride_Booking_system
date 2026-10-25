@@ -773,6 +773,7 @@ def migrate_settings_v2():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_location VARCHAR(100)")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+        cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'customer'")
 
@@ -3193,7 +3194,7 @@ def login():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified, auth_provider, phone, profile_picture, COALESCE(license_image_url, license_image) as license_image_url FROM users WHERE LOWER(TRIM(email))=%s", (email,))
+        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified, auth_provider, phone, profile_picture, role, COALESCE(license_image_url, license_image) as license_image_url FROM users WHERE LOWER(TRIM(email))=%s", (email,))
         user_row = cur.fetchone()
         user = None
         if user_row:
@@ -3219,6 +3220,15 @@ def login():
         
 
         if user:
+
+            # Option A: Block Partner / Staff / Consignor accounts from customer portal
+            user_role = (user.get('role') or 'customer').lower()
+            if user_role in ['consignor', 'admin', 'super_admin', 'superadmin', 'staff']:
+                portal_name = "Consignor Portal" if user_role == 'consignor' else "Admin Portal"
+                return jsonify({
+                    "error": "Staff/Partner Account",
+                    "reason": f"This email is registered as an official {user_role.replace('_', ' ').title()} account. Please log in through the {portal_name}, or use a separate customer account for personal rentals."
+                }), 403
 
             # Check Email Verification Status
             if not user.get('is_email_verified'):
@@ -3635,7 +3645,7 @@ def admin_list_users():
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
                 WHERE u.is_verified = 1
-                  AND COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
+                  AND COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff', 'consignor')
                 ORDER BY u.id DESC
             """)
         else:
@@ -3652,7 +3662,7 @@ def admin_list_users():
                        u.is_verified, CAST(u.created_at AS TEXT) AS created_at
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
-                WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
+                WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff', 'consignor')
                 ORDER BY u.id DESC
             """)
 
@@ -3737,7 +3747,7 @@ def admin_users_list():
                    (SELECT COUNT(*) FROM bookings WHERE user_id = u.id) AS total_bookings,
                    (SELECT COALESCE(SUM(total_price), 0) FROM bookings WHERE user_id = u.id AND (LOWER(status) = 'completed' OR payment_status IN ('Paid', 'Fully Paid'))) AS total_spent
             FROM users u
-            WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
+            WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff', 'consignor')
             ORDER BY u.created_at DESC
         """)
         users = cur.fetchall()
@@ -4497,7 +4507,7 @@ def admin_export_users():
             SELECT id, full_name, email, phone, is_verified, is_frozen,
                    loyalty_points, created_at
             FROM users 
-            WHERE COALESCE(role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
+            WHERE COALESCE(role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff', 'consignor')
             ORDER BY created_at DESC
         """)
         users = cur.fetchall()
@@ -4767,7 +4777,7 @@ def google_auth():
                     # 3. Re-fetch fresh user data
                     try:
                         _gc.execute(
-                            "SELECT id, full_name, is_email_verified, is_driver, is_verified, loyalty_points FROM users WHERE email = %s",
+                            "SELECT id, full_name, role, is_email_verified, is_driver, is_verified, loyalty_points FROM users WHERE email = %s",
                             (email,)
                         )
                         user_fresh = _gc.fetchone() or {}
@@ -4783,6 +4793,13 @@ def google_auth():
                     is_ver     = int(user_fresh.get('is_verified') or 0)
                     lp         = int(user_fresh.get('loyalty_points') or 0)
                     email_ver  = bool(user_fresh.get('is_email_verified') or google_email_verified)
+                    user_role  = (user_fresh.get('role') or 'customer').lower()
+                    if user_role in ['consignor', 'admin', 'super_admin', 'superadmin', 'staff']:
+                        portal_name = "Consignor Portal" if user_role == 'consignor' else "Admin Portal"
+                        return jsonify({
+                            "error": "Staff/Partner Account",
+                            "message": f"This email is registered as an official {user_role.replace('_', ' ').title()} account. Please log in through the {portal_name}."
+                        }), 403
 
                     # 4. If Google says email is verified, mark it in DB
                     if google_email_verified and not user_fresh.get('is_email_verified'):
@@ -12616,6 +12633,7 @@ def get_pending_verifications():
                    is_verified
             FROM users
             WHERE license_image_url IS NOT NULL AND is_verified = 1
+              AND COALESCE(role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff', 'consignor')
             ORDER BY id DESC
         """)
 
@@ -13061,6 +13079,7 @@ def admin_login():
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
             commit_db()
         except Exception:
             pass
@@ -13136,6 +13155,7 @@ def get_admin_me():
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
             commit_db()
         except Exception:
             pass
@@ -13174,6 +13194,7 @@ def list_admins():
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
             commit_db()
         except Exception:
             pass
@@ -13269,6 +13290,7 @@ def update_admin(user_id):
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
             commit_db()
         except Exception:
             pass
@@ -13628,6 +13650,7 @@ def create_admin():
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
             commit_db()
         except Exception:
             pass
