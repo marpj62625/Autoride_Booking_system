@@ -11638,7 +11638,7 @@ input:checked + .ctrl-slider:before {
         </div>
         
         <div id="fleetCalendarScrollContainer" class="fleet-calendar-scroll-container">
-            <table style="width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 800px; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
+            <table style="table-layout: fixed; border-collapse: collapse; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
                 <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
                     <tr id="fleetCalendarMonthRow" style="height: 28px; background: var(--surface-solid);">
                         <!-- Month banners: Month 1 & Month 2 injected via JS -->
@@ -18007,6 +18007,32 @@ input:checked + .ctrl-slider:before {
             });
 
             const totalSlots = allDays.length * 2;
+            const slotWidth = 32; // Exact locked width in px per AM/PM slot (64px per day)
+            const vehColWidth = 180; // Vehicle column width in px
+            const totalTableWidth = vehColWidth + (totalSlots * slotWidth);
+
+            const calTable = document.getElementById('fleetCalendarTable');
+            if (calTable) {
+                calTable.style.width = `${totalTableWidth}px`;
+                calTable.style.minWidth = `${totalTableWidth}px`;
+                calTable.style.maxWidth = `${totalTableWidth}px`;
+                calTable.style.tableLayout = 'fixed';
+                calTable.style.borderCollapse = 'collapse';
+
+                // Strictly lock every column width via colgroup
+                let colgroupHtml = `<col style="width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px;">`;
+                for (let i = 0; i < totalSlots; i++) {
+                    colgroupHtml += `<col style="width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px;">`;
+                }
+                let cgEl = document.getElementById('fleetCalendarColgroup');
+                if (!cgEl) {
+                    cgEl = document.createElement('colgroup');
+                    cgEl.id = 'fleetCalendarColgroup';
+                    calTable.insertBefore(cgEl, calTable.firstChild);
+                }
+                cgEl.innerHTML = colgroupHtml;
+            }
+
             const calStart = new Date(year1, month1, 1, 0, 0, 0);
             const calEnd = isTwoMonths
                 ? new Date(year2, month2, daysInMonth2, 23, 59, 59)
@@ -18016,7 +18042,7 @@ input:checked + .ctrl-slider:before {
             // Vehicle cell spans 3 rows (or 2 if 1 month)
             const headerRowSpan = isTwoMonths ? 3 : 2;
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: 0; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span class="fc-vhead-text">VEHICLE / UNIT</span>
@@ -18025,7 +18051,7 @@ input:checked + .ctrl-slider:before {
 
             if (isTwoMonths) {
                 // Month 1 Header (Authoritative Autoride Green)
-                monthRowHtml += `<th colspan="${daysInMonth1 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); border-right: 3px solid #009240; text-align: center; background: linear-gradient(135deg, #15803d, #00B14F); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                monthRowHtml += `<th colspan="${daysInMonth1 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); border-right: 3px solid #009240; text-align: center; background: linear-gradient(135deg, #15803d, #00B14F); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; box-sizing: border-box;">
                     <div style="display:inline-flex; align-items:center; gap:8px;">
                         <i class="fas fa-calendar-alt" style="font-size: 0.75rem;"></i>
                         <span>${monthNames[month1]} ${year1}</span>
@@ -18034,7 +18060,7 @@ input:checked + .ctrl-slider:before {
                 </th>`;
 
                 // Month 2 Header (Crisp Blue)
-                monthRowHtml += `<th colspan="${daysInMonth2 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); text-align: center; background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                monthRowHtml += `<th colspan="${daysInMonth2 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); text-align: center; background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; box-sizing: border-box;">
                     <div style="display:inline-flex; align-items:center; gap:8px;">
                         <i class="fas fa-calendar-check" style="font-size: 0.75rem;"></i>
                         <span>${monthNames[month2]} ${year2}</span>
@@ -18062,13 +18088,13 @@ input:checked + .ctrl-slider:before {
                 const dateColor = day.isToday ? '#15803d' : 'var(--text-main)';
                 const dividerStyle = day.isLastDayOfFirstMonth ? 'border-right: 3px solid #009240 !important;' : '';
 
-                daysRowHtml += `<th colspan="2" class="${day.isToday ? 'fc-today-col' : ''}" style="padding: 4px 2px; border: 1px solid var(--border); ${dividerStyle} text-align: center; background: ${dowBg}; position: sticky; top: ${daysTopOffset}; z-index: 22;">
+                daysRowHtml += `<th colspan="2" class="${day.isToday ? 'fc-today-col' : ''}" style="width: ${slotWidth * 2}px; min-width: ${slotWidth * 2}px; max-width: ${slotWidth * 2}px; padding: 4px 2px; border: 1px solid var(--border); ${dividerStyle} text-align: center; background: ${dowBg}; position: sticky; top: ${daysTopOffset}; z-index: 22; box-sizing: border-box; overflow: hidden;">
                     <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${day.dayName}</div>
                     <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${day.day}</div>
                 </th>`;
 
-                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">AM</th>`;
-                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); ${dividerStyle} border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">PM</th>`;
+                ampmRowHtml += `<th style="padding: 2px 0; border: 1px solid var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px; box-sizing: border-box; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">AM</th>`;
+                ampmRowHtml += `<th style="padding: 2px 0; border: 1px solid var(--border); ${dividerStyle} border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px; box-sizing: border-box; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">PM</th>`;
             });
 
             const monthRowEl = document.getElementById('fleetCalendarMonthRow');
@@ -18147,7 +18173,7 @@ input:checked + .ctrl-slider:before {
                 
                 // Sticky Vehicle Cell
                 rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
-                    style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 180px; width: 180px; max-width: 180px; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
+                    style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
                     <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
                          onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
                          onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
@@ -18240,6 +18266,7 @@ input:checked + .ctrl-slider:before {
                     if (bkItem) {
                         const bk = bkItem.booking;
                         const spanSlots = Math.min(bkItem.endSlot - s + 1, totalSlots - s);
+                        const spanWidth = spanSlots * slotWidth;
                         const color = this.getBookingColor(bk);
                         const custName = (bk.customer_name || 'Customer').toUpperCase();
                         const rate = parseFloat(bk.total_price || 0);
@@ -18253,18 +18280,18 @@ input:checked + .ctrl-slider:before {
                             onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
                             onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
                             onmouseleave="FleetCalendar.hideTooltip()"
-                            style="padding: 2px 3px; border: 1px solid rgba(0,0,0,0.12); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px;">
-                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 4px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                            style="padding: 2px 3px; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px; width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; overflow: hidden;">
+                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 3px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
                                  onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                  onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
-                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.76rem'}; font-weight: 900; letter-spacing: 0.2px;">
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0;">
                                     <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
                                 </div>
-                                <div style="font-size: 0.62rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden;">
+                                <div style="font-size: 0.60rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
                                     <span>₱${Math.round(rate).toLocaleString()}</span>
                                     ${spanSlots > 1 ? (bal > 0 
-                                        ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
-                                        : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">PAID</span>`) : ''
+                                        ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
+                                        : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) : ''
                                     }
                                 </div>
                             </div>
@@ -18278,21 +18305,22 @@ input:checked + .ctrl-slider:before {
                     const boItem = vBlackouts.find(item => item.startSlot <= s && s <= item.endSlot);
                     if (boItem) {
                         const spanSlots = Math.min(boItem.endSlot - s + 1, totalSlots - s);
+                        const spanWidth = spanSlots * slotWidth;
                         const cellEndSlot = s + spanSlots - 1;
                         const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
-                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 28px; height: 54px;" title="Blackout Blocked">
+                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; height: 54px; overflow: hidden;" title="Blackout Blocked">
                             <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.58rem; font-weight: 800; padding: 1px 3px; border-radius: 4px;">OFF</span>
                         </td>`;
                         s += spanSlots;
                         continue;
                     }
 
-                    // 3. Empty slot
-                    let borderRight = (half === 'AM') ? '1px dashed var(--border)' : '1.5px solid var(--border)';
+                    // 3. Empty slot - Clean uniform 1px solid line
+                    let borderRight = '1px solid var(--border)';
                     if (s === lastSlotOfMonth1) {
                         borderRight = '3px solid #009240 !important';
                     }
-                    rowHtml += `<td style="padding: 0; border: 1px solid var(--border); border-right: ${borderRight}; text-align: center; min-width: 28px; width: 28px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
+                    rowHtml += `<td style="padding: 0; border: 1px solid var(--border); border-right: ${borderRight}; text-align: center; width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px; box-sizing: border-box; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
                     s++;
                 }
 
