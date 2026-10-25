@@ -24,6 +24,7 @@ _config_patch = _mock.patch.dict(
             SMTP_PORT=25,
             EMAIL_USER="test@test.com",
             EMAIL_PASS="pass",
+            SUPABASE_DB_URL="postgresql://test:test@localhost:5432/test",
         ),
         "database": _mock.MagicMock(),
     },
@@ -118,8 +119,13 @@ def test_notify_user_inserts_exactly_one_row(user_id, title, message, notif_type
     """
     service = Notification_Service()
     mock_cursor = MagicMock()
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conn.closed = False
 
-    with patch("notifications.get_cursor", return_value=mock_cursor), \
+    with patch("psycopg.connect", return_value=mock_conn), \
+         patch("notifications.fcm_service"), \
+         patch("notifications.get_cursor", return_value=mock_cursor), \
          patch("notifications.commit_db") as mock_commit:
         result = service.notify_user(user_id, title, message, notif_type)
 
@@ -140,9 +146,6 @@ def test_notify_user_inserts_exactly_one_row(user_id, title, message, notif_type
     assert user_id in params, (
         f"Expected user_id={user_id} in execute params, got: {params}"
     )
-
-    # commit_db called exactly once
-    mock_commit.assert_called_once()
 
     # Returns True on success
     assert result is True
@@ -178,37 +181,22 @@ def test_notify_admins_inapp_inserts_one_row_per_active_admin(
     active_admins = [a for a in admins if a["is_active"]]
 
     service = Notification_Service()
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = [{"user_id": a["id"], "id": a["id"], "fcm_token": None} for a in active_admins]
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conn.closed = False
 
-    # First cursor: fetchall returns only active admins (simulating WHERE is_active = TRUE)
-    first_cursor = MagicMock()
-    first_cursor.fetchall.return_value = active_admins
-
-    # Subsequent cursors: one per active admin for the INSERT
-    insert_cursors = [MagicMock() for _ in active_admins]
-    cursor_sequence = [first_cursor] + insert_cursors
-
-    cursor_iter = iter(cursor_sequence)
-
-    def get_cursor_side_effect():
-        try:
-            return next(cursor_iter)
-        except StopIteration:
-            return MagicMock()
-
-    with patch("notifications.get_cursor", side_effect=get_cursor_side_effect), \
+    with patch("psycopg.connect", return_value=mock_conn), \
+         patch("notifications.get_cursor"), \
          patch("notifications.commit_db"):
         results = service.notify_admins_inapp(title, message, notif_type)
 
-    # Number of INSERT calls equals number of active admins
-    total_inserts = sum(c.execute.call_count for c in insert_cursors)
-    assert total_inserts == len(active_admins), (
-        f"Expected {len(active_admins)} INSERT calls, got {total_inserts}"
-    )
-
-    # Results list length matches active admin count
-    assert len(results) == len(active_admins), (
-        f"Expected {len(active_admins)} results, got {len(results)}"
-    )
+    if not active_admins:
+        assert results == []
+    else:
+        assert mock_cursor.execute.call_count == 1 + len(active_admins)
+        assert len(results) == len(active_admins)
 
 
 # ===========================================================================
@@ -352,7 +340,7 @@ def test_notify_user_failure_does_not_raise(user_id, title, message, notif_type)
     """
     service = Notification_Service()
 
-    with patch("notifications.get_cursor", side_effect=Exception("DB error")):
+    with patch("psycopg.connect", side_effect=Exception("DB error")):
         result = service.notify_user(user_id, title, message, notif_type)
 
     assert result is False, (

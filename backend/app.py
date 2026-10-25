@@ -13021,27 +13021,21 @@ def chat_endpoint():
     
 
     # Store chat messages in database (optional, graceful fail)
-
     try:
-
         cur = get_cursor()
-
+        u_id = int(user_id) if user_id else 0
         cur.execute("""
-
-            INSERT INTO chat_messages (user_id, user_message, bot_response, created_at)
-
-            VALUES (%s, %s, %s, NOW())
-
-        """, (user_id, message, bot_response))
-
+            INSERT INTO chat_messages (sender_type, sender_id, receiver_type, receiver_id, message)
+            VALUES ('user', %s, 'bot', 0, %s)
+        """, (u_id, str(message)[:250]))
+        cur.execute("""
+            INSERT INTO chat_messages (sender_type, sender_id, receiver_type, receiver_id, message)
+            VALUES ('bot', 0, 'user', %s, %s)
+        """, (u_id, str(bot_response)[:250]))
         commit_db()
-
         cur.close()
-
     except Exception as e:
-
-        # Don't fail the response if logging fails (table might not exist yet)
-
+        # Don't fail the response if logging fails
         print(f"Chat log save skipped: {e}")
 
     
