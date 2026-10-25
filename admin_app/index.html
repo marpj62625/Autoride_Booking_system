@@ -8010,7 +8010,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                 </button>
             </div>
 
-            <form id="walkinBookingForm" onsubmit="WalkinBooking.submit(event)">
+            <form id="walkinBookingForm" novalidate onsubmit="WalkinBooking.submit(event); return false;">
                 
                 <!-- Account Mode Selector -->
                 <div style="background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 18px;">
@@ -8302,7 +8302,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                         Cancel
                     </button>
-                    <button type="submit" id="walkinSubmitBtn" 
+                    <button type="button" onclick="WalkinBooking.submit(event)" id="walkinSubmitBtn" 
                             style="padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); color: white; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);">
                         <i class="fas fa-check-circle"></i>
                         <span>Confirm Walk-in Booking</span>
@@ -35378,8 +35378,10 @@ function toggleNewsletterModal(show = true) {
             const guestSec = document.getElementById('walkinGuestSection');
             const regSec = document.getElementById('walkinRegisteredSection');
 
-            const nameInput = document.getElementById('walkinCustName');
+            const fNameInput = document.getElementById('walkinCustFName');
+            const lNameInput = document.getElementById('walkinCustLName');
             const phoneInput = document.getElementById('walkinCustPhone');
+            const nameInput = document.getElementById('walkinCustName');
 
             if (mode === 'guest') {
                 if (guestBtn) {
@@ -35395,8 +35397,10 @@ function toggleNewsletterModal(show = true) {
                 if (guestSec) guestSec.style.display = 'block';
                 if (regSec) regSec.style.display = 'none';
 
-                if (nameInput) nameInput.required = true;
+                if (fNameInput) fNameInput.required = true;
+                if (lNameInput) lNameInput.required = true;
                 if (phoneInput) phoneInput.required = true;
+                if (nameInput) nameInput.required = false;
                 const uid = document.getElementById('walkinCustUserId');
                 if (uid) uid.value = '';
             } else {
@@ -35413,8 +35417,10 @@ function toggleNewsletterModal(show = true) {
                 if (guestSec) guestSec.style.display = 'none';
                 if (regSec) regSec.style.display = 'block';
 
-                if (nameInput) nameInput.required = false;
+                if (fNameInput) fNameInput.required = false;
+                if (lNameInput) lNameInput.required = false;
                 if (phoneInput) phoneInput.required = false;
+                if (nameInput) nameInput.required = false;
             }
         },
 
