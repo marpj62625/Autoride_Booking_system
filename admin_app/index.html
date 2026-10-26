@@ -8371,7 +8371,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
     
     <!-- EDIT / EXTEND BOOKING SCHEDULE MODAL -->
-    <div id="editBookingScheduleModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10005; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);" onclick="if(event.target === this) Bookings.closeScheduleModal();">
+    <div id="editBookingScheduleModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10005; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);" onclick="if(event.target === this) Bookings.handleScheduleBackdropClick();">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-width: 580px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; position: relative;">
             
             <!-- Header -->
@@ -8390,7 +8390,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="Bookings.closeScheduleModal()" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 11px; border-radius: 8px; cursor: pointer; line-height: 1; transition: background 0.15s;" onmouseover="this.style.background='rgba(0,0,0,0.12)'" onmouseout="this.style.background='rgba(0,0,0,0.06)'">
+                <button type="button" onclick="Bookings.handleScheduleBackdropClick()" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 11px; border-radius: 8px; cursor: pointer; line-height: 1; transition: background 0.15s;" onmouseover="this.style.background='rgba(0,0,0,0.12)'" onmouseout="this.style.background='rgba(0,0,0,0.06)'">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -8494,7 +8494,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
             <!-- Footer Buttons -->
             <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; flex-shrink: 0;">
-                <button type="button" onclick="Bookings.closeScheduleModal()" style="flex: 1; padding: 11px 16px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.15s;">
+                <button type="button" onclick="Bookings.handleScheduleBackdropClick()" style="flex: 1; padding: 11px 16px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.15s;">
                     Cancel
                 </button>
                 <button type="button" id="editScheduleSubmitBtn" onclick="Bookings.saveScheduleChange()" style="flex: 2; padding: 11px 16px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s;">
@@ -8503,6 +8503,44 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
         </div>
     </div>
+
+    <!-- EDIT SCHEDULE UNSAVED CHANGES CONFIRMATION POPUP -->
+    <div id="editScheduleUnsavedModal" style="display: none; position: fixed; inset: 0; z-index: 100010; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) Bookings.cancelScheduleUnsavedPrompt()">
+        <div style="width: 100%; max-width: 480px; background: var(--surface-solid, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 20px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); margin: auto;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245,158,11,0.15); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main, #0f172a);">Unsaved Schedule Changes</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted, #64748b);">
+                        May mga binago ka sa schedule ng booking na ito. Nais mo bang i-discard ang mga binago o ipagpatuloy ang pag-edit?
+                    </p>
+                </div>
+            </div>
+
+            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px; margin-bottom: 8px;">
+                Modified Schedule Fields (<span id="editScheduleUnsavedCount">0</span>)
+            </div>
+
+            <div id="editScheduleUnsavedList" style="max-height: 180px; overflow-y: auto; background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 12px; padding: 8px 12px; margin-bottom: 20px;">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" onclick="Bookings.cancelScheduleUnsavedPrompt()" style="flex: 1; min-width: 90px; padding: 11px 14px; background: var(--surface-solid, #ffffff); color: var(--text-main, #334155); border: 1.5px solid var(--border, #cbd5e1); border-radius: 10px; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: background 0.15s;">
+                    Keep Editing
+                </button>
+                <button type="button" onclick="Bookings.confirmDiscardSchedule()" style="padding: 11px 16px; background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; font-weight: 700; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-trash-alt"></i> Discard
+                </button>
+                <button type="button" onclick="Bookings.confirmSaveSchedule()" style="flex: 1.3; min-width: 130px; padding: 11px 16px; background: #00B14F; color: #ffffff; border: none; border-radius: 10px; font-weight: 800; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,177,79,0.3);">
+                    <i class="fas fa-check"></i> Save &amp; Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 
 
 
@@ -12781,7 +12819,7 @@ input:checked + .ctrl-slider:before {
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
-            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal') return;
+            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
@@ -12808,6 +12846,14 @@ input:checked + .ctrl-slider:before {
                 }
                 if (topModal.id === 'sysConfigUnsavedModal') {
                     cancelSysConfigUnsavedPrompt(e);
+                    return;
+                }
+                if (topModal.id === 'editScheduleUnsavedModal') {
+                    if (typeof Bookings !== 'undefined' && Bookings.cancelScheduleUnsavedPrompt) Bookings.cancelScheduleUnsavedPrompt();
+                    return;
+                }
+                if (topModal.id === 'editBookingScheduleModal') {
+                    if (typeof Bookings !== 'undefined' && Bookings.handleScheduleBackdropClick) Bookings.handleScheduleBackdropClick();
                     return;
                 }
                 if (topModal.id === 'vehicleUnsavedModal') {
@@ -21759,17 +21805,98 @@ function toggleNewsletterModal(show = true) {
         },
 
         closeScheduleModal() {
+            this.cancelScheduleUnsavedPrompt();
+            this._originalScheduleSnapshot = null;
             const modal = document.getElementById('editBookingScheduleModal');
             if (modal) modal.style.display = 'none';
             if (typeof modalClose === 'function') modalClose();
         },
 
         _currentEditingBooking: null,
+        _originalScheduleSnapshot: null,
         _previewDebounceTimer: null,
 
         _formatMoney(amt) {
             const num = parseFloat(amt || 0);
             return '₱' + (isNaN(num) ? '0.00' : num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        },
+
+        getScheduleUnsavedDiff() {
+            if (!this._originalScheduleSnapshot) return [];
+            const diff = [];
+            const modeEl = document.getElementById('editScheduleMode');
+            const mode = modeEl ? modeEl.value : 'edit';
+            const sDEl = document.getElementById('editScheduleStartDate');
+            const sTEl = document.getElementById('editScheduleStartTime');
+            const eDEl = document.getElementById('editScheduleEndDate');
+            const eTEl = document.getElementById('editScheduleEndTime');
+
+            const sD = sDEl ? sDEl.value : '';
+            const sT = sTEl && sTEl.value ? sTEl.value.substring(0, 5) : '';
+            const eD = eDEl ? eDEl.value : '';
+            const eT = eTEl && eTEl.value ? eTEl.value.substring(0, 5) : '';
+
+            if (mode !== 'extend') {
+                if (sD && sD !== this._originalScheduleSnapshot.start_date) {
+                    diff.push({ label: 'Pickup Date', oldVal: this._originalScheduleSnapshot.start_date || 'None', newVal: sD });
+                }
+                if (sT && sT !== this._originalScheduleSnapshot.start_time) {
+                    diff.push({ label: 'Pickup Time', oldVal: this._originalScheduleSnapshot.start_time || 'None', newVal: sT });
+                }
+            }
+            if (eD && eD !== this._originalScheduleSnapshot.end_date) {
+                diff.push({ label: 'Return Date', oldVal: this._originalScheduleSnapshot.end_date || 'None', newVal: eD });
+            }
+            if (eT && eT !== this._originalScheduleSnapshot.end_time) {
+                diff.push({ label: 'Return Time', oldVal: this._originalScheduleSnapshot.end_time || 'None', newVal: eT });
+            }
+            return diff;
+        },
+
+        handleScheduleBackdropClick() {
+            const diff = this.getScheduleUnsavedDiff();
+            if (diff.length === 0) {
+                this.closeScheduleModal();
+                return;
+            }
+            this.showScheduleUnsavedPrompt(diff);
+        },
+
+        showScheduleUnsavedPrompt(diff) {
+            const unsavedModal = document.getElementById('editScheduleUnsavedModal');
+            const countEl = document.getElementById('editScheduleUnsavedCount');
+            const listEl = document.getElementById('editScheduleUnsavedList');
+
+            if (countEl) countEl.textContent = diff.length;
+            if (listEl) {
+                listEl.innerHTML = diff.map(d => `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border, #f1f5f9); font-size: 0.78rem;">
+                        <span style="font-weight: 700; color: var(--text-main, #334155); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.label}</span>
+                        <div style="display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 0.75rem;">
+                            <span style="background: rgba(239,68,68,0.12); color: #dc2626; padding: 2px 6px; border-radius: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.oldVal}</span>
+                            <span style="color: var(--text-muted, #94a3b8);">&rarr;</span>
+                            <span style="background: rgba(16,185,129,0.12); color: #059669; padding: 2px 6px; border-radius: 4px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.newVal}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            if (unsavedModal) unsavedModal.style.display = 'flex';
+        },
+
+        cancelScheduleUnsavedPrompt() {
+            const unsavedModal = document.getElementById('editScheduleUnsavedModal');
+            if (unsavedModal) unsavedModal.style.display = 'none';
+        },
+
+        confirmDiscardSchedule() {
+            this.cancelScheduleUnsavedPrompt();
+            this._originalScheduleSnapshot = null;
+            this.closeScheduleModal();
+        },
+
+        confirmSaveSchedule() {
+            this.cancelScheduleUnsavedPrompt();
+            this.saveScheduleChange();
         },
 
         _setupScheduleModal(bookingId, mode) {
@@ -21799,7 +21926,10 @@ function toggleNewsletterModal(show = true) {
             const errAlert = document.getElementById('editScheduleErrorAlert');
 
             if (errAlert) errAlert.style.display = 'none';
-            if (submitBtn) submitBtn.disabled = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
 
             const bIdInput = document.getElementById('editScheduleBookingId');
             if (bIdInput) bIdInput.value = b.id;
@@ -21814,6 +21944,13 @@ function toggleNewsletterModal(show = true) {
             let sTime = (b.start_time || '06:00').substring(0, 5);
             let eTime = (b.end_time || '06:00').substring(0, 5);
 
+            this._originalScheduleSnapshot = {
+                start_date: sDate,
+                start_time: sTime,
+                end_date: eDate,
+                end_time: eTime
+            };
+
             const startInput = document.getElementById('editScheduleStartDate');
             const startTimeInput = document.getElementById('editScheduleStartTime');
             const endInput = document.getElementById('editScheduleEndDate');
@@ -21823,6 +21960,15 @@ function toggleNewsletterModal(show = true) {
             if (startTimeInput) startTimeInput.value = sTime;
             if (endInput) endInput.value = eDate;
             if (endTimeInput) endTimeInput.value = eTime;
+
+            // Date validation limits
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            const maxYear = today.getFullYear() + 2;
+            const maxDateStr = `${maxYear}-12-31`;
+
+            if (startInput) startInput.max = maxDateStr;
+            if (endInput) endInput.max = maxDateStr;
 
             if (mode === 'extend') {
                 if (title) title.textContent = 'Extend Booking Schedule';
@@ -21847,7 +21993,7 @@ function toggleNewsletterModal(show = true) {
                     startTimeInput.style.background = '#f1f5f9';
                     startTimeInput.style.cursor = 'not-allowed';
                 }
-                if (endInput) endInput.min = eDate || sDate;
+                if (endInput) endInput.min = eDate || todayStr;
             } else {
                 if (title) title.textContent = 'Edit Booking Schedule';
                 if (subtitle) subtitle.innerHTML = `• Renter: <b>${b.customer_name || 'Customer'}</b> (${b.car || 'Vehicle'})`;
@@ -21861,18 +22007,19 @@ function toggleNewsletterModal(show = true) {
                 if (submitBtnText) submitBtnText.textContent = 'Confirm & Save Schedule';
 
                 // Enable pickup fields
+                const minStartDate = (sDate && sDate < todayStr) ? sDate : todayStr;
                 if (startInput) {
                     startInput.disabled = false;
                     startInput.style.background = '#ffffff';
                     startInput.style.cursor = 'auto';
-                    startInput.removeAttribute('min');
+                    startInput.min = minStartDate;
                 }
                 if (startTimeInput) {
                     startTimeInput.disabled = false;
                     startTimeInput.style.background = '#ffffff';
                     startTimeInput.style.cursor = 'auto';
                 }
-                if (endInput) endInput.removeAttribute('min');
+                if (endInput) endInput.min = sDate || minStartDate;
             }
 
             modal.style.display = 'flex';
@@ -21883,10 +22030,92 @@ function toggleNewsletterModal(show = true) {
         },
 
         onScheduleInputChange() {
+            const startDEl = document.getElementById('editScheduleStartDate');
+            const endDEl = document.getElementById('editScheduleEndDate');
+            const startTEl = document.getElementById('editScheduleStartTime');
+            const endTEl = document.getElementById('editScheduleEndTime');
+            const modeEl = document.getElementById('editScheduleMode');
+            const submitBtn = document.getElementById('editScheduleSubmitBtn');
+            const errAlert = document.getElementById('editScheduleErrorAlert');
+            const errMsg = document.getElementById('editScheduleErrorMsg');
+            const mode = modeEl ? modeEl.value : 'edit';
+            const b = this._currentEditingBooking;
+
+            if (startDEl && endDEl) {
+                if (mode !== 'extend') {
+                    endDEl.min = startDEl.value || '';
+                    if (startDEl.value && endDEl.value && endDEl.value < startDEl.value) {
+                        endDEl.value = startDEl.value;
+                    }
+                }
+            }
+
+            const startD = startDEl ? startDEl.value : '';
+            const endD = endDEl ? endDEl.value : '';
+            const startT = (startTEl && startTEl.value) ? startTEl.value.substring(0, 5) : '06:00';
+            const endT = (endTEl && endTEl.value) ? endTEl.value.substring(0, 5) : '06:00';
+
+            if (!startD || !endD) {
+                if (errAlert && errMsg) {
+                    errMsg.textContent = 'Please select both pickup and return dates.';
+                    errAlert.style.display = 'block';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                }
+                return;
+            }
+
+            const sMs = new Date(`${startD}T${startT}`).getTime();
+            const eMs = new Date(`${endD}T${endT}`).getTime();
+
+            if (eMs <= sMs) {
+                let msg = 'Return date & time must be strictly after pickup date & time.';
+                if (startD === endD) {
+                    msg = `Return time (${endT}) must be later than pickup time (${startT}) on the same date.`;
+                } else if (endD < startD) {
+                    msg = `Return date (${endD}) cannot be earlier than pickup date (${startD}).`;
+                }
+                if (errAlert && errMsg) {
+                    errMsg.textContent = msg;
+                    errAlert.style.display = 'block';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                }
+                return;
+            }
+
+            if (mode === 'extend' && b) {
+                const origEDate = (b.end_date || '').split('T')[0];
+                const origETime = (b.end_time || '06:00').substring(0, 5);
+                const origEndMs = new Date(`${origEDate}T${origETime}`).getTime();
+                if (eMs <= origEndMs) {
+                    if (errAlert && errMsg) {
+                        errMsg.textContent = `Extended return schedule must be later than current return (${origEDate} ${origETime}).`;
+                        errAlert.style.display = 'block';
+                    }
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                    }
+                    return;
+                }
+            }
+
+            // Validation passed
+            if (errAlert) errAlert.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+
             clearTimeout(this._previewDebounceTimer);
             this._previewDebounceTimer = setTimeout(() => {
                 this._fetchSchedulePreview();
-            }, 250);
+            }, 200);
         },
 
         async _fetchSchedulePreview() {
@@ -21902,9 +22131,9 @@ function toggleNewsletterModal(show = true) {
             const endTEl = document.getElementById('editScheduleEndTime');
 
             const startD = startDEl ? startDEl.value : '';
-            const startT = startTEl && startTEl.value ? startTEl.value : '06:00';
+            const startT = (startTEl && startTEl.value) ? startTEl.value.substring(0, 5) : '06:00';
             const endD = endDEl ? endDEl.value : '';
-            const endT = endTEl && endTEl.value ? endTEl.value : '06:00';
+            const endT = (endTEl && endTEl.value) ? endTEl.value.substring(0, 5) : '06:00';
 
             const errAlert = document.getElementById('editScheduleErrorAlert');
             const errMsg = document.getElementById('editScheduleErrorMsg');
@@ -21912,65 +22141,49 @@ function toggleNewsletterModal(show = true) {
 
             if (!startD || !endD) return;
 
-            // Client side validation
-            const sMs = new Date(`${startD}T${startT.substring(0, 5)}`).getTime();
-            const eMs = new Date(`${endD}T${endT.substring(0, 5)}`).getTime();
-
-            if (isNaN(sMs) || isNaN(eMs)) return;
-
-            if (eMs <= sMs) {
-                if (errAlert && errMsg) {
-                    errMsg.textContent = 'Return date & time must be strictly after pickup date & time.';
-                    errAlert.style.display = 'block';
-                }
-                if (submitBtn) submitBtn.disabled = true;
-                return;
-            }
-
-            if (mode === 'extend') {
-                const oldEndMs = new Date(`${(b.end_date || '').split('T')[0]}T${(b.end_time || '06:00').substring(0, 5)}`).getTime();
-                if (eMs < oldEndMs) {
-                    if (errAlert && errMsg) {
-                        errMsg.textContent = `Extension return must be on or after current return schedule (${(b.end_date || '').split('T')[0]} ${(b.end_time || '06:00').substring(0, 5)}).`;
-                        errAlert.style.display = 'block';
-                    }
-                    if (submitBtn) submitBtn.disabled = true;
-                    return;
-                }
-            }
-
-            if (errAlert) errAlert.style.display = 'none';
-            if (submitBtn) submitBtn.disabled = false;
-
             try {
-                const res = await fetch(`${API_BASE}/api/modify-booking`, {
+                const currentUser = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+                const adminId = currentUser ? currentUser.id : 1;
+
+                const payload = {
+                    booking_id: b.id,
+                    mode: mode,
+                    admin_id: adminId,
+                    start_date: startD,
+                    start_time: startT,
+                    end_date: endD,
+                    end_time: endT,
+                    preview: true
+                };
+
+                const res = await fetch(`${API_URL}/modify-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        booking_id: b.id,
-                        start_date: startD,
-                        start_time: startT,
-                        end_date: endD,
-                        end_time: endT,
-                        preview: true
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
                 if (!res.ok) {
                     if (errAlert && errMsg) {
-                        errMsg.textContent = data.error || 'Schedule conflicts with existing reservations.';
+                        errMsg.textContent = data.error || 'Schedule unavailable.';
                         errAlert.style.display = 'block';
                     }
-                    if (submitBtn) submitBtn.disabled = true;
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '0.5';
+                    }
                     return;
                 }
 
+                // If preview is successful, clear error alert
                 if (errAlert) errAlert.style.display = 'none';
-                if (submitBtn) submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                }
 
-                const daysBadge = document.getElementById('editScheduleDurationBadge');
-                if (daysBadge) daysBadge.textContent = `${data.new_days} Day${data.new_days > 1 ? 's' : ''}`;
+                const durBadge = document.getElementById('editScheduleDurationBadge');
+                if (durBadge) durBadge.textContent = `${data.duration_days} Day${data.duration_days > 1 ? 's' : ''}`;
 
                 const baseEl = document.getElementById('editScheduleBasePriceText');
                 if (baseEl) baseEl.textContent = this._formatMoney(data.new_base_price);
@@ -22098,7 +22311,8 @@ function toggleNewsletterModal(show = true) {
                 }
 
                 if (typeof showToast === 'function') showToast(data.message || 'Schedule updated successfully!', 'success');
-                this.closeScheduleModal();
+                this._originalScheduleSnapshot = null;
+                    this.closeScheduleModal();
 
                 if (typeof Bookings.load === 'function') await Bookings.load();
                 if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
