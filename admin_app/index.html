@@ -18063,6 +18063,8 @@ input:checked + .ctrl-slider:before {
                 event.stopPropagation();
                 if (typeof event.preventDefault === 'function') event.preventDefault();
             }
+            this.hideTooltip();
+            this._suppressTooltipUntil = Date.now() + 1500;
             const fullOrdered = this.getOrderedVehicles();
             const currentView = this.searchQuery ? fullOrdered.filter(v => {
                 const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
@@ -18565,13 +18567,17 @@ input:checked + .ctrl-slider:before {
                          onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
                             <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px; flex: 1;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
-                            <div style="display: inline-flex; gap: 2px; align-items: center; flex-shrink: 0;" onclick="event.stopPropagation()">
-                                <button type="button" onclick="FleetCalendar.moveVehicle(${v.id}, -1, event)" title="Move vehicle up"
+                            <div class="fc-reorder-wrap" style="display: inline-flex; gap: 2px; align-items: center; flex-shrink: 0;"
+                                 onclick="event.stopPropagation()"
+                                 onmouseenter="FleetCalendar.hideTooltip(); event.stopPropagation();"
+                                 onmouseover="FleetCalendar.hideTooltip(); event.stopPropagation();"
+                                 onmouseleave="event.stopPropagation()">
+                                <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, -1, event)" title="Move vehicle up"
                                         ${isFirst ? 'disabled' : ''}
                                         style="background: rgba(0,0,0,0.28); border: none; color: ${isFirst ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isFirst ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
                                     <i class="fas fa-chevron-up"></i>
                                 </button>
-                                <button type="button" onclick="FleetCalendar.moveVehicle(${v.id}, 1, event)" title="Move vehicle down"
+                                <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, 1, event)" title="Move vehicle down"
                                         ${isLast ? 'disabled' : ''}
                                         style="background: rgba(0,0,0,0.28); border: none; color: ${isLast ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isLast ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
                                     <i class="fas fa-chevron-down"></i>
@@ -18762,6 +18768,10 @@ input:checked + .ctrl-slider:before {
         },
 
         hideTooltip() {
+            if (this._tooltipTimer) {
+                clearTimeout(this._tooltipTimer);
+                this._tooltipTimer = null;
+            }
             const tip = document.getElementById('fleetTooltip');
             if (tip) tip.style.display = 'none';
         },
@@ -18769,10 +18779,10 @@ input:checked + .ctrl-slider:before {
         positionTooltip(e, tip) {
             tip.style.display = 'block';
             const rect = tip.getBoundingClientRect();
-            let x = e.clientX + 16;
-            let y = e.clientY + 12;
+            let x = (e ? e.clientX : 0) + 16;
+            let y = (e ? e.clientY : 0) + 12;
             if (x + rect.width > window.innerWidth - 12) {
-                x = e.clientX - rect.width - 12;
+                x = (e ? e.clientX : 0) - rect.width - 12;
             }
             if (y + rect.height > window.innerHeight - 12) {
                 y = window.innerHeight - rect.height - 12;
@@ -18782,35 +18792,44 @@ input:checked + .ctrl-slider:before {
         },
 
         showVehicleTooltip(e, vId) {
+            this.hideTooltip();
+            if (this._suppressTooltipUntil && Date.now() < this._suppressTooltipUntil) return;
+            if (e && e.target && (e.target.closest('.fc-reorder-wrap') || e.target.closest('.fc-reorder-btn'))) return;
             if (window.innerWidth <= 768) return;
-            const v = (this.vehicles || []).find(x => x.id == vId);
-            if (!v) return;
-            const tip = document.getElementById('fleetTooltip');
-            if (!tip) return;
-            
-            const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:105px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block;">` : '';
-            tip.innerHTML = `
-                <div style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,0.45);border:1px solid #334155;font-size:0.75rem;line-height:1.4;">
-                    ${imgHtml}
-                    <div style="font-size:0.92rem;font-weight:900;color:#ffffff;margin-bottom:2px;">${v.brand} ${v.model}</div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                        <span style="background:rgba(0,177,79,0.2);color:#00B14F;border:1px solid rgba(0,177,79,0.4);padding:2px 7px;border-radius:4px;font-weight:800;font-size:0.65rem;">${v.plate_number || 'NO PLATE'}</span>
-                        <span style="background:#1e293b;color:#94a3b8;padding:2px 7px;border-radius:4px;font-size:0.65rem;font-weight:700;">${v.vehicle_type || 'Vehicle'}</span>
-                        <span style="margin-left:auto;font-size:0.65rem;font-weight:800;color:${v.status === 'Available' ? '#10b981' : v.status === 'Maintenance' ? '#ef4444' : '#f59e0b'};">${(v.status||'Available').toUpperCase()}</span>
+
+            const clientX = e ? e.clientX : 0;
+            const clientY = e ? e.clientY : 0;
+            this._tooltipTimer = setTimeout(() => {
+                if (this._suppressTooltipUntil && Date.now() < this._suppressTooltipUntil) return;
+                const v = (this.vehicles || []).find(x => x.id == vId);
+                if (!v) return;
+                const tip = document.getElementById('fleetTooltip');
+                if (!tip) return;
+                
+                const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:105px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block;">` : '';
+                tip.innerHTML = `
+                    <div style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,0.45);border:1px solid #334155;font-size:0.75rem;line-height:1.4;">
+                        ${imgHtml}
+                        <div style="font-size:0.92rem;font-weight:900;color:#ffffff;margin-bottom:2px;">${v.brand} ${v.model}</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                            <span style="background:rgba(0,177,79,0.2);color:#00B14F;border:1px solid rgba(0,177,79,0.4);padding:2px 7px;border-radius:4px;font-weight:800;font-size:0.65rem;">${v.plate_number || 'NO PLATE'}</span>
+                            <span style="background:#1e293b;color:#94a3b8;padding:2px 7px;border-radius:4px;font-size:0.65rem;font-weight:700;">${v.vehicle_type || 'Vehicle'}</span>
+                            <span style="margin-left:auto;font-size:0.65rem;font-weight:800;color:${v.status === 'Available' ? '#10b981' : v.status === 'Maintenance' ? '#ef4444' : '#f59e0b'};">${(v.status||'Available').toUpperCase()}</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #334155;padding-top:6px;color:#cbd5e1;">
+                            <div><span style="color:#94a3b8;font-size:0.65rem;">Transmission:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.transmission || 'Auto'}</b></div>
+                            <div><span style="color:#94a3b8;font-size:0.65rem;">Fuel Type:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.fuel_type || 'Gasoline'}</b></div>
+                            <div><span style="color:#94a3b8;font-size:0.65rem;">Seats:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.seats || 5} Seats</b></div>
+                            <div><span style="color:#94a3b8;font-size:0.65rem;">Daily Rate:</span><br><b style="color:#10b981;font-size:0.75rem;">₱${parseFloat(v.daily_rate||0).toLocaleString()}/day</b></div>
+                        </div>
+                        <div style="margin-top:6px;border-top:1px solid #334155;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#94a3b8;font-size:0.65rem;">Location:</span>
+                            <span style="font-weight:700;color:#ffffff;font-size:0.72rem;">${v.location || 'Main Depot'}</span>
+                        </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #334155;padding-top:6px;color:#cbd5e1;">
-                        <div><span style="color:#94a3b8;font-size:0.65rem;">Transmission:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.transmission || 'Auto'}</b></div>
-                        <div><span style="color:#94a3b8;font-size:0.65rem;">Fuel Type:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.fuel_type || 'Gasoline'}</b></div>
-                        <div><span style="color:#94a3b8;font-size:0.65rem;">Seats:</span><br><b style="color:#ffffff;font-size:0.75rem;">${v.seats || 5} Seats</b></div>
-                        <div><span style="color:#94a3b8;font-size:0.65rem;">Daily Rate:</span><br><b style="color:#10b981;font-size:0.75rem;">₱${parseFloat(v.daily_rate||0).toLocaleString()}/day</b></div>
-                    </div>
-                    <div style="margin-top:6px;border-top:1px solid #334155;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="color:#94a3b8;font-size:0.65rem;">Location:</span>
-                        <span style="font-weight:700;color:#ffffff;font-size:0.72rem;">${v.location || 'Main Depot'}</span>
-                    </div>
-                </div>
-            `;
-            this.positionTooltip(e, tip);
+                `;
+                this.positionTooltip({ clientX, clientY }, tip);
+            }, 250);
         },
 
         showBookingTooltip(e, bId) {
@@ -18857,6 +18876,9 @@ input:checked + .ctrl-slider:before {
         },
 
         handleVehicleClick(e, vId) {
+            if (e && e.target && (e.target.closest('.fc-reorder-wrap') || e.target.closest('.fc-reorder-btn'))) {
+                return;
+            }
             this.hideTooltip();
             const v = (this.vehicles || []).find(x => x.id == vId);
             if (!v) return;
