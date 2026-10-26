@@ -7484,131 +7484,147 @@ def get_saved_payments():
 
 @app.route('/modify-booking', methods=['POST'])
 @app.route('/api/modify-booking', methods=['POST'])
+@app.route('/api/extend-booking', methods=['POST'])
 def modify_booking():
-
-    data = request.json
-
+    data = request.json or {}
     booking_id = data.get('booking_id')
-
     new_start = data.get('start_date')
-
     new_end = data.get('end_date')
-
+    new_start_time = data.get('start_time')
+    new_end_time = data.get('end_time')
     preview = data.get('preview', False)
 
-    
-
-    if not all([booking_id, new_start, new_end]):
-
-        return jsonify({"error": "booking_id, start_date, and end_date are required"}), 400
-
-        
+    if not booking_id:
+        return jsonify({"error": "booking_id is required"}), 400
 
     try:
         cur = get_cursor()
 
-        # ── Booking duration limit check ──
-        try:
-            from datetime import datetime as _dt
-            s_date = _dt.strptime(str(new_start)[:10], '%Y-%m-%d').date()
-            e_date = _dt.strptime(str(new_end)[:10], '%Y-%m-%d').date()
-            booking_days = (e_date - s_date).days
-            if booking_days < 1:
-                return jsonify({"error": "Return date must be after pickup date."}), 400
-
-            cur.execute("SELECT value FROM settings WHERE key = 'max_booking_duration_days'")
-            mb_row = cur.fetchone()
-            max_days = int(mb_row['value']) if mb_row and mb_row['value'] else 730
-
-            if booking_days > max_days:
-                return jsonify({
-                    "error": f"Booking duration ({booking_days} days) exceeds the maximum allowed limit of {max_days} days."
-                }), 400
-        except (ValueError, TypeError):
-            return jsonify({"error": "Invalid date format for start_date or end_date."}), 400
-
-        # Fetch current daily rate to recalculate total
-
+        # Fetch current booking details first
         cur.execute("""
-
-            SELECT b.total_price, v.daily_rate, b.status, b.amount_paid, b.payment_status,
-                   b.addon_price, b.insurance_price, b.start_date AS old_start, b.end_date AS old_end
+            SELECT b.id, b.total_price, v.daily_rate, b.status, b.amount_paid, b.payment_status,
+                   b.addon_price, b.insurance_price, b.start_date AS old_start, b.end_date AS old_end,
+                   b.start_time AS old_start_time, b.end_time AS old_end_time, b.vehicle_id, b.user_id
             FROM bookings b 
             JOIN vehicles v ON b.vehicle_id = v.id 
             WHERE b.id = %s
         """, (booking_id,))
-
         bk = cur.fetchone()
 
-        
+        if not bk:
+            return jsonify({"error": "Booking not found"}), 404
 
-        if not bk or bk['status'] not in ['Pending', 'Confirmed']:
+        allowed_statuses = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing']
+        if bk['status'] not in allowed_statuses:
+            return jsonify({"error": f"Booking with status '{bk['status']}' cannot be modified."}), 400
 
-            return jsonify({"error": "Booking cannot be modified"}), 400
+        is_ongoing = bk['status'] in ['Picked Up', 'Ongoing']
+
+        # Determine start date & time
+        if is_ongoing:
+            # For ongoing bookings, pickup has already occurred; start date and time cannot be modified
+            new_start = str(bk['old_start']).split(' ')[0]
+            new_start_time = str(bk.get('old_start_time') or '06:00').strip()[:5]
+        else:
+            if not new_start:
+                new_start = str(bk['old_start']).split(' ')[0]
+            if not new_start_time:
+                new_start_time = str(bk.get('old_start_time') or '06:00').strip()[:5]
+
+        # Determine end date & time
+        if not new_end:
+            new_end = str(bk['old_end']).split(' ')[0]
+        if not new_end_time:
+            new_end_time = str(bk.get('old_end_time') or '06:00').strip()[:5]
+
+        # Format and validate datetime
+        from datetime import datetime as _dt
+        try:
+            s_dt = _dt.strptime(f"{str(new_start)[:10]} {new_start_time[:5]}", '%Y-%m-%d %H:%M')
+            e_dt = _dt.strptime(f"{str(new_end)[:10]} {new_end_time[:5]}", '%Y-%m-%d %H:%M')
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid date or time format. Use YYYY-MM-DD and HH:MM."}), 400
+
+        if e_dt <= s_dt:
+            return jsonify({"error": "Return date and time must be after pickup date and time."}), 400
+
+        # If ongoing extension, ensure new return is not before old return
+        if is_ongoing:
+            old_e_dt = _dt.strptime(f"{str(bk['old_end']).split(' ')[0]} {str(bk.get('old_end_time') or '06:00')[:5]}", '%Y-%m-%d %H:%M')
+            if e_dt < old_e_dt:
+                return jsonify({"error": f"Extended return ({new_end} {new_end_time}) cannot be earlier than current scheduled return ({bk['old_end']} {str(bk.get('old_end_time') or '06:00')[:5]})."}), 400
+
+        # Duration in days calculation
+        diff_seconds = (e_dt - s_dt).total_seconds()
+        if diff_seconds <= 86400:
+            new_days = 1
+        else:
+            excess_hours = (diff_seconds % 86400) / 3600.0
+            base_days = int(diff_seconds // 86400)
+            new_days = base_days + (1 if excess_hours > 2.0 else 0)
+            new_days = max(1, new_days)
+
+        # ── Booking duration limit check ──
+        cur.execute("SELECT value FROM settings WHERE key = 'max_booking_duration_days'")
+        mb_row = cur.fetchone()
+        max_days = int(mb_row['value']) if mb_row and mb_row['value'] else 730
+        if new_days > max_days:
+            return jsonify({
+                "error": f"Booking duration ({new_days} days) exceeds the maximum allowed limit of {max_days} days."
+            }), 400
 
         # Check for blackout dates
         cur.execute("""
             SELECT id, reason, affected_vehicles 
             FROM blackout_dates 
             WHERE start_date <= %s AND end_date >= %s
-        """, (new_end, new_start))
+        """, (str(new_end)[:10], str(new_start)[:10]))
         blackouts = cur.fetchall()
         for b in blackouts:
             if not b.get('affected_vehicles') or b['affected_vehicles'] == 'all':
                 return jsonify({
-                    "error": f"Cannot change dates - Blackout Date Conflict: {b['reason']}"
+                    "error": f"Cannot change schedule - Blackout Date Conflict: {b['reason']}"
                 }), 409
             affected = [v.strip() for v in b['affected_vehicles'].split(',')]
-            bk_vehicle_id = str(bk.get('vehicle_id') or data.get('vehicle_id') or '')
+            bk_vehicle_id = str(bk['vehicle_id'])
             if bk_vehicle_id in affected:
                 return jsonify({
-                    "error": f"Cannot change dates - Blackout Date Conflict: {b['reason']}"
+                    "error": f"Cannot change schedule - Blackout Date Conflict: {b['reason']}"
                 }), 409
 
-        # ── Overlap guard for modification: check no other booking occupies the new dates ──
+        # ── Overlap guard for modification: check no other booking occupies the new dates/times ──
         cur.execute("""
-            SELECT b.id, b.start_date, b.end_date, b.status,
+            SELECT b.id, b.start_date, b.end_date, b.start_time, b.end_time, b.status,
                    (b.end_date + INTERVAL '1 day')::date AS next_available
             FROM bookings b
-            JOIN bookings orig ON orig.id = %s
-            WHERE b.vehicle_id = orig.vehicle_id
+            WHERE b.vehicle_id = %s
               AND b.id != %s
               AND b.status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
-              AND b.start_date <= %s
-              AND b.end_date >= %s
+              AND (
+                  (b.start_date < %s OR (b.start_date = %s AND COALESCE(b.start_time, '00:00') < %s))
+                  AND
+                  (b.end_date > %s OR (b.end_date = %s AND COALESCE(b.end_time, '23:59') > %s))
+              )
             ORDER BY b.start_date ASC
             LIMIT 1
-        """, (booking_id, booking_id, new_end, new_start))
+        """, (bk['vehicle_id'], booking_id, str(new_end)[:10], str(new_end)[:10], new_end_time, str(new_start)[:10], str(new_start)[:10], new_start_time))
 
         mod_overlap = cur.fetchone()
         if mod_overlap:
             o = dict(mod_overlap)
             return jsonify({
-                "error": "Cannot change dates – another booking occupies {start} to {end} (status: {status}). "
-                         "The vehicle is available again from {next}.".format(
-                             start=str(o['start_date']), end=str(o['end_date']),
-                             status=o['status'], next=str(o['next_available']))
+                "error": "Cannot change schedule – vehicle is occupied by booking #{id} from {start} {stime} to {end} {etime} (status: {status}). Next available from {next}.".format(
+                    id=o['id'],
+                    start=str(o['start_date']), stime=str(o.get('start_time') or '06:00')[:5],
+                    end=str(o['end_date']), etime=str(o.get('end_time') or '06:00')[:5],
+                    status=o['status'], next=str(o['next_available']))
             }), 409
-
-            
 
         rate = float(bk['daily_rate'])
 
-        # Calculate new days
-        from datetime import datetime
-        try:
-            d1 = datetime.strptime(str(new_start)[:10], "%Y-%m-%d")
-            d2 = datetime.strptime(str(new_end)[:10], "%Y-%m-%d")
-        except (ValueError, TypeError):
-            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-        new_days = max(1, (d2 - d1).days)
-
-        if new_days <= 0:
-            return jsonify({"error": "Invalid dates"}), 400
-
         # Calculate old days to find out daily rate of addons and insurance
-        od1 = datetime.strptime(str(bk['old_start']).split(' ')[0], "%Y-%m-%d")
-        od2 = datetime.strptime(str(bk['old_end']).split(' ')[0], "%Y-%m-%d")
+        od1 = _dt.strptime(str(bk['old_start']).split(' ')[0], "%Y-%m-%d")
+        od2 = _dt.strptime(str(bk['old_end']).split(' ')[0], "%Y-%m-%d")
         old_days = max(1, (od2 - od1).days)
 
         daily_addon = float(bk['addon_price'] or 0) / old_days if old_days > 0 else 0
@@ -7623,24 +7639,20 @@ def modify_booking():
         # Check for long term discount in settings table
         cur.execute("SELECT value FROM settings WHERE key = 'long_term_discount_days'")
         row = cur.fetchone()
-        lt_days = int(row['value']) if row else 7
+        lt_days = int(row['value']) if row and row['value'] else 7
         
         cur.execute("SELECT value FROM settings WHERE key = 'long_term_discount_percent'")
         row = cur.fetchone()
-        lt_pct = int(row['value']) if row else 10
+        lt_pct = int(row['value']) if row and row['value'] else 10
         
-        discount = 0
+        discount = 0.0
         if new_days >= lt_days:
-            # apply discount to base_price, mirroring frontend calculation
             discount = new_base_price * (lt_pct / 100.0)
 
         new_total -= discount
 
-        if preview:
-            return jsonify({"new_total": float(f"{new_total:.2f}")}), 200
-            
         amount_paid = float(bk['amount_paid'] or 0)
-        new_balance = new_total - amount_paid
+        new_balance = max(0.0, new_total - amount_paid)
         
         new_payment_status = bk['payment_status']
         if new_balance > 0:
@@ -7652,42 +7664,62 @@ def modify_booking():
             new_payment_status = 'Paid'
             new_balance = 0.0
 
+        if preview:
+            return jsonify({
+                "new_total": float(f"{new_total:.2f}"),
+                "new_days": new_days,
+                "new_balance": float(f"{new_balance:.2f}"),
+                "new_base_price": float(f"{new_base_price:.2f}"),
+                "new_addon_price": float(f"{new_addon_price:.2f}"),
+                "new_insurance_price": float(f"{new_insurance_price:.2f}"),
+                "discount": float(f"{discount:.2f}"),
+                "daily_rate": rate
+            }), 200
+
         cur.execute("""
             UPDATE bookings 
-            SET start_date = %s, end_date = %s, total_price = %s, base_price = %s, 
+            SET start_date = %s, end_date = %s, start_time = %s, end_time = %s,
+                total_price = %s, base_price = %s, 
                 addon_price = %s, insurance_price = %s, discount_amount = %s,
                 balance_amount = %s, payment_status = %s
             WHERE id = %s
-        """, (new_start, new_end, new_total, new_base_price, new_addon_price, 
+        """, (str(new_start)[:10], str(new_end)[:10], new_start_time, new_end_time,
+              new_total, new_base_price, new_addon_price, 
               new_insurance_price, discount, new_balance, new_payment_status, booking_id))
 
         commit_db()
 
         # Send in-app notification to customer
         try:
-            cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
-            bk_row = cur.fetchone()
-            if bk_row:
+            user_id = bk.get('user_id')
+            if user_id:
                 from notifications import notification_service
+                action_text = "extended" if is_ongoing else "updated"
                 notification_service.notify_user(
-                    bk_row['user_id'],
-                    "Booking Updated",
-                    f"Your booking #{booking_id} dates have been updated: {new_start} to {new_end}. New total: PHP {round(new_total, 2)}.",
+                    user_id,
+                    f"Booking Schedule {action_text.capitalize()}",
+                    f"Your booking #{booking_id} schedule has been {action_text}: {new_start} {new_start_time} to {new_end} {new_end_time}. Total: PHP {round(new_total, 2)}.",
                     'booking_modified'
                 )
         except Exception as notif_err:
             print(f"ERROR SENDING MODIFY BOOKING NOTIFICATION: {notif_err}")
 
-        return jsonify({"message": "Booking modified", "new_total": float(f"{new_total:.2f}"), "new_balance": float(f"{new_balance:.2f}")}), 200
+        return jsonify({
+            "message": f"Booking schedule successfully {'extended' if is_ongoing else 'modified'}",
+            "new_total": float(f"{new_total:.2f}"),
+            "new_balance": float(f"{new_balance:.2f}"),
+            "new_days": new_days,
+            "start_date": str(new_start)[:10],
+            "end_date": str(new_end)[:10],
+            "start_time": new_start_time,
+            "end_time": new_end_time
+        }), 200
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
 
     finally:
-
         if 'cur' in locals():
-
             cur.close()
 
 
