@@ -11591,6 +11591,26 @@ input:checked + .ctrl-slider:before {
                     <button type="button" id="fcView2MonthsBtn" onclick="FleetCalendar.setViewMonths(2)" title="View 2 consecutive months in one screen" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; background: #00B14F; color: white;">2 Months</button>
                     <button type="button" id="fcView1MonthBtn" onclick="FleetCalendar.setViewMonths(1)" title="View single month" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-muted);">1 Month</button>
                 </div>
+                <!-- Sort Presets Dropdown & Reset (Option C) -->
+                <div id="fleetCalendarSortWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
+                    <i class="fas fa-sort-amount-down" style="font-size: 0.72rem; color: #00B14F;"></i>
+                    <select id="fleetCalendarSortSelect" onchange="FleetCalendar.onSortChange(this.value)" title="Sort Vehicles & Bookings"
+                            style="background: transparent; border: none; font-size: 0.74rem; font-weight: 700; color: var(--text-main); outline: none; cursor: pointer; padding: 2px 0;">
+                        <option value="default">Default Order</option>
+                        <option value="brand_asc">Brand/Model (A → Z)</option>
+                        <option value="brand_desc">Brand/Model (Z → A)</option>
+                        <option value="category">Category (Van → SUV → Sedan)</option>
+                        <option value="plate_asc">Plate No. (A → Z)</option>
+                        <option value="most_booked">Most Booked First</option>
+                        <option value="rate_desc">Daily Rate (High → Low)</option>
+                        <option value="rate_asc">Daily Rate (Low → High)</option>
+                        <option value="custom" disabled hidden>Custom Manual Order</option>
+                    </select>
+                    <button id="fcResetSortBtn" type="button" onclick="FleetCalendar.resetVehicleOrder()" title="Reset to default order"
+                            style="display: none; background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.72rem; padding: 1px 4px;">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
                 <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
                     <i class="fas fa-sync-alt"></i>
                 </button>
@@ -17474,6 +17494,173 @@ async edit(id) { this.openModal(id); },
         searchQuery: '',
         activeBookingId: null,
         selectedColor: null,
+        sortMode: 'default',
+        customOrder: [],
+
+        getVehicleCategory(v) {
+            if (v.category && String(v.category).trim()) return String(v.category).trim();
+            if (v.type && String(v.type).trim()) return String(v.type).trim();
+            const str = `${v.brand || ''} ${v.model || ''}`.toLowerCase();
+            if (str.includes('hiace') || str.includes('van') || str.includes('commuter') || str.includes('grandia')) return 'Van';
+            if (str.includes('fortuner') || str.includes('montero') || str.includes('everest') || str.includes('terra') || str.includes('mu-x') || str.includes('suv')) return 'SUV';
+            if (str.includes('innova') || str.includes('avanza') || str.includes('rush') || str.includes('xpander') || str.includes('mpv') || str.includes('ertiga')) return 'MPV';
+            if (str.includes('vios') || str.includes('mirage') || str.includes('city') || str.includes('almera') || str.includes('sedan') || str.includes('civic')) return 'Sedan';
+            if (str.includes('hilux') || str.includes('d-max') || str.includes('ranger') || str.includes('strada') || str.includes('navara') || str.includes('pickup')) return 'Pickup';
+            if (str.includes('wigo') || str.includes('brio') || str.includes('hatchback')) return 'Hatchback';
+            return 'Other';
+        },
+
+        initSortSettings() {
+            try {
+                const savedMode = localStorage.getItem('fleet_calendar_sort_mode');
+                if (savedMode) this.sortMode = savedMode;
+                const savedOrder = localStorage.getItem('fleet_calendar_custom_order');
+                if (savedOrder) {
+                    const parsed = JSON.parse(savedOrder);
+                    if (Array.isArray(parsed)) this.customOrder = parsed;
+                }
+            } catch (e) {
+                console.warn('Failed to load fleet calendar sort settings:', e);
+            }
+        },
+
+        syncSortUI() {
+            const selectEl = document.getElementById('fleetCalendarSortSelect');
+            const resetBtn = document.getElementById('fcResetSortBtn');
+            if (selectEl) {
+                selectEl.value = this.sortMode || 'default';
+            }
+            if (resetBtn) {
+                const isCustom = (this.sortMode && this.sortMode !== 'default') || (Array.isArray(this.customOrder) && this.customOrder.length > 0);
+                resetBtn.style.display = isCustom ? 'inline-flex' : 'none';
+            }
+        },
+
+        onSortChange(mode) {
+            this.sortMode = mode || 'default';
+            try {
+                localStorage.setItem('fleet_calendar_sort_mode', this.sortMode);
+            } catch (e) {}
+            this.syncSortUI();
+            this.render();
+        },
+
+        resetVehicleOrder() {
+            this.sortMode = 'default';
+            this.customOrder = [];
+            try {
+                localStorage.removeItem('fleet_calendar_sort_mode');
+                localStorage.removeItem('fleet_calendar_custom_order');
+            } catch (e) {}
+            this.syncSortUI();
+            this.render();
+            if (typeof showNotification === 'function') {
+                showNotification('Vehicle order reset to default', 'info');
+            }
+        },
+
+        moveVehicle(vehicleId, direction, event) {
+            if (event) {
+                event.stopPropagation();
+                if (typeof event.preventDefault === 'function') event.preventDefault();
+            }
+            const fullOrdered = this.getOrderedVehicles();
+            const currentView = this.searchQuery ? fullOrdered.filter(v => {
+                const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
+                if (matchVeh) return true;
+                return (this.bookings || []).some(b => {
+                    if (String(b.vehicle_id) !== String(v.id)) return false;
+                    return (b.customer_name || '').toLowerCase().includes(this.searchQuery) ||
+                           String(b.id).includes(this.searchQuery);
+                });
+            }) : fullOrdered;
+
+            const viewIdx = currentView.findIndex(v => Number(v.id) === Number(vehicleId));
+            if (viewIdx === -1) return;
+            const targetViewIdx = viewIdx + direction;
+            if (targetViewIdx < 0 || targetViewIdx >= currentView.length) return;
+
+            const targetVehicle = currentView[targetViewIdx];
+            const fullIdxA = fullOrdered.findIndex(v => Number(v.id) === Number(vehicleId));
+            const fullIdxB = fullOrdered.findIndex(v => Number(v.id) === Number(targetVehicle.id));
+            if (fullIdxA === -1 || fullIdxB === -1) return;
+
+            // Swap positions
+            const temp = fullOrdered[fullIdxA];
+            fullOrdered[fullIdxA] = fullOrdered[fullIdxB];
+            fullOrdered[fullIdxB] = temp;
+
+            this.customOrder = fullOrdered.map(v => Number(v.id));
+            this.sortMode = 'custom';
+            try {
+                localStorage.setItem('fleet_calendar_custom_order', JSON.stringify(this.customOrder));
+                localStorage.setItem('fleet_calendar_sort_mode', 'custom');
+            } catch (e) {}
+            this.syncSortUI();
+            this.render();
+        },
+
+        getOrderedVehicles() {
+            const list = [...(this.vehicles || [])];
+            if (this.sortMode === 'custom' && Array.isArray(this.customOrder) && this.customOrder.length > 0) {
+                const orderMap = new Map();
+                this.customOrder.forEach((id, index) => orderMap.set(Number(id), index));
+                list.sort((a, b) => {
+                    const idA = Number(a.id);
+                    const idB = Number(b.id);
+                    const idxA = orderMap.has(idA) ? orderMap.get(idA) : 99999;
+                    const idxB = orderMap.has(idB) ? orderMap.get(idB) : 99999;
+                    return idxA - idxB;
+                });
+                return list;
+            }
+
+            if (this.sortMode === 'brand_asc') {
+                list.sort((a, b) => {
+                    const nameA = `${a.brand || ''} ${a.model || ''}`.trim().toLowerCase();
+                    const nameB = `${b.brand || ''} ${b.model || ''}`.trim().toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+            } else if (this.sortMode === 'brand_desc') {
+                list.sort((a, b) => {
+                    const nameA = `${a.brand || ''} ${a.model || ''}`.trim().toLowerCase();
+                    const nameB = `${b.brand || ''} ${b.model || ''}`.trim().toLowerCase();
+                    return nameB.localeCompare(nameA);
+                });
+            } else if (this.sortMode === 'category') {
+                const catPriority = { 'van': 1, 'suv': 2, 'mpv': 3, 'auv': 3, 'sedan': 4, 'hatchback': 5, 'pickup': 6 };
+                list.sort((a, b) => {
+                    const cA = this.getVehicleCategory(a).toLowerCase();
+                    const cB = this.getVehicleCategory(b).toLowerCase();
+                    const pA = catPriority[cA] || 10;
+                    const pB = catPriority[cB] || 10;
+                    if (pA !== pB) return pA - pB;
+                    return `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`);
+                });
+            } else if (this.sortMode === 'plate_asc') {
+                list.sort((a, b) => (a.plate_number || '').localeCompare(b.plate_number || ''));
+            } else if (this.sortMode === 'most_booked') {
+                const counts = {};
+                (this.bookings || []).forEach(b => {
+                    const st = String(b.status || '').toLowerCase().trim();
+                    if (st !== 'cancelled' && st !== 'rejected') {
+                        const vid = Number(b.vehicle_id);
+                        counts[vid] = (counts[vid] || 0) + 1;
+                    }
+                });
+                list.sort((a, b) => {
+                    const cA = counts[Number(a.id)] || 0;
+                    const cB = counts[Number(b.id)] || 0;
+                    if (cB !== cA) return cB - cA;
+                    return Number(a.id) - Number(b.id);
+                });
+            } else if (this.sortMode === 'rate_desc') {
+                list.sort((a, b) => parseFloat(b.daily_rate || 0) - parseFloat(a.daily_rate || 0));
+            } else if (this.sortMode === 'rate_asc') {
+                list.sort((a, b) => parseFloat(a.daily_rate || 0) - parseFloat(b.daily_rate || 0));
+            }
+            return list;
+        },
 
         // Curated, attractive pastel/solid palette for schedule monitoring
         paletteColors: [
@@ -17571,6 +17758,7 @@ async edit(id) { this.openModal(id); },
                         fetchedBookings = [];
                     }
                 }
+                this.initSortSettings();
                 this.vehicles = fetchedVehicles;
                 this.bookings = fetchedBookings;
                 this.blackouts = await bRes.json();
@@ -17808,8 +17996,11 @@ async edit(id) { this.openModal(id); },
             const headerRowEl = document.getElementById('fleetCalendarHeaderRow');
             if (headerRowEl) headerRowEl.innerHTML = ampmRowHtml;
 
+            this.syncSortUI();
+
             // Filter vehicles and calculate stats
-            let filteredVehicles = this.vehicles || [];
+            let orderedVehicles = this.getOrderedVehicles();
+            let filteredVehicles = orderedVehicles;
             if (this.searchQuery) {
                 filteredVehicles = filteredVehicles.filter(v => {
                     const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
@@ -17862,7 +18053,9 @@ async edit(id) { this.openModal(id); },
 
             // Render Body Rows (Gantt Schedule with Colspan - AM & PM slots)
             let bodyHtml = "";
-            filteredVehicles.forEach(v => {
+            filteredVehicles.forEach((v, vIdx) => {
+                const isFirst = (vIdx === 0);
+                const isLast = (vIdx === filteredVehicles.length - 1);
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
                 
                 // Sticky Vehicle Cell
@@ -17871,7 +18064,21 @@ async edit(id) { this.openModal(id); },
                     <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
                          onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
                          onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
-                        <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px;">${v.brand} ${v.model}</div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                            <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px; flex: 1;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
+                            <div style="display: inline-flex; gap: 2px; align-items: center; flex-shrink: 0;" onclick="event.stopPropagation()">
+                                <button type="button" onclick="FleetCalendar.moveVehicle(${v.id}, -1, event)" title="Move vehicle up"
+                                        ${isFirst ? 'disabled' : ''}
+                                        style="background: rgba(0,0,0,0.28); border: none; color: ${isFirst ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isFirst ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                                <button type="button" onclick="FleetCalendar.moveVehicle(${v.id}, 1, event)" title="Move vehicle down"
+                                        ${isLast ? 'disabled' : ''}
+                                        style="background: rgba(0,0,0,0.28); border: none; color: ${isLast ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isLast ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="fc-vmeta" style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
                             <span style="font-size: 0.62rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${v.plate_number || 'NO PLATE'}</span>
                             <span style="font-size: 0.62rem; color: #fef08a; font-weight: 800; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;" title="Daily Rental Rate">
