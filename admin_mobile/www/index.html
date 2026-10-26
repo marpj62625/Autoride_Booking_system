@@ -8310,28 +8310,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Form Inputs -->
-                <form id="editScheduleForm" onsubmit="event.preventDefault(); Bookings.saveScheduleChange();">
-                    <input type="hidden" id="editScheduleBookingId" value="" />
-                    <input type="hidden" id="editScheduleMode" value="edit" />
-
-                    <!-- Pickup Schedule Group -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
-                        <div style="font-size: 0.72rem; font-weight: 800; color: #00B14F; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-calendar-check"></i> Pickup Schedule</span>
-                            <span id="editSchedulePickupBadge" style="display: none; font-size: 0.65rem; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 6px; font-weight: 700;">Locked (Vehicle Picked Up)</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Pickup Date</label>
-                                <input type="date" id="editScheduleStartDate" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Pickup Time</label>
-                                <input type="time" id="editScheduleStartTime" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Return Schedule Group -->
