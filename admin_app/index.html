@@ -8381,8 +8381,13 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <i class="fas fa-calendar-alt"></i>
                     </div>
                     <div>
-                        <h2 id="editScheduleModalTitle" style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">Edit Booking Schedule</h2>
-                        <div id="editScheduleModalSubtitle" style="font-size: 0.75rem; color: #64748b; margin-top: 2px; font-weight: 600;">Booking #<span id="editScheduleBookingIdText">-</span></div>
+                        <h2 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">
+                            <span id="editScheduleModalTitle">Edit Booking Schedule</span>
+                        </h2>
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px; font-weight: 600;">
+                            <span>Booking #<b id="editScheduleBookingIdText">-</b></span>
+                            <span id="editScheduleModalSubtitle" style="margin-left: 6px;"></span>
+                        </div>
                     </div>
                 </div>
                 <button type="button" onclick="Bookings.closeScheduleModal()" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 11px; border-radius: 8px; cursor: pointer; line-height: 1; transition: background 0.15s;" onmouseover="this.style.background='rgba(0,0,0,0.12)'" onmouseout="this.style.background='rgba(0,0,0,0.06)'">
@@ -8401,6 +8406,103 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         </div>
                     </div>
                 </div>
+
+                <!-- Form Inputs -->
+                <form id="editScheduleForm" onsubmit="event.preventDefault(); Bookings.saveScheduleChange();">
+                    <input type="hidden" id="editScheduleBookingId" value="" />
+                    <input type="hidden" id="editScheduleMode" value="edit" />
+
+                    <!-- Pickup Schedule Group -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #00B14F; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-calendar-check"></i> Pickup Schedule</span>
+                            <span id="editSchedulePickupBadge" style="display: none; font-size: 0.65rem; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 6px; font-weight: 700;">Locked (Vehicle Picked Up)</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Pickup Date</label>
+                                <input type="date" id="editScheduleStartDate" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Pickup Time</label>
+                                <input type="time" id="editScheduleStartTime" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Return Schedule Group -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #ef4444; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-calendar-times"></i> Return Schedule
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Return Date</label>
+                                <input type="date" id="editScheduleEndDate" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Return Time</label>
+                                <input type="time" id="editScheduleEndTime" onchange="Bookings.onScheduleInputChange()" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: #0f172a; background: #ffffff;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculation & Pricing Preview Card -->
+                    <div id="editSchedulePreviewBox" style="background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+                        <div style="font-size: 0.68rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="display: flex; align-items: center; gap: 5px;"><i class="fas fa-calculator" style="color: #0284c7;"></i> New Schedule Preview</span>
+                            <span id="editScheduleDurationBadge" style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">- Days</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem;">
+                            <div style="display: flex; justify-content: space-between; color: #64748b;">
+                                <span>Base Rental:</span>
+                                <span id="editScheduleBasePriceText" style="font-weight: 700; color: #0f172a;">₱0.00</span>
+                            </div>
+                            <div id="editScheduleAddonRow" style="display: none; justify-content: space-between; color: #64748b;">
+                                <span>Add-ons:</span>
+                                <span id="editScheduleAddonPriceText" style="font-weight: 700; color: #0f172a;">₱0.00</span>
+                            </div>
+                            <div id="editScheduleInsuranceRow" style="display: none; justify-content: space-between; color: #64748b;">
+                                <span>Insurance:</span>
+                                <span id="editScheduleInsurancePriceText" style="font-weight: 700; color: #0f172a;">₱0.00</span>
+                            </div>
+                            <div id="editScheduleDiscountRow" style="display: none; justify-content: space-between; color: #16a34a;">
+                                <span>Long-term Discount:</span>
+                                <span id="editScheduleDiscountText" style="font-weight: 700; color: #16a34a;">-₱0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid #e2e8f0; font-weight: 800; font-size: 0.95rem;">
+                                <span style="color: #0f172a;">New Total Amount:</span>
+                                <span id="editScheduleTotalPriceText" style="color: #00B14F;">₱0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #475569; padding-top: 4px;">
+                                <span>Amount Paid:</span>
+                                <span id="editScheduleAmountPaidText" style="font-weight: 700; color: #16a34a;">₱0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 800; padding-top: 4px; border-top: 1px dashed #cbd5e1;">
+                                <span style="color: #ef4444;">Balance Due:</span>
+                                <span id="editScheduleBalanceText" style="color: #ef4444;">₱0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Alert inside modal -->
+                    <div id="editScheduleErrorAlert" style="display: none; background: #fef2f2; border: 1.5px solid #fecaca; color: #b91c1c; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.8rem; font-weight: 600; line-height: 1.4;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 6px;"></i><span id="editScheduleErrorMsg"></span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; flex-shrink: 0;">
+                <button type="button" onclick="Bookings.closeScheduleModal()" style="flex: 1; padding: 11px 16px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.15s;">
+                    Cancel
+                </button>
+                <button type="button" id="editScheduleSubmitBtn" onclick="Bookings.saveScheduleChange()" style="flex: 2; padding: 11px 16px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s;">
+                    <i class="fas fa-save"></i> <span id="editScheduleSubmitBtnText">Confirm &amp; Save Schedule</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
                 <!-- Form Inputs -->
                 <form id="editScheduleForm" onsubmit="event.preventDefault(); Bookings.saveScheduleChange();">
@@ -21761,6 +21863,11 @@ function toggleNewsletterModal(show = true) {
         _currentEditingBooking: null,
         _previewDebounceTimer: null,
 
+        _formatMoney(amt) {
+            const num = parseFloat(amt || 0);
+            return '₱' + (isNaN(num) ? '0.00' : num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        },
+
         _setupScheduleModal(bookingId, mode) {
             let b = (this.data && this.data.find(x => x.id == bookingId || x.booking_id == bookingId)) 
                  || (typeof FleetCalendar !== 'undefined' && FleetCalendar.bookings && FleetCalendar.bookings.find(x => x.id == bookingId || x.booking_id == bookingId)) 
@@ -21779,6 +21886,7 @@ function toggleNewsletterModal(show = true) {
 
             const title = document.getElementById('editScheduleModalTitle');
             const subtitle = document.getElementById('editScheduleModalSubtitle');
+            const bIdText = document.getElementById('editScheduleBookingIdText');
             const iconBox = document.getElementById('editScheduleIconBox');
             const notice = document.getElementById('editScheduleOngoingNotice');
             const pickupBadge = document.getElementById('editSchedulePickupBadge');
@@ -21789,9 +21897,13 @@ function toggleNewsletterModal(show = true) {
             if (errAlert) errAlert.style.display = 'none';
             if (submitBtn) submitBtn.disabled = false;
 
-            document.getElementById('editScheduleBookingId').value = b.id;
-            document.getElementById('editScheduleMode').value = mode;
-            document.getElementById('editScheduleBookingIdText').textContent = b.id;
+            const bIdInput = document.getElementById('editScheduleBookingId');
+            if (bIdInput) bIdInput.value = b.id;
+
+            const modeInput = document.getElementById('editScheduleMode');
+            if (modeInput) modeInput.value = mode;
+
+            if (bIdText) bIdText.textContent = b.id;
 
             const sDate = (b.start_date || '').split('T')[0];
             const eDate = (b.end_date || '').split('T')[0];
@@ -21803,14 +21915,14 @@ function toggleNewsletterModal(show = true) {
             const endInput = document.getElementById('editScheduleEndDate');
             const endTimeInput = document.getElementById('editScheduleEndTime');
 
-            startInput.value = sDate;
-            startTimeInput.value = sTime;
-            endInput.value = eDate;
-            endTimeInput.value = eTime;
+            if (startInput) startInput.value = sDate;
+            if (startTimeInput) startTimeInput.value = sTime;
+            if (endInput) endInput.value = eDate;
+            if (endTimeInput) endTimeInput.value = eTime;
 
             if (mode === 'extend') {
                 if (title) title.textContent = 'Extend Booking Schedule';
-                if (subtitle) subtitle.innerHTML = `Extend ongoing rental for <b>${b.customer_name || 'Customer'}</b> (Unit: ${b.car || 'Vehicle'})`;
+                if (subtitle) subtitle.innerHTML = `• Renter: <b>${b.customer_name || 'Customer'}</b> (${b.car || 'Vehicle'})`;
                 if (iconBox) {
                     iconBox.style.background = '#e0f2fe';
                     iconBox.style.color = '#0284c7';
@@ -21821,18 +21933,20 @@ function toggleNewsletterModal(show = true) {
                 if (submitBtnText) submitBtnText.textContent = 'Confirm Extension';
 
                 // Lock pickup fields
-                startInput.disabled = true;
-                startTimeInput.disabled = true;
-                startInput.style.background = '#f1f5f9';
-                startTimeInput.style.background = '#f1f5f9';
-                startInput.style.cursor = 'not-allowed';
-                startTimeInput.style.cursor = 'not-allowed';
-
-                // Set min attribute for return date to current return date or pickup date
-                endInput.min = eDate || sDate;
+                if (startInput) {
+                    startInput.disabled = true;
+                    startInput.style.background = '#f1f5f9';
+                    startInput.style.cursor = 'not-allowed';
+                }
+                if (startTimeInput) {
+                    startTimeInput.disabled = true;
+                    startTimeInput.style.background = '#f1f5f9';
+                    startTimeInput.style.cursor = 'not-allowed';
+                }
+                if (endInput) endInput.min = eDate || sDate;
             } else {
                 if (title) title.textContent = 'Edit Booking Schedule';
-                if (subtitle) subtitle.innerHTML = `Modify schedule for <b>${b.customer_name || 'Customer'}</b> (Unit: ${b.car || 'Vehicle'})`;
+                if (subtitle) subtitle.innerHTML = `• Renter: <b>${b.customer_name || 'Customer'}</b> (${b.car || 'Vehicle'})`;
                 if (iconBox) {
                     iconBox.style.background = '#e0e7ff';
                     iconBox.style.color = '#4338ca';
@@ -21843,14 +21957,18 @@ function toggleNewsletterModal(show = true) {
                 if (submitBtnText) submitBtnText.textContent = 'Confirm & Save Schedule';
 
                 // Enable pickup fields
-                startInput.disabled = false;
-                startTimeInput.disabled = false;
-                startInput.style.background = '#ffffff';
-                startTimeInput.style.background = '#ffffff';
-                startInput.style.cursor = 'auto';
-                startTimeInput.style.cursor = 'auto';
-                startInput.removeAttribute('min');
-                endInput.removeAttribute('min');
+                if (startInput) {
+                    startInput.disabled = false;
+                    startInput.style.background = '#ffffff';
+                    startInput.style.cursor = 'auto';
+                    startInput.removeAttribute('min');
+                }
+                if (startTimeInput) {
+                    startTimeInput.disabled = false;
+                    startTimeInput.style.background = '#ffffff';
+                    startTimeInput.style.cursor = 'auto';
+                }
+                if (endInput) endInput.removeAttribute('min');
             }
 
             modal.style.display = 'flex';
@@ -21871,11 +21989,19 @@ function toggleNewsletterModal(show = true) {
             const b = this._currentEditingBooking;
             if (!b) return;
 
-            const mode = document.getElementById('editScheduleMode').value;
-            const startD = document.getElementById('editScheduleStartDate').value;
-            const startT = document.getElementById('editScheduleStartTime').value || '06:00';
-            const endD = document.getElementById('editScheduleEndDate').value;
-            const endT = document.getElementById('editScheduleEndTime').value || '06:00';
+            const modeEl = document.getElementById('editScheduleMode');
+            const mode = modeEl ? modeEl.value : 'edit';
+
+            const startDEl = document.getElementById('editScheduleStartDate');
+            const startTEl = document.getElementById('editScheduleStartTime');
+            const endDEl = document.getElementById('editScheduleEndDate');
+            const endTEl = document.getElementById('editScheduleEndTime');
+
+            const startD = startDEl ? startDEl.value : '';
+            const startT = startTEl && startTEl.value ? startTEl.value : '06:00';
+            const endD = endDEl ? endDEl.value : '';
+            const endT = endTEl && endTEl.value ? endTEl.value : '06:00';
+
             const errAlert = document.getElementById('editScheduleErrorAlert');
             const errMsg = document.getElementById('editScheduleErrorMsg');
             const submitBtn = document.getElementById('editScheduleSubmitBtn');
@@ -21889,7 +22015,7 @@ function toggleNewsletterModal(show = true) {
             if (isNaN(sMs) || isNaN(eMs)) return;
 
             if (eMs <= sMs) {
-                if (errAlert) {
+                if (errAlert && errMsg) {
                     errMsg.textContent = 'Return date & time must be strictly after pickup date & time.';
                     errAlert.style.display = 'block';
                 }
@@ -21900,7 +22026,7 @@ function toggleNewsletterModal(show = true) {
             if (mode === 'extend') {
                 const oldEndMs = new Date(`${(b.end_date || '').split('T')[0]}T${(b.end_time || '06:00').substring(0, 5)}`).getTime();
                 if (eMs < oldEndMs) {
-                    if (errAlert) {
+                    if (errAlert && errMsg) {
                         errMsg.textContent = `Extension return must be on or after current return schedule (${(b.end_date || '').split('T')[0]} ${(b.end_time || '06:00').substring(0, 5)}).`;
                         errAlert.style.display = 'block';
                     }
@@ -21928,7 +22054,7 @@ function toggleNewsletterModal(show = true) {
 
                 const data = await res.json();
                 if (!res.ok) {
-                    if (errAlert) {
+                    if (errAlert && errMsg) {
                         errMsg.textContent = data.error || 'Schedule conflicts with existing reservations.';
                         errAlert.style.display = 'block';
                     }
@@ -21943,14 +22069,14 @@ function toggleNewsletterModal(show = true) {
                 if (daysBadge) daysBadge.textContent = `${data.new_days} Day${data.new_days > 1 ? 's' : ''}`;
 
                 const baseEl = document.getElementById('editScheduleBasePriceText');
-                if (baseEl) baseEl.textContent = fmtMoney(data.new_base_price);
+                if (baseEl) baseEl.textContent = this._formatMoney(data.new_base_price);
 
                 const addonRow = document.getElementById('editScheduleAddonRow');
                 const addonEl = document.getElementById('editScheduleAddonPriceText');
                 if (addonRow && addonEl) {
                     if (data.new_addon_price > 0) {
                         addonRow.style.display = 'flex';
-                        addonEl.textContent = fmtMoney(data.new_addon_price);
+                        addonEl.textContent = this._formatMoney(data.new_addon_price);
                     } else {
                         addonRow.style.display = 'none';
                     }
@@ -21961,7 +22087,7 @@ function toggleNewsletterModal(show = true) {
                 if (insRow && insEl) {
                     if (data.new_insurance_price > 0) {
                         insRow.style.display = 'flex';
-                        insEl.textContent = fmtMoney(data.new_insurance_price);
+                        insEl.textContent = this._formatMoney(data.new_insurance_price);
                     } else {
                         insRow.style.display = 'none';
                     }
@@ -21972,20 +22098,20 @@ function toggleNewsletterModal(show = true) {
                 if (discRow && discEl) {
                     if (data.discount > 0) {
                         discRow.style.display = 'flex';
-                        discEl.textContent = `-${fmtMoney(data.discount)}`;
+                        discEl.textContent = `-${this._formatMoney(data.discount)}`;
                     } else {
                         discRow.style.display = 'none';
                     }
                 }
 
                 const totalEl = document.getElementById('editScheduleTotalPriceText');
-                if (totalEl) totalEl.textContent = fmtMoney(data.new_total);
+                if (totalEl) totalEl.textContent = this._formatMoney(data.new_total);
 
                 const paidEl = document.getElementById('editScheduleAmountPaidText');
-                if (paidEl) paidEl.textContent = fmtMoney(b.amount_paid || 0);
+                if (paidEl) paidEl.textContent = this._formatMoney(b.amount_paid || 0);
 
                 const balEl = document.getElementById('editScheduleBalanceText');
-                if (balEl) balEl.textContent = fmtMoney(data.new_balance);
+                if (balEl) balEl.textContent = this._formatMoney(data.new_balance);
 
             } catch (err) {
                 console.error('Preview fetch error:', err);
@@ -21996,11 +22122,19 @@ function toggleNewsletterModal(show = true) {
             const b = this._currentEditingBooking;
             if (!b) return;
 
-            const mode = document.getElementById('editScheduleMode').value;
-            const startD = document.getElementById('editScheduleStartDate').value;
-            const startT = document.getElementById('editScheduleStartTime').value || '06:00';
-            const endD = document.getElementById('editScheduleEndDate').value;
-            const endT = document.getElementById('editScheduleEndTime').value || '06:00';
+            const modeEl = document.getElementById('editScheduleMode');
+            const mode = modeEl ? modeEl.value : 'edit';
+
+            const startDEl = document.getElementById('editScheduleStartDate');
+            const startTEl = document.getElementById('editScheduleStartTime');
+            const endDEl = document.getElementById('editScheduleEndDate');
+            const endTEl = document.getElementById('editScheduleEndTime');
+
+            const startD = startDEl ? startDEl.value : '';
+            const startT = startTEl && startTEl.value ? startTEl.value : '06:00';
+            const endD = endDEl ? endDEl.value : '';
+            const endT = endTEl && endTEl.value ? endTEl.value : '06:00';
+
             const submitBtn = document.getElementById('editScheduleSubmitBtn');
             const submitBtnText = document.getElementById('editScheduleSubmitBtnText');
             const errAlert = document.getElementById('editScheduleErrorAlert');
@@ -22009,7 +22143,7 @@ function toggleNewsletterModal(show = true) {
             if (errAlert) errAlert.style.display = 'none';
 
             if (!startD || !endD) {
-                if (errAlert) {
+                if (errAlert && errMsg) {
                     errMsg.textContent = 'Please fill out all date fields.';
                     errAlert.style.display = 'block';
                 }
@@ -22019,7 +22153,7 @@ function toggleNewsletterModal(show = true) {
             const sMs = new Date(`${startD}T${startT.substring(0, 5)}`).getTime();
             const eMs = new Date(`${endD}T${endT.substring(0, 5)}`).getTime();
             if (eMs <= sMs) {
-                if (errAlert) {
+                if (errAlert && errMsg) {
                     errMsg.textContent = 'Return date & time must be strictly after pickup date & time.';
                     errAlert.style.display = 'block';
                 }
@@ -22047,7 +22181,7 @@ function toggleNewsletterModal(show = true) {
 
                 const data = await res.json();
                 if (!res.ok) {
-                    if (errAlert) {
+                    if (errAlert && errMsg) {
                         errMsg.textContent = data.error || 'Failed to update booking schedule.';
                         errAlert.style.display = 'block';
                     }
@@ -22071,7 +22205,7 @@ function toggleNewsletterModal(show = true) {
 
             } catch (err) {
                 console.error('Save schedule error:', err);
-                if (errAlert) {
+                if (errAlert && errMsg) {
                     errMsg.textContent = 'A network error occurred. Please try again.';
                     errAlert.style.display = 'block';
                 }
