@@ -8348,61 +8348,83 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             <form id="saEditBookingForm" onsubmit="event.preventDefault(); Bookings.submitSuperAdminEdit();" style="flex: 1; overflow-y: auto; padding-right: 4px;">
                 <input type="hidden" id="saEditBookingId" />
 
-                <!-- Customer Name Split: First Name, Middle Name, Last Name -->
+                <!-- Customer Name Split: First Name, Middle Name, Last Name (No Spaces Allowed) -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px;">
-                    <div style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-id-card" style="color: #4f46e5;"></i> Customer Name Breakdown <span style="color: #ef4444;">*</span>
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-id-card" style="color: #4f46e5;"></i> Customer Name Breakdown <span style="color: #ef4444;">*</span></span>
+                        <span style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(Bawal ang space)</span>
                     </div>
                     <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; gap: 8px;">
                         <div>
-                            <label style="font-size: 0.66rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 3px;">First Name *</label>
-                            <input type="text" id="saEditFirstName" required placeholder="First Name" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this)" />
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <label style="font-size: 0.66rem; color: #64748b; font-weight: 700;">First Name *</label>
+                                <span id="saFnameCount" style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">0/25</span>
+                            </div>
+                            <input type="text" id="saEditFirstName" required placeholder="First Name" maxlength="25" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saFnameCount', 25)" />
                         </div>
                         <div>
-                            <label style="font-size: 0.66rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 3px;">Middle Name</label>
-                            <input type="text" id="saEditMiddleName" placeholder="Optional" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this)" />
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <label style="font-size: 0.66rem; color: #64748b; font-weight: 700;">Middle Name</label>
+                                <span id="saMnameCount" style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">0/25</span>
+                            </div>
+                            <input type="text" id="saEditMiddleName" placeholder="Optional" maxlength="25" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saMnameCount', 25)" />
                         </div>
                         <div>
-                            <label style="font-size: 0.66rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 3px;">Last Name *</label>
-                            <input type="text" id="saEditLastName" required placeholder="Last Name" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this)" />
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                <label style="font-size: 0.66rem; color: #64748b; font-weight: 700;">Last Name *</label>
+                                <span id="saLnameCount" style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">0/25</span>
+                            </div>
+                            <input type="text" id="saEditLastName" required placeholder="Last Name" maxlength="25" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saLnameCount', 25)" />
                         </div>
                     </div>
                     <div id="saNameError" style="display: none; font-size: 0.7rem; color: #ef4444; font-weight: 700; margin-top: 6px;"></div>
                 </div>
 
-                <!-- Customer Phone with Live Strict Validation -->
+                <!-- Customer Phone with Live Strict Validation & Length Badge -->
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px;">
-                    <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px;">
-                        <i class="fas fa-phone-alt" style="color: #00B14F; margin-right: 4px;"></i> Contact Number / Phone <span style="color: #ef4444;">*</span>
-                    </label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px;">
+                            <i class="fas fa-phone-alt" style="color: #00B14F; margin-right: 4px;"></i> Contact Number / Phone <span style="color: #ef4444;">*</span>
+                        </label>
+                        <span id="saPhoneCount" style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">0/13</span>
+                    </div>
                     <input type="tel" id="saEditCustomerPhone" required placeholder="09XXXXXXXXX" maxlength="13" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; font-weight: 700; color: #0f172a; box-sizing: border-box; letter-spacing: 0.5px;" oninput="Bookings.formatSaPhoneInput(this)" />
                     <div id="saPhoneFeedback" style="font-size: 0.7rem; color: #64748b; margin-top: 4px; font-weight: 600;">
                         Format: 11 digits starting with 09 (e.g. 09171234567) or +639XXXXXXXXX
                     </div>
                 </div>
 
-                <!-- Destination & Purpose Grid -->
+                <!-- Destination & Purpose Grid with Character Limits -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div>
-                        <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 4px;">
-                            Destination
-                        </label>
-                        <input type="text" id="saEditDestination" placeholder="e.g. Makati / Tagaytay" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" />
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase;">
+                                Destination
+                            </label>
+                            <span id="saDestCount" style="font-size: 0.62rem; color: #94a3b8; font-weight: 700;">0/40</span>
+                        </div>
+                        <input type="text" id="saEditDestination" placeholder="e.g. Makati" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saDestCount', 40)" />
                     </div>
                     <div>
-                        <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 4px;">
-                            Purpose of Rental
-                        </label>
-                        <input type="text" id="saEditRentalPurpose" placeholder="e.g. Business / Vacation" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" />
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase;">
+                                Purpose of Rental
+                            </label>
+                            <span id="saPurpCount" style="font-size: 0.62rem; color: #94a3b8; font-weight: 700;">0/40</span>
+                        </div>
+                        <input type="text" id="saEditRentalPurpose" placeholder="e.g. Vacation" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 40)" />
                     </div>
                 </div>
 
-                <!-- Reason / Audit Note -->
+                <!-- Reason / Audit Note with Character Limit -->
                 <div style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 4px;">
-                        Reason for Update <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;">(Logged to Activity Trail)</span>
-                    </label>
-                    <input type="text" id="saEditReason" placeholder="e.g. Corrected phone number from client monitoring sheet" maxlength="150" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; color: #0f172a; box-sizing: border-box;" />
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase;">
+                            Reason for Update <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 600;">(Logged to Activity Trail)</span>
+                        </label>
+                        <span id="saReasonCount" style="font-size: 0.62rem; color: #94a3b8; font-weight: 700;">0/80</span>
+                    </div>
+                    <input type="text" id="saEditReason" placeholder="e.g. Corrected phone number from client monitoring sheet" maxlength="80" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saReasonCount', 80)" />
                 </div>
 
                 <!-- Action Buttons -->
@@ -12924,7 +12946,7 @@ input:checked + .ctrl-slider:before {
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
-            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal') return;
+            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal' || modal.id === 'editBookingDetailsSuperAdminModal' || modal.id === 'editSaBookingUnsavedModal') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
@@ -12951,6 +12973,14 @@ input:checked + .ctrl-slider:before {
                 }
                 if (topModal.id === 'sysConfigUnsavedModal') {
                     cancelSysConfigUnsavedPrompt(e);
+                    return;
+                }
+                if (topModal.id === 'editSaBookingUnsavedModal') {
+                    if (typeof Bookings !== 'undefined' && Bookings.cancelSaUnsavedPrompt) Bookings.cancelSaUnsavedPrompt();
+                    return;
+                }
+                if (topModal.id === 'editBookingDetailsSuperAdminModal') {
+                    if (typeof Bookings !== 'undefined' && Bookings.handleSaEditBackdropClick) Bookings.handleSaEditBackdropClick();
                     return;
                 }
                 if (topModal.id === 'editScheduleUnsavedModal') {
@@ -22112,27 +22142,37 @@ function toggleNewsletterModal(show = true) {
 
         _originalSaEditSnapshot: null,
 
+        updateCharCount(inputEl, countId, max) {
+            if (!inputEl) return;
+            const len = inputEl.value.length;
+            const badge = document.getElementById(countId);
+            if (badge) badge.textContent = `${len}/${max}`;
+        },
+
         parseCustomerNameParts(fullName) {
             const clean = (fullName || '').trim().replace(/\s+/g, ' ');
             if (!clean) return { first: '', middle: '', last: '' };
             const parts = clean.split(' ');
             if (parts.length === 1) {
-                return { first: parts[0], middle: '', last: '' };
+                return { first: parts[0].replace(/\s+/g, ''), middle: '', last: '' };
             } else if (parts.length === 2) {
-                return { first: parts[0], middle: '', last: parts[1] };
+                return { first: parts[0].replace(/\s+/g, ''), middle: '', last: parts[1].replace(/\s+/g, '') };
             } else {
                 return {
-                    first: parts[0],
-                    middle: parts.slice(1, -1).join(' '),
-                    last: parts[parts.length - 1]
+                    first: parts[0].replace(/\s+/g, ''),
+                    middle: parts.slice(1, -1).join('').replace(/\s+/g, ''),
+                    last: parts[parts.length - 1].replace(/\s+/g, '')
                 };
             }
         },
 
-        validateSaNameField(inputEl) {
+        validateSaNameField(inputEl, countId, max) {
             if (!inputEl) return;
-            // Disallow characters that are clearly garbage (numbers, special symbols except hyphen/period/apostrophe)
-            inputEl.value = inputEl.value.replace(/[^a-zA-Z\s\-\.\'ñÑ]/g, '');
+            // Strictly disallow spaces (spaces are stripped instantly), numbers, and special symbols except hyphen/period/apostrophe
+            inputEl.value = inputEl.value.replace(/\s+/g, '').replace(/[^a-zA-Z\-\.\'ñÑ]/g, '');
+            if (countId && max) {
+                this.updateCharCount(inputEl, countId, max);
+            }
             const errEl = document.getElementById('saNameError');
             if (errEl) errEl.style.display = 'none';
         },
@@ -22153,6 +22193,9 @@ function toggleNewsletterModal(show = true) {
                 val = val.substring(0, 11);
             }
             inputEl.value = val;
+
+            const countEl = document.getElementById('saPhoneCount');
+            if (countEl) countEl.textContent = `${val.length}/13`;
 
             // Live validation indicator
             const feedbackEl = document.getElementById('saPhoneFeedback');
@@ -22194,24 +22237,45 @@ function toggleNewsletterModal(show = true) {
             document.getElementById('saEditBookingId').value = b.id;
             document.getElementById('saEditBookingIdText').textContent = b.id;
             document.getElementById('saEditVehicleText').textContent = b.car || b.vehicle || `${b.brand || ''} ${b.model || ''}`.trim() || '';
-            document.getElementById('saEditFirstName').value = nameParts.first;
-            document.getElementById('saEditMiddleName').value = nameParts.middle;
-            document.getElementById('saEditLastName').value = nameParts.last;
+            
+            const fnEl = document.getElementById('saEditFirstName');
+            const mnEl = document.getElementById('saEditMiddleName');
+            const lnEl = document.getElementById('saEditLastName');
+            
+            if (fnEl) { fnEl.value = nameParts.first; this.updateCharCount(fnEl, 'saFnameCount', 25); }
+            if (mnEl) { mnEl.value = nameParts.middle; this.updateCharCount(mnEl, 'saMnameCount', 25); }
+            if (lnEl) { lnEl.value = nameParts.last; this.updateCharCount(lnEl, 'saLnameCount', 25); }
 
             const phoneInput = document.getElementById('saEditCustomerPhone');
-            phoneInput.value = (b.customer_phone || b.phone || '').trim();
-            this.formatSaPhoneInput(phoneInput);
+            if (phoneInput) {
+                phoneInput.value = (b.customer_phone || b.phone || '').trim();
+                this.formatSaPhoneInput(phoneInput);
+            }
 
-            document.getElementById('saEditDestination').value = (b.destination || '').trim();
-            document.getElementById('saEditRentalPurpose').value = (b.rental_purpose || '').trim();
-            document.getElementById('saEditReason').value = '';
+            const destEl = document.getElementById('saEditDestination');
+            if (destEl) {
+                destEl.value = (b.destination || '').trim();
+                this.updateCharCount(destEl, 'saDestCount', 40);
+            }
+
+            const purpEl = document.getElementById('saEditRentalPurpose');
+            if (purpEl) {
+                purpEl.value = (b.rental_purpose || '').trim();
+                this.updateCharCount(purpEl, 'saPurpCount', 40);
+            }
+
+            const reasonEl = document.getElementById('saEditReason');
+            if (reasonEl) {
+                reasonEl.value = '';
+                this.updateCharCount(reasonEl, 'saReasonCount', 80);
+            }
 
             // Take original snapshot for unsaved changes detection
             this._originalSaEditSnapshot = {
                 firstName: nameParts.first,
                 middleName: nameParts.middle,
                 lastName: nameParts.last,
-                phone: phoneInput.value,
+                phone: (b.customer_phone || b.phone || '').trim(),
                 destination: (b.destination || '').trim(),
                 rentalPurpose: (b.rental_purpose || '').trim()
             };
@@ -22280,6 +22344,9 @@ function toggleNewsletterModal(show = true) {
         cancelSaUnsavedPrompt() {
             const unsavedModal = document.getElementById('editSaBookingUnsavedModal');
             if (unsavedModal) unsavedModal.style.display = 'none';
+            // Explicitly ensure the Super Admin edit modal remains active and visible
+            const mainModal = document.getElementById('editBookingDetailsSuperAdminModal');
+            if (mainModal) mainModal.style.display = 'flex';
         },
 
         confirmDiscardSaEdit() {
@@ -22324,7 +22391,7 @@ function toggleNewsletterModal(show = true) {
             // Validate Name
             if (!firstName || firstName.length < 2) {
                 if (nameErrEl) {
-                    nameErrEl.textContent = 'Please enter a valid First Name (minimum 2 characters).';
+                    nameErrEl.textContent = 'Please enter a valid First Name (minimum 2 characters, no spaces).';
                     nameErrEl.style.display = 'block';
                 }
                 document.getElementById('saEditFirstName')?.focus();
@@ -22332,7 +22399,7 @@ function toggleNewsletterModal(show = true) {
             }
             if (!lastName || lastName.length < 2) {
                 if (nameErrEl) {
-                    nameErrEl.textContent = 'Please enter a valid Last Name (minimum 2 characters).';
+                    nameErrEl.textContent = 'Please enter a valid Last Name (minimum 2 characters, no spaces).';
                     nameErrEl.style.display = 'block';
                 }
                 document.getElementById('saEditLastName')?.focus();
