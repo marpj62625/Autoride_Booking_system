@@ -8426,6 +8426,53 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
         </div>
     </div>
 
+    <!-- SUPER ADMIN: APPLY NAME/PHONE TO ALL OTHER BOOKINGS CONFIRMATION MODAL -->
+    <div id="editSaSyncAllPromptModal" style="display: none; position: fixed; inset: 0; z-index: 100025; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) Bookings.cancelSaSyncAllPrompt()">
+        <div style="width: 100%; max-width: 500px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); margin: auto;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+                    <i class="fas fa-user-sync"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Update Other Bookings?</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b; line-height: 1.4;">
+                        May iba pang existing booking ang renter na ito sa system.
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 8px;">
+                    May <span id="editSaSyncOtherCount" style="color: #2563eb; font-weight: 800;">0</span> pang ibang booking si <span id="editSaSyncCustomerName" style="color: #0f172a; font-weight: 800;">Customer</span>:
+                </div>
+                <div id="editSaSyncOtherList" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 10px 12px; margin-bottom: 18px; display: flex; gap: 8px; align-items: center;">
+                <i class="fas fa-info-circle" style="color: #d97706; font-size: 0.95rem; flex-shrink: 0;"></i>
+                <div style="font-size: 0.75rem; color: #92400e; line-height: 1.35;">
+                    <b>Pangalan at Phone Number</b> lamang ang ia-apply sa ibang bookings. Ang <b>Destination</b> at <b>Purpose</b> ay mananatiling unique sa bawat booking.
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" onclick="Bookings.confirmSaSyncAll(true)" style="width: 100%; padding: 11px; border-radius: 12px; border: none; background: #00B14F; color: white; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,177,79,0.25);">
+                    <i class="fas fa-check-double"></i> I-apply sa Lahat ng Bookings (<span id="editSaSyncTotalCount">0</span>)
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" onclick="Bookings.confirmSaSyncAll(false)" style="flex: 1; padding: 10px; border-radius: 12px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 700; font-size: 0.82rem; cursor: pointer;">
+                        Itong Booking Lang
+                    </button>
+                    <button type="button" onclick="Bookings.cancelSaSyncAllPrompt()" style="flex: 0 0 90px; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f1f5f9; color: #64748b; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- EDIT / EXTEND BOOKING SCHEDULE MODAL -->
     <div id="editBookingScheduleModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10005; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);" onclick="if(event.target === this) Bookings.handleScheduleBackdropClick();">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-width: 580px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; position: relative;">
@@ -12895,7 +12942,7 @@ input:checked + .ctrl-slider:before {
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
-            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal' || modal.id === 'editBookingDetailsSuperAdminModal' || modal.id === 'editSaBookingUnsavedModal') return;
+            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal' || modal.id === 'editBookingDetailsSuperAdminModal' || modal.id === 'editSaBookingUnsavedModal' || modal.id === 'editSaSyncAllPromptModal') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
@@ -12922,6 +12969,10 @@ input:checked + .ctrl-slider:before {
                 }
                 if (topModal.id === 'sysConfigUnsavedModal') {
                     cancelSysConfigUnsavedPrompt(e);
+                    return;
+                }
+                if (topModal.id === 'editSaSyncAllPromptModal') {
+                    if (typeof Bookings !== 'undefined' && Bookings.cancelSaSyncAllPrompt) Bookings.cancelSaSyncAllPrompt();
                     return;
                 }
                 if (topModal.id === 'editSaBookingUnsavedModal') {
@@ -22224,6 +22275,7 @@ function toggleNewsletterModal(show = true) {
                 firstName: nameParts.first,
                 middleName: nameParts.middle,
                 lastName: nameParts.last,
+                fullName: (b.customer_name || '').trim(),
                 phone: (b.customer_phone || b.phone || '').trim(),
                 destination: (b.destination || '').trim(),
                 rentalPurpose: (b.rental_purpose || '').trim()
@@ -22369,30 +22421,124 @@ function toggleNewsletterModal(show = true) {
 
             const submitBtn = document.getElementById('saEditSubmitBtn');
             const origHtml = submitBtn ? submitBtn.innerHTML : 'Save Changes';
+
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
+            const adminId = user.id || '';
+
+            const payload = {
+                admin_id: adminId,
+                booking_id: bookingId,
+                customer_name: combinedName,
+                customer_phone: customerPhone,
+                destination: destination,
+                rental_purpose: rentalPurpose,
+                reason: reason,
+                apply_to_all: false
+            };
+
+            // Check if Customer Name or Phone Number was modified
+            const origFullName = (this._originalSaEditSnapshot?.fullName || '').trim().toLowerCase();
+            const origPhone = (this._originalSaEditSnapshot?.phone || '').trim();
+            const nameChanged = (combinedName.trim().toLowerCase() !== origFullName);
+            const phoneChanged = (customerPhone.trim() !== origPhone);
+
+            // If name or phone changed, check if customer has other bookings
+            if (nameChanged || phoneChanged) {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking other bookings...';
+                }
+
+                try {
+                    const checkRes = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}/related-bookings?admin_id=${encodeURIComponent(adminId)}`, {
+                        headers: {
+                            'X-Admin-Id': String(adminId)
+                        }
+                    });
+                    const checkData = await checkRes.json();
+
+                    if (checkRes.ok && checkData.count > 0) {
+                        // Customer has other bookings! Prompt Super Admin first
+                        this._pendingSaEditPayload = payload;
+                        this._pendingRelatedBookings = checkData.bookings || [];
+
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = origHtml;
+                        }
+
+                        const promptModal = document.getElementById('editSaSyncAllPromptModal');
+                        const countEl = document.getElementById('editSaSyncOtherCount');
+                        const totalCountEl = document.getElementById('editSaSyncTotalCount');
+                        const custNameEl = document.getElementById('editSaSyncCustomerName');
+                        const listEl = document.getElementById('editSaSyncOtherList');
+
+                        if (countEl) countEl.textContent = checkData.count;
+                        if (totalCountEl) totalCountEl.textContent = checkData.count + 1;
+                        if (custNameEl) custNameEl.textContent = this._originalSaEditSnapshot?.fullName || combinedName;
+
+                        if (listEl) {
+                            listEl.innerHTML = (checkData.bookings || []).map(b => `
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.78rem;">
+                                    <div>
+                                        <span style="font-weight: 800; color: #0f172a;">Booking #${b.id}</span>
+                                        <span style="color: #64748b; margin-left: 6px;">${b.car}</span>
+                                        <div style="color: #94a3b8; font-size: 0.7rem; margin-top: 1px;">Dates: ${b.start_date} to ${b.end_date}</div>
+                                    </div>
+                                    <span style="font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: #e0f2fe; color: #0369a1; text-transform: uppercase;">
+                                        ${b.status}
+                                    </span>
+                                </div>
+                            `).join('');
+                        }
+
+                        if (promptModal) promptModal.style.display = 'flex';
+                        return;
+                    }
+                } catch (chkErr) {
+                    console.warn('Error checking related bookings, proceeding with single booking edit:', chkErr);
+                }
+            }
+
+            // Save single booking directly
+            await this.executeSaEditSave(payload, submitBtn, origHtml);
+        },
+
+        confirmSaSyncAll(applyToAll) {
+            this.cancelSaSyncAllPrompt();
+            if (!this._pendingSaEditPayload) return;
+            const payload = { ...this._pendingSaEditPayload, apply_to_all: !!applyToAll };
+            const submitBtn = document.getElementById('saEditSubmitBtn');
+            const origHtml = submitBtn ? submitBtn.innerHTML : 'Save Changes';
+            this.executeSaEditSave(payload, submitBtn, origHtml);
+        },
+
+        cancelSaSyncAllPrompt() {
+            const promptModal = document.getElementById('editSaSyncAllPromptModal');
+            if (promptModal) promptModal.style.display = 'none';
+            const submitBtn = document.getElementById('saEditSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+            }
+            const mainModal = document.getElementById('editBookingDetailsSuperAdminModal');
+            if (mainModal) mainModal.style.display = 'flex';
+        },
+
+        async executeSaEditSave(payload, submitBtn, origHtml) {
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             }
-
-            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
-            const adminId = user.id || '';
 
             try {
                 const res = await fetch(`${API_BASE}/api/admin/bookings/edit-details`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Admin-Id': String(adminId)
+                        'X-Admin-Id': String(payload.admin_id)
                     },
-                    body: JSON.stringify({
-                        admin_id: adminId,
-                        booking_id: bookingId,
-                        customer_name: combinedName,
-                        customer_phone: customerPhone,
-                        destination: destination,
-                        rental_purpose: rentalPurpose,
-                        reason: reason
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
@@ -22400,27 +22546,40 @@ function toggleNewsletterModal(show = true) {
                     throw new Error(data.error || 'Failed to update booking details');
                 }
 
-                // Update local memory
-                const b = (this.data || []).find(x => String(x.id) === String(bookingId));
+                // Update local memory for edited booking
+                const b = (this.data || []).find(x => String(x.id) === String(payload.booking_id));
                 if (b) {
-                    b.customer_name = combinedName;
-                    b.customer_phone = customerPhone;
-                    b.destination = destination;
-                    b.rental_purpose = rentalPurpose;
+                    b.customer_name = payload.customer_name;
+                    b.customer_phone = payload.customer_phone;
+                    b.destination = payload.destination;
+                    b.rental_purpose = payload.rental_purpose;
                 }
 
-                showNotification('Booking details updated successfully!', 'success');
+                // If synced to other bookings, update them in memory too
+                if (data.synced_booking_ids && data.synced_booking_ids.length > 0) {
+                    const syncedSet = new Set(data.synced_booking_ids.map(String));
+                    (this.data || []).forEach(item => {
+                        if (syncedSet.has(String(item.id))) {
+                            item.customer_name = payload.customer_name;
+                            item.customer_phone = payload.customer_phone;
+                        }
+                    });
+                }
+
+                showNotification(data.message || 'Booking details updated successfully!', 'success');
                 this.closeSuperAdminEditModal(true);
 
                 // Re-render table and details modal if still open
                 this.render();
                 if (document.getElementById('bookingDetailsModal') && document.getElementById('bookingDetailsModal').style.display !== 'none') {
-                    this.view(bookingId);
+                    this.view(payload.booking_id);
                 }
             } catch (err) {
                 console.error('Super Admin edit booking error:', err);
                 showNotification(err.message || 'Error updating booking', 'error');
             } finally {
+                this._pendingSaEditPayload = null;
+                this._pendingRelatedBookings = null;
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = origHtml;

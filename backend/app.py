@@ -8673,6 +8673,90 @@ def mark_booking_paid(booking_id):
 
 
 
+@app.route('/admin/bookings/<int:booking_id>/related-bookings', methods=['GET'])
+@app.route('/api/admin/bookings/<int:booking_id>/related-bookings', methods=['GET'])
+@app.route('/api/admin/bookings/related-bookings', methods=['GET'])
+def get_related_customer_bookings(booking_id=None):
+    """
+    Returns other bookings for the same customer (by user_id or customer_name/phone).
+    Used to prompt Super Admin whether to sync Name/Phone to all bookings.
+    """
+    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    if not is_authorized:
+        return err_resp
+
+    b_id = booking_id or request.args.get('booking_id')
+    if not b_id:
+        return jsonify({"error": "Booking ID is required"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, user_id, customer_name, customer_phone FROM bookings WHERE id = %s", (b_id,))
+        bk = cur.fetchone()
+        if not bk:
+            return jsonify({"error": "Booking not found"}), 404
+
+        orig_uid = bk.get('user_id')
+        orig_cname = (bk.get('customer_name') or '').strip()
+        orig_cphone = (bk.get('customer_phone') or '').strip()
+
+        rows = []
+        if orig_uid:
+            cur.execute("""
+                SELECT b.id, b.start_date, b.end_date, b.status, v.brand, v.model, v.plate_number
+                FROM bookings b
+                LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE b.user_id = %s AND b.id != %s
+                ORDER BY b.id DESC
+            """, (orig_uid, b_id))
+            rows = cur.fetchall() or []
+        elif orig_cname:
+            if orig_cphone:
+                cur.execute("""
+                    SELECT b.id, b.start_date, b.end_date, b.status, v.brand, v.model, v.plate_number
+                    FROM bookings b
+                    LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                    WHERE b.id != %s AND (
+                        LOWER(TRIM(b.customer_name)) = LOWER(TRIM(%s))
+                        OR (b.customer_phone IS NOT NULL AND b.customer_phone != '' AND b.customer_phone = %s)
+                    )
+                    ORDER BY b.id DESC
+                """, (b_id, orig_cname, orig_cphone))
+            else:
+                cur.execute("""
+                    SELECT b.id, b.start_date, b.end_date, b.status, v.brand, v.model, v.plate_number
+                    FROM bookings b
+                    LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                    WHERE b.id != %s AND LOWER(TRIM(b.customer_name)) = LOWER(TRIM(%s))
+                    ORDER BY b.id DESC
+                """, (b_id, orig_cname))
+            rows = cur.fetchall() or []
+
+        results = []
+        for r in rows:
+            car_label = f"{r.get('brand') or ''} {r.get('model') or ''}".strip()
+            if r.get('plate_number'):
+                car_label += f" ({r['plate_number']})"
+            results.append({
+                "id": r['id'],
+                "car": car_label or 'Vehicle N/A',
+                "start_date": str(r.get('start_date') or ''),
+                "end_date": str(r.get('end_date') or ''),
+                "status": r.get('status') or 'Unknown'
+            })
+
+        return jsonify({
+            "count": len(results),
+            "customer_name": bk.get('customer_name') or '',
+            "bookings": results
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/admin/bookings/<int:booking_id>/edit-details', methods=['POST', 'PUT'])
 @app.route('/api/admin/bookings/<int:booking_id>/edit-details', methods=['POST', 'PUT'])
 @app.route('/api/admin/bookings/edit-details', methods=['POST', 'PUT'])
@@ -8758,6 +8842,45 @@ def edit_booking_details_super_admin(booking_id=None):
             WHERE id = %s
         """, (customer_name, customer_phone, destination or None, rental_purpose or None, b_id))
 
+        # Check if user requested to apply Name and Phone to other bookings of the same customer
+        apply_to_all = bool(data.get('apply_to_all'))
+        synced_other_ids = []
+        if apply_to_all and (bk['customer_name'] != customer_name or (bk.get('customer_phone') or '') != customer_phone):
+            orig_uid = bk.get('user_id')
+            orig_cname = (bk.get('customer_name') or '').strip()
+            orig_cphone = (bk.get('customer_phone') or '').strip()
+
+            other_rows = []
+            if orig_uid:
+                cur.execute("SELECT id FROM bookings WHERE user_id = %s AND id != %s", (orig_uid, b_id))
+                other_rows = cur.fetchall() or []
+            elif orig_cname:
+                if orig_cphone:
+                    cur.execute("""
+                        SELECT id FROM bookings
+                        WHERE id != %s AND (
+                            LOWER(TRIM(customer_name)) = LOWER(TRIM(%s))
+                            OR (customer_phone IS NOT NULL AND customer_phone != '' AND customer_phone = %s)
+                        )
+                    """, (b_id, orig_cname, orig_cphone))
+                else:
+                    cur.execute("""
+                        SELECT id FROM bookings
+                        WHERE id != %s AND LOWER(TRIM(customer_name)) = LOWER(TRIM(%s))
+                    """, (b_id, orig_cname))
+                other_rows = cur.fetchall() or []
+
+            other_ids = [r['id'] for r in other_rows]
+            if other_ids:
+                cur.execute("""
+                    UPDATE bookings
+                    SET customer_name = %s,
+                        customer_phone = %s
+                    WHERE id = ANY(%s)
+                """, (customer_name, customer_phone, other_ids))
+                synced_other_ids = other_ids
+                changes.append(f"Synced Name and Phone to {len(other_ids)} other booking(s): #{', #'.join(map(str, other_ids))}")
+
         # Sync linked user account if present
         if bk.get('user_id'):
             try:
@@ -8798,12 +8921,13 @@ def edit_booking_details_super_admin(booking_id=None):
 
         return jsonify({
             "success": True,
-            "message": "Booking details successfully updated by Super Admin.",
+            "message": f"Booking details successfully updated by Super Admin.{f' Synced Name and Phone to {len(synced_other_ids)} other booking(s).' if synced_other_ids else ''}",
             "booking_id": b_id,
             "customer_name": customer_name,
             "customer_phone": customer_phone,
             "destination": destination,
             "rental_purpose": rental_purpose,
+            "synced_booking_ids": synced_other_ids,
             "changes": changes
         }), 200
     except Exception as e:
