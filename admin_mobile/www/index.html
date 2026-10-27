@@ -22343,7 +22343,7 @@ function toggleNewsletterModal(show = true) {
             }
 
             try {
-                const res = await fetch(`${API_BASE}/api/admin/bookings/edit-details`, {
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${encodeURIComponent(payload.booking_id)}/edit-details`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
