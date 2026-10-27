@@ -8703,10 +8703,25 @@ def edit_booking_details_super_admin(booking_id=None):
     rental_purpose = str(data.get('rental_purpose') or '').strip()
     reason = str(data.get('reason') or '').strip()
 
-    if not customer_name:
-        return jsonify({"error": "Customer name cannot be empty"}), 400
-    if not customer_phone:
-        return jsonify({"error": "Customer phone number cannot be empty"}), 400
+    if not customer_name or len(customer_name) < 2:
+        return jsonify({"error": "Customer name must be at least 2 characters long."}), 400
+    if len(customer_name) > 120:
+        return jsonify({"error": "Customer name cannot exceed 120 characters."}), 400
+
+    # Sanitize and validate Philippine mobile phone number strictly
+    clean_phone = re.sub(r'[\s\-\(\)]', '', customer_phone)
+    if not re.match(r'^(\+639\d{9}|09\d{9})$', clean_phone):
+        return jsonify({
+            "error": "Invalid phone number format. Must be an 11-digit Philippine mobile number starting with 09 (e.g., 09171234567) or +639XXXXXXXXX."
+        }), 400
+    customer_phone = clean_phone
+
+    if len(destination) > 150:
+        return jsonify({"error": "Destination cannot exceed 150 characters."}), 400
+    if len(rental_purpose) > 150:
+        return jsonify({"error": "Rental purpose cannot exceed 150 characters."}), 400
+    if len(reason) > 200:
+        return jsonify({"error": "Update reason cannot exceed 200 characters."}), 400
 
     try:
         cur = get_cursor()
