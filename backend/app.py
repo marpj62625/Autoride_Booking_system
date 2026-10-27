@@ -269,7 +269,7 @@ def check_approaching_return_deadlines():
             FROM bookings b
             LEFT JOIN users u ON b.user_id = u.id
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            WHERE b.status IN ('Picked Up', 'Ongoing', 'Confirmed', 'Approved')
+            WHERE b.status IN ('Picked Up', 'Ongoing')
               AND b.end_date IS NOT NULL
         """)
         active_bookings = cur.fetchall() or []
@@ -290,6 +290,9 @@ def check_approaching_return_deadlines():
         ns = Notification_Service()
 
         for bk in active_bookings:
+            # Strictly guard: Vehicle MUST be released (Picked Up/Ongoing) before return deadlines or late return penalties apply!
+            if (bk.get('status') or '').lower() not in ('picked up', 'ongoing'):
+                continue
             b_id = bk['id']
             u_id = bk['user_id']
             veh_name = bk['vehicle_name']
