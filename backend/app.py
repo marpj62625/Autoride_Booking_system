@@ -8668,6 +8668,136 @@ def mark_booking_paid(booking_id):
 
 
 
+
+
+@app.route('/admin/bookings/<int:booking_id>/edit-details', methods=['POST', 'PUT'])
+@app.route('/api/admin/bookings/<int:booking_id>/edit-details', methods=['POST', 'PUT'])
+@app.route('/api/admin/bookings/edit-details', methods=['POST', 'PUT'])
+def edit_booking_details_super_admin(booking_id=None):
+    """
+    Super Admin exclusive endpoint to modify customer information and booking details.
+    Allows updating:
+    - customer_name
+    - customer_phone
+    - destination
+    - rental_purpose
+    - reason (for audit log)
+    Also synchronizes with users table if booking is linked to a customer user account.
+    """
+    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    if not is_authorized:
+        return err_resp
+
+    data = request.get_json(silent=True) or {}
+    b_id = booking_id or data.get('booking_id')
+    if not b_id:
+        return jsonify({"error": "Booking ID is required"}), 400
+
+    admin_id = (
+        data.get('admin_id') or data.get('requester_id') or
+        request.args.get('admin_id') or request.headers.get('X-Admin-Id')
+    )
+    customer_name = str(data.get('customer_name') or '').strip()
+    customer_phone = str(data.get('customer_phone') or '').strip()
+    destination = str(data.get('destination') or '').strip()
+    rental_purpose = str(data.get('rental_purpose') or '').strip()
+    reason = str(data.get('reason') or '').strip()
+
+    if not customer_name:
+        return jsonify({"error": "Customer name cannot be empty"}), 400
+    if not customer_phone:
+        return jsonify({"error": "Customer phone number cannot be empty"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, user_id, customer_name, customer_phone, destination, rental_purpose, status
+            FROM bookings
+            WHERE id = %s
+        """, (b_id,))
+        bk = cur.fetchone()
+        if not bk:
+            return jsonify({"error": "Booking not found"}), 404
+
+        # Track changes for audit log
+        changes = []
+        if bk['customer_name'] != customer_name:
+            changes.append(f"Customer Name: '{bk['customer_name']}' -> '{customer_name}'")
+        if (bk['customer_phone'] or '') != customer_phone:
+            changes.append(f"Phone: '{bk['customer_phone'] or 'N/A'}' -> '{customer_phone}'")
+        if (bk.get('destination') or '') != destination:
+            changes.append(f"Destination: '{bk.get('destination') or 'None'}' -> '{destination}'")
+        if (bk.get('rental_purpose') or '') != rental_purpose:
+            changes.append(f"Purpose: '{bk.get('rental_purpose') or 'None'}' -> '{rental_purpose}'")
+
+        # Update bookings record
+        cur.execute("""
+            UPDATE bookings
+            SET customer_name = %s,
+                customer_phone = %s,
+                destination = %s,
+                rental_purpose = %s
+            WHERE id = %s
+        """, (customer_name, customer_phone, destination or None, rental_purpose or None, b_id))
+
+        # Sync linked user account if present
+        if bk.get('user_id'):
+            try:
+                cur.execute("""
+                    UPDATE users
+                    SET full_name = COALESCE(NULLIF(%s, ''), full_name),
+                        phone_number = COALESCE(NULLIF(%s, ''), phone_number)
+                    WHERE id = %s AND role IN ('customer', 'renter')
+                """, (customer_name, customer_phone, bk['user_id']))
+            except Exception as ue:
+                print(f"Warning: Failed to sync linked user profile #{bk['user_id']}: {ue}")
+
+        commit_db()
+
+        # Audit log entry
+        admin_name = "Super Admin"
+        if admin_id:
+            try:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (admin_id,))
+                a_row = cur.fetchone()
+                if a_row and a_row.get('full_name'):
+                    admin_name = a_row['full_name']
+            except Exception:
+                pass
+
+        change_summary = "; ".join(changes) if changes else "No field changes detected"
+        if reason:
+            change_summary += f" | Note: {reason}"
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action=f"Edited Booking Details #{b_id}",
+            target_type="booking",
+            target_id=b_id,
+            details=change_summary
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Booking details successfully updated by Super Admin.",
+            "booking_id": b_id,
+            "customer_name": customer_name,
+            "customer_phone": customer_phone,
+            "destination": destination,
+            "rental_purpose": rental_purpose,
+            "changes": changes
+        }), 200
+    except Exception as e:
+        if 'cur' in locals():
+            try: get_db().rollback()
+            except Exception: pass
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
 @app.route('/admin/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
 @app.route('/api/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
