@@ -8205,7 +8205,7 @@
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px;">
                     <div style="font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
                         <span style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-id-card" style="color: #4f46e5;"></i> Customer Name Breakdown <span style="color: #ef4444;">*</span></span>
-                        <span style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(Bawal ang space)</span>
+                        <span style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(No spaces allowed)</span>
                     </div>
                     <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; gap: 8px;">
                         <div>
@@ -8303,7 +8303,7 @@
                 <div style="flex: 1;">
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Unsaved Changes</h3>
                     <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b; line-height: 1.4;">
-                        May mga binago ka sa detalye ng customer. Nais mo bang i-discard ang mga pagbabago o ipagpatuloy ang pag-edit?
+                        You have unsaved changes to the customer details. Do you want to discard your changes or keep editing?
                     </p>
                 </div>
             </div>
@@ -8340,14 +8340,14 @@
                 <div style="flex: 1;">
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Update Other Bookings?</h3>
                     <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b; line-height: 1.4;">
-                        May iba pang existing booking ang renter na ito sa system.
+                        This renter has other existing bookings in the system.
                     </p>
                 </div>
             </div>
 
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 14px;">
                 <div style="font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 8px;">
-                    May <span id="editSaSyncOtherCount" style="color: #2563eb; font-weight: 800;">0</span> pang ibang booking si <span id="editSaSyncCustomerName" style="color: #0f172a; font-weight: 800;">Customer</span>:
+                    Found <span id="editSaSyncOtherCount" style="color: #2563eb; font-weight: 800;">0</span> other booking(s) for <span id="editSaSyncCustomerName" style="color: #0f172a; font-weight: 800;">Customer</span>:
                 </div>
                 <div id="editSaSyncOtherList" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
                     <!-- Dynamically populated -->
@@ -8357,17 +8357,17 @@
             <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; padding: 10px 12px; margin-bottom: 18px; display: flex; gap: 8px; align-items: center;">
                 <i class="fas fa-info-circle" style="color: #d97706; font-size: 0.95rem; flex-shrink: 0;"></i>
                 <div style="font-size: 0.75rem; color: #92400e; line-height: 1.35;">
-                    <b>Pangalan at Phone Number</b> lamang ang ia-apply sa ibang bookings. Ang <b>Destination</b> at <b>Purpose</b> ay mananatiling unique sa bawat booking.
+                    <b>Name and Phone Number</b> only will be applied to other bookings. <b>Destination</b> and <b>Purpose</b> will remain unique to each booking.
                 </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button type="button" onclick="Bookings.confirmSaSyncAll(true)" style="width: 100%; padding: 11px; border-radius: 12px; border: none; background: #00B14F; color: white; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,177,79,0.25);">
-                    <i class="fas fa-check-double"></i> I-apply sa Lahat ng Bookings (<span id="editSaSyncTotalCount">0</span>)
+                    <i class="fas fa-check-double"></i> Apply to All Bookings (<span id="editSaSyncTotalCount">0</span>)
                 </button>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" onclick="Bookings.confirmSaSyncAll(false)" style="flex: 1; padding: 10px; border-radius: 12px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155; font-weight: 700; font-size: 0.82rem; cursor: pointer;">
-                        Itong Booking Lang
+                        This Booking Only
                     </button>
                     <button type="button" onclick="Bookings.cancelSaSyncAllPrompt()" style="flex: 0 0 90px; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f1f5f9; color: #64748b; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
                         Cancel
@@ -8521,7 +8521,7 @@
                 <div style="flex: 1;">
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main, #0f172a);">Unsaved Schedule Changes</h3>
                     <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted, #64748b);">
-                        May mga binago ka sa schedule ng booking na ito. Nais mo bang i-discard ang mga binago o ipagpatuloy ang pag-edit?
+                        You have unsaved changes to this booking schedule. Do you want to discard your changes or keep editing?
                     </p>
                 </div>
             </div>
@@ -8996,7 +8996,7 @@ input:checked + .ctrl-slider:before {
                 <div style="flex: 1;">
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main, #0f172a);">Unsaved Changes Detected</h3>
                     <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted, #64748b);">
-                        May mga nabago kang settings. Nais mo ba itong i-save bago isara ang card?
+                        You have modified settings. Do you want to save before closing?
                     </p>
                 </div>
             </div>
