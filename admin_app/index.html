@@ -8059,7 +8059,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
                                 <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
-                                <input type="time" id="walkinStartTime" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinStartTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             </div>
                         </div>
@@ -8073,7 +8073,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
                                 <input type="date" id="walkinEndDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
-                                <input type="time" id="walkinEndTime" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinEndTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             </div>
                         </div>
@@ -8202,7 +8202,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     <button type="button" onclick="WalkinBooking.submit(event)" id="walkinSubmitBtn" 
                             style="padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); color: white; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);">
                         <i class="fas fa-check-circle"></i>
-                        <span>Confirm Walk-in Booking</span>
+                        <span>Confirm Booking</span>
                     </button>
                 </div>
 
@@ -36880,8 +36880,10 @@ function toggleNewsletterModal(show = true) {
             this.selectedCustomer = null;
             this.setMode('guest');
 
-            // Default dates: today start time now
+            // Default dates: today start time now (snapped to 15-min interval)
             const now = new Date();
+            const m = now.getMinutes();
+            now.setMinutes(Math.round(m / 15) * 15, 0, 0);
             const todayStr = this.formatDate(now);
             const timeStr = this.formatTime(now);
 
@@ -36979,7 +36981,11 @@ function toggleNewsletterModal(show = true) {
             const startD = document.getElementById('walkinStartDate');
             const startT = document.getElementById('walkinStartTime');
             if (startD) startD.value = this.formatDate(now);
-            if (startT) startT.value = this.formatTime(now);
+            if (startT) {
+                const m = now.getMinutes();
+                now.setMinutes(Math.round(m / 15) * 15, 0, 0);
+                startT.value = this.formatTime(now);
+            }
             this.recalculate();
         },
 
@@ -37020,6 +37026,26 @@ function toggleNewsletterModal(show = true) {
                 }
 
                 this.vehicles = Array.isArray(list) ? list : (list.vehicles || []);
+
+                // Align vehicle ordering with Fleet Calendar order
+                if (window.FleetCalendar) {
+                    if (!window.FleetCalendar.vehicles || window.FleetCalendar.vehicles.length === 0) {
+                        window.FleetCalendar.vehicles = this.vehicles;
+                    }
+                    if (typeof window.FleetCalendar.getOrderedVehicles === 'function') {
+                        const calendarOrder = window.FleetCalendar.getOrderedVehicles();
+                        if (Array.isArray(calendarOrder) && calendarOrder.length > 0) {
+                            const orderMap = new Map();
+                            calendarOrder.forEach((v, index) => orderMap.set(Number(v.id), index));
+                            this.vehicles.sort((a, b) => {
+                                const idxA = orderMap.has(Number(a.id)) ? orderMap.get(Number(a.id)) : 99999;
+                                const idxB = orderMap.has(Number(b.id)) ? orderMap.get(Number(b.id)) : 99999;
+                                return idxA - idxB;
+                            });
+                        }
+                    }
+                }
+
                 if (warnEl) warnEl.style.display = 'none';
 
                 if (!sel) return;
@@ -37057,7 +37083,10 @@ function toggleNewsletterModal(show = true) {
                     if (warnText) warnText.textContent = 'Could not load vehicle units: ' + (err.message || 'Network disconnected');
                 }
                 if (window.FleetCalendar && Array.isArray(window.FleetCalendar.vehicles) && window.FleetCalendar.vehicles.length > 0) {
-                    this.vehicles = window.FleetCalendar.vehicles;
+                    const fallbackVehicles = (typeof window.FleetCalendar.getOrderedVehicles === 'function')
+                        ? window.FleetCalendar.getOrderedVehicles()
+                        : window.FleetCalendar.vehicles;
+                    this.vehicles = [...fallbackVehicles];
                     if (sel) {
                         sel.innerHTML = '<option value="">Select an available vehicle...</option>';
                         this.vehicles.forEach(v => {
