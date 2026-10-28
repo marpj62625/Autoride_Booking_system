@@ -18966,14 +18966,27 @@ input:checked + .ctrl-slider:before {
             const sTime = b.start_time || '06:00';
             const eTime = b.end_time || '06:00';
 
+            const v = (this.vehicles || []).find(x => x.id == b.vehicle_id);
+            let dispatchBranch = b.dispatch_branch || b.pickup_location || b.branch || (v && v.location) || 'SAN PABLO';
+            if (dispatchBranch.toLowerCase().includes('san pablo')) {
+                dispatchBranch = 'SAN PABLO';
+            } else if (dispatchBranch.toLowerCase().includes('tanauan') || dispatchBranch.toLowerCase().includes('tomas')) {
+                dispatchBranch = 'TANAUAN';
+            } else if (dispatchBranch.toLowerCase().includes('calamba')) {
+                dispatchBranch = 'CALAMBA';
+            } else if (dispatchBranch.includes(',')) {
+                dispatchBranch = dispatchBranch.split(',')[0].trim().toUpperCase();
+            } else {
+                dispatchBranch = dispatchBranch.trim().toUpperCase();
+            }
+
             tip.innerHTML = `
                 <div style="background:#ffffe1;color:#000000;padding:12px 14px;border:1.5px solid #222222;box-shadow:3px 3px 10px rgba(0,0,0,0.35);font-family:Arial, Helvetica, sans-serif;font-size:0.75rem;line-height:1.45;min-width:240px;max-width:320px;">
                     <div style="font-weight:bold;margin-bottom:6px;border-bottom:1px dashed #555;padding-bottom:5px;">
-                        ${rate >= 1000 ? (rate / 1000) + 'k' : '₱' + rate.toLocaleString()}<br>
-                        ${dp > 0 ? `-${dp.toLocaleString()}<br>` : '0 DP<br>'}
-                        ${bal.toLocaleString()} balance<br>
-                        ${fee > 0 ? `${fee.toLocaleString()} ${feePct}%<br>` : ''}
-                        Total ${totalWithFee.toLocaleString()}
+                        Total: ${totalWithFee.toLocaleString()}<br>
+                        Paid: ${dp.toLocaleString()}<br>
+                        Balance: ${bal.toLocaleString()}<br>
+                        Dispatch Branch: ${dispatchBranch}
                     </div>
                     <div>
                         <b>Name:</b> ${b.customer_name || 'Customer'}<br>
