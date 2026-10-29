@@ -7958,8 +7958,8 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
-                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="color:#ef4444;">*</span></label>
-                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11); WalkinBooking.validateEmergencyPhone();"
+                            <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">(Optional)</span></label>
+                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11); WalkinBooking.validateEmergencyPhone();"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -8057,7 +8057,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                                 </button>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                                <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
+                                <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate(); WalkinBooking.syncInitialStatus();"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                                 <input type="time" id="walkinStartTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
@@ -11295,6 +11295,9 @@ input:checked + .ctrl-slider:before {
 
 
                 <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.8);">Documenting vehicle condition</p>
+                <div style="margin-top: 8px; font-size: 0.72rem; color: rgba(255,255,255,0.92); background: rgba(0,0,0,0.22); padding: 7px 12px; border-radius: 8px; line-height: 1.4;">
+                    <i class="fas fa-shield-alt" style="margin-right: 5px; color: #4ade80;"></i> Records odometer, fuel level, and scratch photos before releasing the vehicle to protect against condition disputes upon return.
+                </div>
 
 
 
@@ -21871,6 +21874,11 @@ function toggleNewsletterModal(show = true) {
 
             // Confirmed / Approved: Pickup Inspect & No Show
             if (st === 'confirmed' || st === 'approved') {
+                buttons.push(`
+                    <button onclick="Bookings.pickup(${b.id})" class="booking-action-btn" style="background: #00B14F; color: white; font-weight: 800;">
+                        <i class="fas fa-key"></i> Hand Over Key
+                    </button>
+                `);
                 const act = Bookings.getPickupInspectAction(b);
                 buttons.push(`
                     <button onclick="${act.onClick}" class="booking-action-btn" style="background: ${act.active ? 'var(--amber, #f59e0b)' : '#94a3b8'}; color: white; cursor: ${act.active ? 'pointer' : 'not-allowed'}; opacity: ${act.active ? '1' : '0.6'};">
@@ -23251,6 +23259,7 @@ function toggleNewsletterModal(show = true) {
                 actionBtns += `<button onclick="Bookings.reject(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-times"></i>Reject</button>`;
             }
             if (st === 'confirmed' || st === 'approved') {
+                actionBtns += `<button type="button" onclick="Bookings.pickup(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,177,79,0.35);"><i class="fas fa-key"></i>Hand Over Key</button>`;
                 const act = Bookings.getPickupInspectAction(b);
                 actionBtns += `<button onclick="${act.onClick}" style="flex:1;min-width:120px;padding:11px 10px;background:${act.active ? '#f59e0b' : '#94a3b8'};color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:${act.active ? 'pointer' : 'not-allowed'};opacity:${act.active ? '1' : '0.6'};display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
                 if (Bookings.isPickupPast(b)) {
@@ -28901,9 +28910,20 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            const active = (allBookings || []).filter(b =>
-                b.status === 'Picked Up' || b.status === 'Ongoing'
-            );
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+            const active = (allBookings || []).filter(b => {
+                const st = (b.status || '').toLowerCase().trim();
+                if (st === 'picked up' || st === 'ongoing' || st === 'active') return true;
+                // Auto-include confirmed/approved bookings whose scheduled rental covers today
+                if (st === 'confirmed' || st === 'approved') {
+                    const sD = (b.start_date || '').split('T')[0];
+                    const eD = (b.end_date || '').split('T')[0];
+                    if (sD && eD && sD <= todayStr && eD >= todayStr) return true;
+                }
+                return false;
+            });
 
             // Prioritize due returns (closest return date & time first)
             active.sort((a, b) => {
@@ -29081,7 +29101,10 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <span style="background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ONGOING</span>
+                        ${(['picked up','ongoing','active'].includes((b.status||'').toLowerCase().trim())) ?
+                            `<span style="background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ONGOING</span>` :
+                            `<span style="background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid rgba(59,130,246,0.3);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">SCHEDULED / DUE TODAY</span>`
+                        }
 
 
 
@@ -29226,34 +29249,18 @@ function toggleNewsletterModal(show = true) {
 
 
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-
-
-
                         <button onclick="Bookings.view(${b.id})" style="padding:9px 8px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
-
-
-
                             <i class="fas fa-eye" style="margin-right:4px;"></i>View Details
-
-
-
                         </button>
-
-
-
                         <button onclick="AdminChatWithUser(${b.id})" style="padding:9px 8px;background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
-
-
-
                             <i class="fas fa-comments" style="margin-right:4px;"></i>Chat
-
-
-
                         </button>
-
-
-
                     </div>
+                    ${(!['picked up','ongoing','active'].includes((b.status||'').toLowerCase().trim())) ? `
+                    <button onclick="Bookings.pickup(${b.id})" style="width:100%;margin-top:8px;padding:10px 12px;background:#00B14F;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(0,177,79,0.35);">
+                        <i class="fas fa-key"></i> Hand Over Key (Mark Ongoing)
+                    </button>
+                    ` : ''}
 
 
 
@@ -36832,6 +36839,18 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
+        syncInitialStatus() {
+            const startD = document.getElementById('walkinStartDate')?.value;
+            const statusEl = document.getElementById('walkinBookingStatus');
+            if (!statusEl || !startD) return;
+            const todayStr = this.formatDate(new Date());
+            if (startD <= todayStr) {
+                statusEl.value = 'Picked Up';
+            } else {
+                statusEl.value = 'Confirmed';
+            }
+        },
+
         validateEmergencyPhone() {
             const custP = (document.getElementById('walkinCustPhone')?.value || '').trim();
             const emergP = (document.getElementById('walkinEmergPhone')?.value || '').trim();
@@ -36907,6 +36926,7 @@ function toggleNewsletterModal(show = true) {
 
             modal.style.display = 'flex';
             if (typeof modalOpen === 'function') modalOpen();
+            this.syncInitialStatus();
 
             // Load vehicles & customers in background
             await Promise.all([
@@ -36951,7 +36971,7 @@ function toggleNewsletterModal(show = true) {
 
                 if (fNameInput) fNameInput.required = true;
                 if (lNameInput) lNameInput.required = true;
-                if (phoneInput) phoneInput.required = true;
+                if (phoneInput) phoneInput.required = false;
                 if (nameInput) nameInput.required = false;
                 const uid = document.getElementById('walkinCustUserId');
                 if (uid) uid.value = '';
@@ -37434,12 +37454,6 @@ function toggleNewsletterModal(show = true) {
                         return;
                     }
 
-                    if (!custPhone) {
-                        this.showError('Customer Phone Number is required.');
-                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
-                        return;
-                    }
-
                     if (emergPhone && custPhone && emergPhone === custPhone) {
                         this.validateEmergencyPhone();
                         this.showError('Emergency phone number cannot be the same as customer phone number.');
@@ -37447,8 +37461,8 @@ function toggleNewsletterModal(show = true) {
                         return;
                     }
 
-                    if (!custName || !custPhone) {
-                        this.showError('Please fill in customer name and contact details.');
+                    if (!custName) {
+                        this.showError('Please fill in customer name.');
                         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                         return;
                     }
