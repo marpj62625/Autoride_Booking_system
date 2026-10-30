@@ -37083,7 +37083,7 @@ function toggleNewsletterModal(show = true) {
                 this.vehicles.forEach(v => {
                     const statusStr = (v.status || '').toLowerCase().trim();
                     // Do not hide ongoing or rented vehicles; only exclude decommissioned/sold/inactive
-                    if (['sold', 'inactive', 'disabled'].includes(statusStr)) return;
+                    if (['unavailable', 'maintenance', 'repair', 'service', 'sold', 'inactive', 'disabled'].includes(statusStr)) return;
 
                     addedCount++;
                     const opt = document.createElement('option');
@@ -37102,7 +37102,7 @@ function toggleNewsletterModal(show = true) {
                 if (addedCount === 0 && this.vehicles.length > 0) {
                     this.vehicles.forEach(v => {
                         const statusStr = (v.status || '').toLowerCase().trim();
-                        if (['sold', 'inactive', 'disabled'].includes(statusStr)) return;
+                        if (['unavailable', 'maintenance', 'repair', 'service', 'sold', 'inactive', 'disabled'].includes(statusStr)) return;
                         const opt = document.createElement('option');
                         opt.value = v.id;
                         const isRented = ['rented', 'ongoing', 'picked up'].includes(statusStr);
