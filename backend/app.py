@@ -19146,7 +19146,9 @@ def update_booking_quick_pricing(booking_id):
             return jsonify({"error": "Invalid price or amount values"}), 400
 
         payment_status = data.get('payment_status')
-        if not payment_status:
+        if balance_amount <= 0 and total_price > 0 and amount_paid >= total_price:
+            payment_status = 'Paid'
+        elif not payment_status:
             if balance_amount <= 0 and total_price > 0:
                 payment_status = 'Paid'
             elif amount_paid > 0 and balance_amount > 0:

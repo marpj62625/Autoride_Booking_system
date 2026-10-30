@@ -7836,7 +7836,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Payment Status</label>
-                        <select id="quickPaymentStatus" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
+                        <select id="quickPaymentStatus" onchange="FleetCalendar.onQuickPaymentStatusChange()" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
                             <option value="Paid">Paid</option>
                             <option value="Partially Paid">Partially Paid</option>
                             <option value="Unpaid">Unpaid</option>
@@ -19006,7 +19006,7 @@ input:checked + .ctrl-slider:before {
                         <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
                         <b>Date:</b> ${sDate} to ${eDate}<br>
                         <b>Time:</b> ${sTime} to ${eTime}<br>
-                        <b>Payment Status:</b> <span style="font-weight:800; color:${bal === 0 ? '#16a34a' : '#dc2626'};">${b.payment_status || (bal === 0 ? 'Paid' : 'Unpaid')}</span>
+                        <b>Payment Status:</b> <span style="font-weight:800; color:${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) || String(b.payment_status || '').toLowerCase() === 'paid' ? '#16a34a' : (String(b.payment_status || '').toLowerCase().includes('partial') || (dp > 0 && bal > 0) ? '#d97706' : '#dc2626')};">${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) ? 'Paid' : (b.payment_status || (bal === 0 ? 'Paid' : (dp > 0 ? 'Partially Paid' : 'Unpaid')))}</span>
                     </div>
                 </div>
             `;
@@ -19211,7 +19211,11 @@ input:checked + .ctrl-slider:before {
 
             const statusSelect = document.getElementById('quickPaymentStatus');
             if (statusSelect) {
-                statusSelect.value = b.payment_status || (bal === 0 ? 'Paid' : (amountPaid > 0 ? 'Partially Paid' : 'Unpaid'));
+                if (bal === 0 && totalPrice > 0 && amountPaid >= totalPrice) {
+                    statusSelect.value = 'Paid';
+                } else {
+                    statusSelect.value = b.payment_status || (bal === 0 ? 'Paid' : (amountPaid > 0 ? 'Partially Paid' : 'Unpaid'));
+                }
             }
 
             const methodSelect = document.getElementById('quickPaymentMethod');
@@ -19307,6 +19311,28 @@ input:checked + .ctrl-slider:before {
             }
         },
 
+        onQuickPaymentStatusChange() {
+            const statusSelect = document.getElementById('quickPaymentStatus');
+            const totalInp = document.getElementById('quickTotalPrice');
+            const paidInp = document.getElementById('quickAmountPaid');
+            if (!statusSelect || !totalInp || !paidInp) return;
+
+            const total = Math.min(500000, Math.max(0, parseFloat(totalInp.value || 0)));
+            const currentPaid = parseFloat(paidInp.value || 0);
+            const status = statusSelect.value;
+
+            if (status === 'Paid') {
+                paidInp.value = total;
+            } else if (status === 'Unpaid') {
+                paidInp.value = 0;
+            } else if (status === 'Partially Paid') {
+                if (currentPaid === 0 || currentPaid >= total) {
+                    paidInp.value = Math.round(total / 2);
+                }
+            }
+            this.recalcQuickBalance();
+        },
+
         quickMarkPaid() {
             const totalInp = document.getElementById('quickTotalPrice');
             const total = Math.min(500000, Math.max(0, parseFloat(totalInp?.value || 0)));
@@ -19321,7 +19347,10 @@ input:checked + .ctrl-slider:before {
             const total = Math.min(500000, Math.max(0, parseFloat(document.getElementById('quickTotalPrice')?.value || 0)));
             const paid = Math.min(500000, Math.max(0, parseFloat(document.getElementById('quickAmountPaid')?.value || 0)));
             const bal = Math.max(0, total - paid);
-            const paymentStatus = document.getElementById('quickPaymentStatus')?.value || 'Unpaid';
+            let paymentStatus = document.getElementById('quickPaymentStatus')?.value || 'Unpaid';
+            if (bal === 0 && total > 0 && paid >= total) {
+                paymentStatus = 'Paid';
+            }
             const paymentMethod = document.getElementById('quickPaymentMethod')?.value || 'Cash';
             const applyToCustomer = document.getElementById('quickApplyToCustomer')?.checked ?? true;
 
