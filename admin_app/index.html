@@ -8043,6 +8043,13 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             <i class="fas fa-exclamation-circle"></i> <span id="walkinVehicleLoadWarningText">Vehicles failed to load.</span>
                             <button type="button" onclick="WalkinBooking.loadVehicles()" style="background: none; border: none; color: #2563eb; text-decoration: underline; cursor: pointer; font-weight: 800; font-size: 0.72rem; padding: 0;">Retry</button>
                         </div>
+                        <div id="walkinVehicleConflictWarning" style="display: none; font-size: 0.76rem; color: #92400e; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 8px 12px; margin-top: 6px; align-items: flex-start; gap: 8px; line-height: 1.4;">
+                            <i class="fas fa-exclamation-triangle" style="color: #d97706; font-size: 0.95rem; margin-top: 2px; flex-shrink: 0;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 800; color: #78350f; margin-bottom: 2px;">Schedule Conflict Warning</div>
+                                <div id="walkinVehicleConflictText">This vehicle has an existing rental on the selected dates.</div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Schedule Dates & Times -->
@@ -36868,6 +36875,7 @@ function toggleNewsletterModal(show = true) {
             }
         }, // 'guest' or 'registered'
         vehicles: [],
+        allBookings: [],
         customers: [],
         selectedCustomer: null,
 
@@ -36928,10 +36936,11 @@ function toggleNewsletterModal(show = true) {
             if (typeof modalOpen === 'function') modalOpen();
             this.syncInitialStatus();
 
-            // Load vehicles & customers in background
+            // Load vehicles, customers & active bookings in background
             await Promise.all([
                 this.loadVehicles(preselectedVehicleId),
-                this.loadCustomers()
+                this.loadCustomers(),
+                this.loadBookingsForConflict()
             ]);
 
             this.recalculate();
@@ -37069,29 +37078,36 @@ function toggleNewsletterModal(show = true) {
                 if (warnEl) warnEl.style.display = 'none';
 
                 if (!sel) return;
-                sel.innerHTML = '<option value="">Select an available vehicle...</option>';
-                let availableCount = 0;
+                sel.innerHTML = '<option value="">Select a vehicle unit...</option>';
+                let addedCount = 0;
                 this.vehicles.forEach(v => {
-                    const statusStr = (v.status || 'Available');
-                    const isOperational = (statusStr.toLowerCase() === 'available');
-                    if (isOperational) {
-                        availableCount++;
-                        const opt = document.createElement('option');
-                        opt.value = v.id;
-                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day`;
-                        opt.dataset.rate = v.daily_rate || 0;
-                        if (preselectedId && String(v.id) === String(preselectedId)) {
-                            opt.selected = true;
-                        }
-                        sel.appendChild(opt);
+                    const statusStr = (v.status || '').toLowerCase().trim();
+                    // Do not hide ongoing or rented vehicles; only exclude decommissioned/sold/inactive
+                    if (['sold', 'inactive', 'disabled'].includes(statusStr)) return;
+
+                    addedCount++;
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    const isRented = ['rented', 'ongoing', 'picked up'].includes(statusStr);
+                    const tag = isRented ? ' • (Currently Rented)' : '';
+                    opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day${tag}`;
+                    opt.dataset.rate = v.daily_rate || 0;
+                    opt.dataset.status = v.status || 'Available';
+                    if (preselectedId && String(v.id) === String(preselectedId)) {
+                        opt.selected = true;
                     }
+                    sel.appendChild(opt);
                 });
 
-                if (availableCount === 0 && this.vehicles.length > 0) {
+                if (addedCount === 0 && this.vehicles.length > 0) {
                     this.vehicles.forEach(v => {
+                        const statusStr = (v.status || '').toLowerCase().trim();
+                        if (['sold', 'inactive', 'disabled'].includes(statusStr)) return;
                         const opt = document.createElement('option');
                         opt.value = v.id;
-                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - [${v.status || 'Booked'}]`;
+                        const isRented = ['rented', 'ongoing', 'picked up'].includes(statusStr);
+                        const tag = isRented ? ' • (Currently Rented)' : '';
+                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day${tag}`;
                         opt.dataset.rate = v.daily_rate || 0;
                         sel.appendChild(opt);
                     });
@@ -37131,6 +37147,77 @@ function toggleNewsletterModal(show = true) {
                 }
             } catch (err) {
                 console.warn('Could not preload customers list:', err);
+            }
+        },
+
+        async loadBookingsForConflict() {
+            try {
+                if (typeof Bookings !== 'undefined' && Array.isArray(Bookings.data) && Bookings.data.length > 0) {
+                    this.allBookings = Bookings.data;
+                    return;
+                }
+                if (window.FleetCalendar && Array.isArray(window.FleetCalendar.bookings) && window.FleetCalendar.bookings.length > 0) {
+                    this.allBookings = window.FleetCalendar.bookings;
+                    return;
+                }
+                const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                const adminId = user ? user.id : '';
+                const res = await fetch(`${API_BASE}/api/bookings?admin_id=${adminId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.allBookings = data.bookings || data || [];
+                }
+            } catch (e) {
+                console.warn('Could not load bookings for conflict check:', e);
+            }
+        },
+
+        checkCollision() {
+            const warnEl = document.getElementById('walkinVehicleConflictWarning');
+            const warnText = document.getElementById('walkinVehicleConflictText');
+            const vSel = document.getElementById('walkinVehicleSelect');
+            if (!warnEl || !warnText) return null;
+
+            const vehicleId = vSel?.value;
+            const startD = document.getElementById('walkinStartDate')?.value;
+            const endD = document.getElementById('walkinEndDate')?.value;
+
+            if (!vehicleId || !startD || !endD) {
+                warnEl.style.display = 'none';
+                return null;
+            }
+
+            const bookings = (this.allBookings && this.allBookings.length > 0)
+                ? this.allBookings
+                : ((typeof Bookings !== 'undefined' && Array.isArray(Bookings.data)) ? Bookings.data : []);
+
+            const activeStatuses = ['confirmed', 'approved', 'picked up', 'ongoing'];
+
+            const conflict = bookings.find(b => {
+                const vId = b.vehicle_id || b.car_id;
+                if (!vId || String(vId) !== String(vehicleId)) return false;
+                const st = (b.status || '').toLowerCase().trim();
+                if (!activeStatuses.includes(st)) return false;
+
+                const bStart = (b.start_date || '').split('T')[0];
+                const bEnd = (b.end_date || '').split('T')[0];
+                if (!bStart || !bEnd) return false;
+
+                // Overlap: existing booking start <= new booking end AND existing booking end >= new booking start
+                return (bStart <= endD && bEnd >= startD);
+            });
+
+            if (conflict) {
+                const cName = conflict.customer_name || conflict.renter_name || 'Customer';
+                const cStatus = conflict.status || 'Active';
+                const cStart = (conflict.start_date || '').split('T')[0];
+                const cEnd = (conflict.end_date || '').split('T')[0];
+                warnText.innerHTML = `Unit is already booked from <strong>${cStart}</strong> to <strong>${cEnd}</strong> (${cName} - ${cStatus}). Rental dates will collide!`;
+                warnEl.style.display = 'flex';
+                return conflict;
+            } else {
+                warnEl.style.display = 'none';
+                return null;
             }
         },
 
@@ -37221,6 +37308,7 @@ function toggleNewsletterModal(show = true) {
             const opt = sel.options[sel.selectedIndex];
             const dailyRate = opt ? Number(opt.dataset.rate || 0) : 0;
             this.recalculate(dailyRate);
+            this.checkCollision();
         },
 
         getDays() {
@@ -37266,6 +37354,7 @@ function toggleNewsletterModal(show = true) {
             }
 
             this.recalculateTotal();
+            this.checkCollision();
         },
 
         recalculateTotal() {
@@ -37402,9 +37491,25 @@ function toggleNewsletterModal(show = true) {
                 if (!vehicleId) {
                     const vSel = document.getElementById('walkinVehicleSelect');
                     if (vSel) vSel.style.borderColor = '#ef4444';
-                    this.showError('Please select an available vehicle unit.');
+                    this.showError('Please select a vehicle unit.');
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
                     return;
+                }
+
+                const collision = this.checkCollision();
+                if (collision) {
+                    const cName = collision.customer_name || collision.renter_name || 'Customer';
+                    const cStart = (collision.start_date || '').split('T')[0];
+                    const cEnd = (collision.end_date || '').split('T')[0];
+                    const proceed = confirm(
+                        `⚠️ SCHEDULE COLLISION DETECTED\n\n` +
+                        `This vehicle is already booked from ${cStart} to ${cEnd} (${cName}).\n\n` +
+                        `The dates collide with this reservation. Are you sure you want to attempt saving this booking?`
+                    );
+                    if (!proceed) {
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                        return;
+                    }
                 }
 
                 const startDate = document.getElementById('walkinStartDate')?.value;
