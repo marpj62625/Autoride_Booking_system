@@ -7667,7 +7667,7 @@
     </div>
 
     <!-- FLEET BOOKING QUICK DETAILS & WORKING PRICING PANEL -->
-    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { FleetCalendar.closeQuickModal(); }">
+    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { FleetCalendar.requestCloseQuickModal(); }">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
@@ -7678,7 +7678,7 @@
                         <span id="quickModalSubtitle" style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Booking #0 &bull; Customer</span>
                     </div>
                 </div>
-                <button onclick="FleetCalendar.closeQuickModal()" style="background: rgba(0,0,0,0.06); border: none; color: #475569; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                <button onclick="FleetCalendar.requestCloseQuickModal()" style="background: rgba(0,0,0,0.06); border: none; color: #475569; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;" title="Close modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -7782,7 +7782,7 @@
                 <button type="button" id="btnQuickOpenFullDetails" onclick="FleetCalendar.openFullBookingDetails()" style="flex: 1; padding: 11px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
                     <i class="fas fa-external-link-alt"></i> Full Details
                 </button>
-                <button type="button" onclick="FleetCalendar.closeQuickModal()" style="padding: 11px 14px; background: white; color: #64748b; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
+                <button type="button" onclick="FleetCalendar.requestCloseQuickModal()" style="padding: 11px 14px; background: white; color: #64748b; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
                     Cancel
                 </button>
             </div>
@@ -18774,6 +18774,16 @@ async edit(id) { this.openModal(id); },
                 methodSelect.value = b.payment_method || 'Cash';
             }
 
+            // Snapshot baseline state to protect against accidental dismissal
+            this.quickInitialState = {
+                vehicle_id: String(b.vehicle_id || ''),
+                total_price: Math.round(totalPrice),
+                amount_paid: Math.round(amountPaid),
+                payment_status: statusSelect ? statusSelect.value : '',
+                payment_method: methodSelect ? methodSelect.value : 'Cash',
+                color: (this.selectedColor || '').toLowerCase()
+            };
+
             const modal = document.getElementById('fleetBookingModal');
             if (modal) {
                 modal.style.display = 'flex';
@@ -18960,7 +18970,35 @@ async edit(id) { this.openModal(id); },
             }
         },
 
+        requestCloseQuickModal() {
+            if (this.hasUnsavedQuickChanges()) {
+                const discard = confirm("You have unsaved changes in this booking.\n\nAre you sure you want to discard your changes and close?");
+                if (!discard) return;
+            }
+            this.closeQuickModal();
+        },
+
+        hasUnsavedQuickChanges() {
+            if (!this.quickInitialState) return false;
+            const currentVid = String(document.getElementById('quickVehicleSelect')?.value || '');
+            const currentTotal = Math.round(parseFloat(document.getElementById('quickTotalPrice')?.value || 0));
+            const currentPaid = Math.round(parseFloat(document.getElementById('quickAmountPaid')?.value || 0));
+            const currentStatus = document.getElementById('quickPaymentStatus')?.value || '';
+            const currentMethod = document.getElementById('quickPaymentMethod')?.value || '';
+            const currentColor = (this.selectedColor || '').toLowerCase();
+
+            return (
+                currentVid !== this.quickInitialState.vehicle_id ||
+                currentTotal !== this.quickInitialState.total_price ||
+                currentPaid !== this.quickInitialState.amount_paid ||
+                currentStatus !== this.quickInitialState.payment_status ||
+                currentMethod !== this.quickInitialState.payment_method ||
+                currentColor !== this.quickInitialState.color
+            );
+        },
+
         closeQuickModal() {
+            this.quickInitialState = null;
             const modal = document.getElementById('fleetBookingModal');
             if (modal) {
                 modal.style.display = 'none';
