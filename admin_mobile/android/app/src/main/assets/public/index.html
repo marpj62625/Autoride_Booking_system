@@ -7667,7 +7667,7 @@
     </div>
 
     <!-- FLEET BOOKING QUICK DETAILS & WORKING PRICING PANEL -->
-    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { FleetCalendar.requestCloseQuickModal(); }">
+    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { if(event.stopPropagation) event.stopPropagation(); if(event.stopImmediatePropagation) event.stopImmediatePropagation(); FleetCalendar.requestCloseQuickModal(); }">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
             <!-- Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
@@ -7790,7 +7790,7 @@
     </div>
 
 <!-- FLEET QUICK MODAL UNSAVED CHANGES WARNING POPUP -->
-    <div id="fleetQuickUnsavedModal" style="display: none; position: fixed; inset: 0; z-index: 1000020; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) FleetCalendar.cancelQuickUnsavedPrompt()">
+    <div id="fleetQuickUnsavedModal" style="display: none; position: fixed; inset: 0; z-index: 1000020; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) { if(event.stopPropagation) event.stopPropagation(); if(event.stopImmediatePropagation) event.stopImmediatePropagation(); FleetCalendar.cancelQuickUnsavedPrompt(); }">
         <div style="width: 100%; max-width: 480px; background: var(--surface-solid, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 20px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); margin: auto;">
             <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
                 <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245,158,11,0.15); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
@@ -12642,6 +12642,18 @@ input:checked + .ctrl-slider:before {
             }
             return;
         }
+        if (e.target && e.target.id === 'fleetBookingModal') {
+            if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) {
+                FleetCalendar.requestCloseQuickModal();
+            }
+            return;
+        }
+        if (e.target && e.target.id === 'fleetQuickUnsavedModal') {
+            if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) {
+                FleetCalendar.cancelQuickUnsavedPrompt();
+            }
+            return;
+        }
 
         const modalBackdropIds = [
             'inspectionModal', 'bookingDetailsModal', 'umModal',
@@ -12667,7 +12679,7 @@ input:checked + .ctrl-slider:before {
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
-            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal' || modal.id === 'editBookingDetailsSuperAdminModal' || modal.id === 'editSaBookingUnsavedModal' || modal.id === 'editSaSyncAllPromptModal') return;
+            if (modal.id === 'systemConfigModal' || modal.id === 'sysConfigUnsavedModal' || modal.id === 'vehicleModal' || modal.id === 'vehicleUnsavedModal' || modal.id === 'editBookingScheduleModal' || modal.id === 'editScheduleUnsavedModal' || modal.id === 'editBookingDetailsSuperAdminModal' || modal.id === 'editSaBookingUnsavedModal' || modal.id === 'editSaSyncAllPromptModal' || modal.id === 'fleetBookingModal' || modal.id === 'fleetQuickUnsavedModal') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
@@ -12724,6 +12736,14 @@ input:checked + .ctrl-slider:before {
                     if (typeof Vehicles !== 'undefined' && Vehicles.onBackdropClick) Vehicles.onBackdropClick();
                     return;
                 }
+                if (topModal.id === 'fleetQuickUnsavedModal') {
+                    if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) FleetCalendar.cancelQuickUnsavedPrompt();
+                    return;
+                }
+                if (topModal.id === 'fleetBookingModal') {
+                    if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) FleetCalendar.requestCloseQuickModal();
+                    return;
+                }
                 topModal.style.display = 'none';
             }
         }
@@ -12755,6 +12775,14 @@ input:checked + .ctrl-slider:before {
             }
             if (topModal.id === 'vehicleModal') {
                 if (typeof Vehicles !== 'undefined' && Vehicles.onBackdropClick) Vehicles.onBackdropClick();
+                return true;
+            }
+            if (topModal.id === 'fleetQuickUnsavedModal') {
+                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) FleetCalendar.cancelQuickUnsavedPrompt();
+                return true;
+            }
+            if (topModal.id === 'fleetBookingModal') {
+                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) FleetCalendar.requestCloseQuickModal();
                 return true;
             }
             topModal.style.display = 'none';
@@ -19096,6 +19124,8 @@ async edit(id) { this.openModal(id); },
         },
 
         showQuickUnsavedPrompt(diff) {
+            const bookingModal = document.getElementById('fleetBookingModal');
+            if (bookingModal) bookingModal.style.display = 'flex';
             const unsavedModal = document.getElementById('fleetQuickUnsavedModal');
             const countEl = document.getElementById('fleetQuickUnsavedCount');
             const listEl = document.getElementById('fleetQuickUnsavedList');
@@ -19119,6 +19149,8 @@ async edit(id) { this.openModal(id); },
         cancelQuickUnsavedPrompt() {
             const unsavedModal = document.getElementById('fleetQuickUnsavedModal');
             if (unsavedModal) unsavedModal.style.display = 'none';
+            const bookingModal = document.getElementById('fleetBookingModal');
+            if (bookingModal) bookingModal.style.display = 'flex';
         },
 
         confirmDiscardQuickChanges() {
