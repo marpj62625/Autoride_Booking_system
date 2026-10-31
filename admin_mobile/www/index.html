@@ -7789,6 +7789,43 @@
         </div>
     </div>
 
+<!-- FLEET QUICK MODAL UNSAVED CHANGES WARNING POPUP -->
+    <div id="fleetQuickUnsavedModal" style="display: none; position: fixed; inset: 0; z-index: 1000020; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) FleetCalendar.cancelQuickUnsavedPrompt()">
+        <div style="width: 100%; max-width: 480px; background: var(--surface-solid, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 20px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); margin: auto;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245,158,11,0.15); color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main, #0f172a);">Unsaved Changes</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted, #64748b); line-height: 1.4;">
+                        You have unsaved changes to this booking. Do you want to discard your changes or keep editing?
+                    </p>
+                </div>
+            </div>
+
+            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px; margin-bottom: 8px;">
+                Modified Fields (<span id="fleetQuickUnsavedCount">0</span>)
+            </div>
+
+            <div id="fleetQuickUnsavedList" style="max-height: 180px; overflow-y: auto; background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 12px; padding: 8px 12px; margin-bottom: 20px;">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" onclick="FleetCalendar.cancelQuickUnsavedPrompt()" style="flex: 1; min-width: 90px; padding: 11px 14px; background: var(--surface-solid, #ffffff); color: var(--text-main, #334155); border: 1.5px solid var(--border, #cbd5e1); border-radius: 10px; font-weight: 700; font-size: 0.84rem; cursor: pointer; transition: background 0.15s;">
+                    Keep Editing
+                </button>
+                <button type="button" onclick="FleetCalendar.confirmDiscardQuickChanges()" style="padding: 11px 16px; background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; font-weight: 700; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-trash-alt"></i> Discard
+                </button>
+                <button type="button" onclick="FleetCalendar.confirmSaveQuickChanges()" style="flex: 1.3; min-width: 130px; padding: 11px 16px; background: #00B14F; color: #ffffff; border: none; border-radius: 10px; font-weight: 800; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,177,79,0.3);">
+                    <i class="fas fa-check"></i> Save &amp; Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MARK FULLY PAID & BALANCE COLLECTION MODAL (WITH PAYMENT FEE) -->
     <div id="bookingMarkPaidModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none;" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; max-width: 460px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);">
@@ -18775,8 +18812,12 @@ async edit(id) { this.openModal(id); },
             }
 
             // Snapshot baseline state to protect against accidental dismissal
+            const initOpt = vehSelect && vehSelect.selectedIndex >= 0 ? vehSelect.options[vehSelect.selectedIndex] : null;
+            const initVehicleName = initOpt ? initOpt.text.split('—')[0].trim() : `${b.brand || ''} ${b.model || ''} (${b.plate_number || ''})`.trim();
+
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
+                vehicle_name: initVehicleName,
                 total_price: Math.round(totalPrice),
                 amount_paid: Math.round(amountPaid),
                 payment_status: statusSelect ? statusSelect.value : '',
@@ -18970,34 +19011,128 @@ async edit(id) { this.openModal(id); },
             }
         },
 
-        requestCloseQuickModal() {
-            if (this.hasUnsavedQuickChanges()) {
-                const discard = confirm("You have unsaved changes in this booking.\n\nAre you sure you want to discard your changes and close?");
-                if (!discard) return;
+        getQuickUnsavedDiff() {
+            if (!this.quickInitialState) return [];
+            const diff = [];
+
+            // 1. Assigned Unit
+            const vSelect = document.getElementById('quickVehicleSelect');
+            const currentVid = String(vSelect?.value || '');
+            if (currentVid && currentVid !== this.quickInitialState.vehicle_id) {
+                const oldName = this.quickInitialState.vehicle_name || 'Original Unit';
+                const newOption = vSelect && vSelect.selectedIndex >= 0 ? vSelect.options[vSelect.selectedIndex] : null;
+                const newName = newOption ? newOption.text.split('—')[0].trim() : 'New Unit';
+                diff.push({
+                    label: 'Assigned Vehicle',
+                    oldVal: oldName,
+                    newVal: newName
+                });
             }
-            this.closeQuickModal();
+
+            // 2. Total Price
+            const currentTotal = Math.round(parseFloat(document.getElementById('quickTotalPrice')?.value || 0));
+            if (currentTotal !== this.quickInitialState.total_price) {
+                diff.push({
+                    label: 'Total Price',
+                    oldVal: '₱' + Number(this.quickInitialState.total_price || 0).toLocaleString(),
+                    newVal: '₱' + Number(currentTotal || 0).toLocaleString()
+                });
+            }
+
+            // 3. Amount Paid
+            const currentPaid = Math.round(parseFloat(document.getElementById('quickAmountPaid')?.value || 0));
+            if (currentPaid !== this.quickInitialState.amount_paid) {
+                diff.push({
+                    label: 'Amount Paid',
+                    oldVal: '₱' + Number(this.quickInitialState.amount_paid || 0).toLocaleString(),
+                    newVal: '₱' + Number(currentPaid || 0).toLocaleString()
+                });
+            }
+
+            // 4. Payment Status
+            const currentStatus = document.getElementById('quickPaymentStatus')?.value || '';
+            if (currentStatus !== this.quickInitialState.payment_status) {
+                diff.push({
+                    label: 'Payment Status',
+                    oldVal: this.quickInitialState.payment_status || 'None',
+                    newVal: currentStatus || 'None'
+                });
+            }
+
+            // 5. Payment Method
+            const currentMethod = document.getElementById('quickPaymentMethod')?.value || '';
+            if (currentMethod !== this.quickInitialState.payment_method) {
+                diff.push({
+                    label: 'Payment Method',
+                    oldVal: this.quickInitialState.payment_method || 'Cash',
+                    newVal: currentMethod || 'Cash'
+                });
+            }
+
+            // 6. Booking Color
+            const currentColor = (this.selectedColor || '').toLowerCase();
+            if (currentColor && currentColor !== this.quickInitialState.color) {
+                diff.push({
+                    label: 'Booking Color',
+                    oldVal: this.quickInitialState.color || 'Default',
+                    newVal: currentColor || 'New Color'
+                });
+            }
+
+            return diff;
         },
 
         hasUnsavedQuickChanges() {
-            if (!this.quickInitialState) return false;
-            const currentVid = String(document.getElementById('quickVehicleSelect')?.value || '');
-            const currentTotal = Math.round(parseFloat(document.getElementById('quickTotalPrice')?.value || 0));
-            const currentPaid = Math.round(parseFloat(document.getElementById('quickAmountPaid')?.value || 0));
-            const currentStatus = document.getElementById('quickPaymentStatus')?.value || '';
-            const currentMethod = document.getElementById('quickPaymentMethod')?.value || '';
-            const currentColor = (this.selectedColor || '').toLowerCase();
+            return this.getQuickUnsavedDiff().length > 0;
+        },
 
-            return (
-                currentVid !== this.quickInitialState.vehicle_id ||
-                currentTotal !== this.quickInitialState.total_price ||
-                currentPaid !== this.quickInitialState.amount_paid ||
-                currentStatus !== this.quickInitialState.payment_status ||
-                currentMethod !== this.quickInitialState.payment_method ||
-                currentColor !== this.quickInitialState.color
-            );
+        requestCloseQuickModal() {
+            const diff = this.getQuickUnsavedDiff();
+            if (diff.length === 0) {
+                this.closeQuickModal();
+                return;
+            }
+            this.showQuickUnsavedPrompt(diff);
+        },
+
+        showQuickUnsavedPrompt(diff) {
+            const unsavedModal = document.getElementById('fleetQuickUnsavedModal');
+            const countEl = document.getElementById('fleetQuickUnsavedCount');
+            const listEl = document.getElementById('fleetQuickUnsavedList');
+
+            if (countEl) countEl.textContent = diff.length;
+            if (listEl) {
+                listEl.innerHTML = diff.map(d => `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border, #f1f5f9); font-size: 0.78rem;">
+                        <span style="font-weight: 700; color: var(--text-main, #334155); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${d.label}</span>
+                        <div style="display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 0.75rem;">
+                            <span style="background: rgba(239,68,68,0.12); color: #dc2626; padding: 2px 6px; border-radius: 4px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${d.oldVal}">${d.oldVal}</span>
+                            <span style="color: var(--text-muted, #94a3b8);">&rarr;</span>
+                            <span style="background: rgba(16,185,129,0.12); color: #059669; padding: 2px 6px; border-radius: 4px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${d.newVal}">${d.newVal}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            if (unsavedModal) unsavedModal.style.display = 'flex';
+        },
+
+        cancelQuickUnsavedPrompt() {
+            const unsavedModal = document.getElementById('fleetQuickUnsavedModal');
+            if (unsavedModal) unsavedModal.style.display = 'none';
+        },
+
+        confirmDiscardQuickChanges() {
+            this.cancelQuickUnsavedPrompt();
+            this.closeQuickModal();
+        },
+
+        async confirmSaveQuickChanges() {
+            this.cancelQuickUnsavedPrompt();
+            await this.saveQuickPricing();
         },
 
         closeQuickModal() {
+            this.cancelQuickUnsavedPrompt();
             this.quickInitialState = null;
             const modal = document.getElementById('fleetBookingModal');
             if (modal) {
