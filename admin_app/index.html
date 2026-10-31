@@ -19598,7 +19598,7 @@ input:checked + .ctrl-slider:before {
                             <div>Paid: <strong style="color:#16a34a;">₱${Math.round(amountPaid).toLocaleString()}</strong></div>
                         </div>
                         <div style="margin-top:6px; padding-top:6px; border-top:1px dashed #bbf7d0; display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:800; text-transform:uppercase; font-size:0.75rem;">${sobra > 0 ? 'Sobra / Credit:' : 'Kulang na Babayaran:'}</span>
+                            <span style="font-weight:800; text-transform:uppercase; font-size:0.75rem;">${sobra > 0 ? 'Overpayment / Credit:' : (kulang === 0 ? 'Balance Due (Paid):' : 'Remaining Balance Due:')}</span>
                             <strong style="font-size:0.95rem; font-weight:900; color:${sobra > 0 ? '#0284c7' : (kulang > 0 ? '#dc2626' : '#15803d')};">
                                 ₱${Math.round(sobra > 0 ? sobra : kulang).toLocaleString()}
                             </strong>
