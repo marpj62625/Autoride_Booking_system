@@ -7790,9 +7790,30 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     <span><i class="fas fa-car" style="color: #0284c7; margin-right: 5px;"></i> Assigned Vehicle / Unit</span>
                     <span id="quickVehicleTransferBadge" style="font-size: 0.68rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 10px;">Transfer Unit</span>
                 </label>
-                <select id="quickVehicleSelect" onchange="FleetCalendar.onQuickVehicleSelectChange()" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
+                <!-- Hidden native select for 100% backward compatibility -->
+                <select id="quickVehicleSelect" onchange="FleetCalendar.onQuickVehicleSelectChange()" style="display: none;">
                     <!-- Options injected via JS -->
                 </select>
+
+                <!-- Custom Scrollable Vehicle Dropdown Trigger -->
+                <div id="quickVehicleDropdownTrigger" onclick="FleetCalendar.toggleVehicleDropdown()" style="width: 100%; padding: 9px 12px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; transition: all 0.15s;">
+                    <div id="quickVehicleTriggerLabel" style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <i class="fas fa-car" style="color: #0284c7;"></i>
+                        <span>Select Vehicle</span>
+                    </div>
+                    <i id="quickVehicleChevron" class="fas fa-chevron-down" style="font-size: 0.75rem; color: #64748b; margin-left: 8px; transition: transform 0.2s;"></i>
+                </div>
+
+                <!-- Custom Scrollable Vehicle Dropdown Menu (6-7 items visible, scrollable) -->
+                <div id="quickVehicleDropdownMenu" style="display: none; position: relative; margin-top: 8px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; box-shadow: 0 10px 25px -4px rgba(0,0,0,0.18); overflow: hidden; z-index: 50;">
+                    <div style="padding: 8px 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-search" style="font-size: 0.75rem; color: #94a3b8;"></i>
+                        <input type="text" id="quickVehicleSearchInput" oninput="FleetCalendar.filterVehicleDropdown(this.value)" placeholder="Search vehicle or plate..." style="width: 100%; border: none; background: transparent; font-size: 0.78rem; outline: none; color: #0f172a; font-weight: 600;">
+                    </div>
+                    <div id="quickVehicleDropdownList" style="max-height: 250px; overflow-y: auto;">
+                        <!-- Injected via FleetCalendar.renderCustomVehicleDropdown() -->
+                    </div>
+                </div>
                 <!-- Live Transfer Feedback & Conflict Card -->
                 <div id="quickTransferAlertCard" style="display: none; margin-top: 10px; border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.45;"></div>
             </div>
@@ -19282,6 +19303,7 @@ input:checked + .ctrl-slider:before {
                 });
                 vehSelect.innerHTML = optionsHtml;
             }
+            this.renderCustomVehicleDropdown(b);
 
             // Active Color
             const activeColorObj = this.getBookingColor(b);
@@ -19663,6 +19685,7 @@ input:checked + .ctrl-slider:before {
         },
 
         closeQuickModal() {
+            this.closeVehicleDropdown();
             this.cancelQuickUnsavedPrompt();
             this.quickInitialState = null;
             const modal = document.getElementById('fleetBookingModal');
@@ -19724,6 +19747,132 @@ input:checked + .ctrl-slider:before {
             }
 
             return null;
+        },
+
+                toggleVehicleDropdown() {
+            const menu = document.getElementById('quickVehicleDropdownMenu');
+            const chevron = document.getElementById('quickVehicleChevron');
+            const search = document.getElementById('quickVehicleSearchInput');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block';
+            if (isOpen) {
+                this.closeVehicleDropdown();
+            } else {
+                menu.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                if (search) {
+                    search.value = '';
+                    this.filterVehicleDropdown('');
+                    setTimeout(() => search.focus(), 50);
+                }
+            }
+        },
+
+        closeVehicleDropdown() {
+            const menu = document.getElementById('quickVehicleDropdownMenu');
+            const chevron = document.getElementById('quickVehicleChevron');
+            if (menu) menu.style.display = 'none';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+        },
+
+        filterVehicleDropdown(query) {
+            const q = (query || '').toLowerCase().trim();
+            const items = document.querySelectorAll('#quickVehicleDropdownList .quick-veh-item');
+            items.forEach(el => {
+                const text = (el.getAttribute('data-text') || '').toLowerCase();
+                if (!q || text.includes(q)) {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        },
+
+        selectCustomVehicle(vId) {
+            const sel = document.getElementById('quickVehicleSelect');
+            if (sel) {
+                sel.value = vId;
+            }
+            this.updateVehicleTriggerLabel(vId);
+            this.closeVehicleDropdown();
+            this.onQuickVehicleSelectChange();
+        },
+
+        updateVehicleTriggerLabel(selectedVid) {
+            const labelEl = document.getElementById('quickVehicleTriggerLabel');
+            if (!labelEl) return;
+            const vehiclesList = (typeof this.getOrderedVehicles === 'function' ? this.getOrderedVehicles() : this.vehicles) || [];
+            const v = vehiclesList.find(x => String(x.id) === String(selectedVid));
+            if (!v) {
+                labelEl.innerHTML = `<i class="fas fa-car" style="color: #64748b;"></i> <span>Select Vehicle</span>`;
+                return;
+            }
+            const brand = v.brand || '';
+            const model = v.model || '';
+            const plate = v.plate_number ? `(${v.plate_number})` : '';
+            const dailyRate = parseFloat(v.daily_rate || 0);
+            const rateFormatted = dailyRate > 0 ? `₱${Math.round(dailyRate).toLocaleString()}/d` : 'No Rate';
+
+            labelEl.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                    <i class="fas fa-car" style="color: #0284c7;"></i>
+                    <span style="font-weight:700; color:#0f172a;">${brand} ${model}</span>
+                    <span style="color:#64748b; font-size:0.75rem;">${plate}</span>
+                    <span style="background:#f1f5f9; color:#0f172a; padding:1px 6px; border-radius:5px; font-weight:800; font-size:0.74rem;">${rateFormatted}</span>
+                </div>
+            `;
+        },
+
+        renderCustomVehicleDropdown(b) {
+            const listEl = document.getElementById('quickVehicleDropdownList');
+            if (!listEl) return;
+            const vehiclesList = (typeof this.getOrderedVehicles === 'function' ? this.getOrderedVehicles() : this.vehicles) || [];
+            
+            let html = '';
+            vehiclesList.forEach(v => {
+                const isCurrent = String(v.id) === String(b.vehicle_id);
+                const brand = v.brand || '';
+                const model = v.model || '';
+                const plate = v.plate_number ? `(${v.plate_number})` : '';
+                const dailyRate = parseFloat(v.daily_rate || 0);
+                const rateFormatted = dailyRate > 0 ? `₱${Math.round(dailyRate).toLocaleString()}/d` : 'No Rate';
+                const conflict = isCurrent ? null : this.checkVehicleConflict(v.id, b.id, b.start_date, b.end_date);
+
+                let badge = '';
+                if (isCurrent) {
+                    badge = `<span style="font-size:0.68rem; font-weight:800; background:#e0f2fe; color:#0369a1; padding:2px 7px; border-radius:6px;">CURRENT</span>`;
+                } else if (conflict) {
+                    const cText = conflict.type === 'booking' ? conflict.customer : 'Blocked';
+                    badge = `<span style="font-size:0.68rem; font-weight:700; background:#fee2e2; color:#b91c1c; padding:2px 7px; border-radius:6px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cText}">⚠️ CONFLICT: ${cText}</span>`;
+                } else {
+                    badge = `<span style="font-size:0.68rem; font-weight:700; background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:6px;">AVAILABLE</span>`;
+                }
+
+                const bg = isCurrent ? '#f0fdf4' : '#ffffff';
+                const border = isCurrent ? 'border-left: 3px solid #00B14F;' : 'border-left: 3px solid transparent;';
+
+                html += `
+                    <div class="quick-veh-item" data-vid="${v.id}" data-text="${brand} ${model} ${plate}" onclick="FleetCalendar.selectCustomVehicle('${v.id}')"
+                         style="display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid #f1f5f9; background:${bg}; ${border} cursor:pointer; font-size:0.8rem; transition:background 0.15s;"
+                         onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='${bg}'">
+                        <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                            <i class="fas fa-car" style="color: ${isCurrent ? '#00B14F' : '#64748b'}; font-size:0.85rem; flex-shrink:0;"></i>
+                            <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                <span style="font-weight:700; color:#0f172a;">${brand} ${model}</span>
+                                <span style="font-size:0.74rem; color:#64748b; font-weight:600; margin-left:3px;">${plate}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                            <span style="font-weight:800; color:#0f172a; font-size:0.78rem;">${rateFormatted}</span>
+                            ${badge}
+                        </div>
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+            this.updateVehicleTriggerLabel(b.vehicle_id);
+            this.closeVehicleDropdown();
         },
 
         onQuickVehicleSelectChange() {
