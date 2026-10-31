@@ -19130,10 +19130,65 @@ def update_booking_quick_pricing(booking_id):
     data = request.json or {}
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, user_id, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT id, user_id, vehicle_id, start_date, end_date, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color FROM bookings WHERE id = %s", (booking_id,))
         b = cur.fetchone()
         if not b:
             return jsonify({"error": "Booking not found"}), 404
+
+        # Optional vehicle reassignment
+        target_vehicle_id = data.get('vehicle_id')
+        reassigned_vehicle = False
+        old_vehicle_id = b.get('vehicle_id')
+        target_veh_info = ""
+        if target_vehicle_id is not None and str(target_vehicle_id).strip():
+            try:
+                t_vid = int(target_vehicle_id)
+                if t_vid != old_vehicle_id:
+                    cur.execute("SELECT id, brand, model, plate_number, status FROM vehicles WHERE id = %s", (t_vid,))
+                    target_veh = cur.fetchone()
+                    if not target_veh:
+                        return jsonify({"error": "Target vehicle not found"}), 404
+
+                    # Check for schedule conflicts on target vehicle
+                    cur.execute("""
+                        SELECT id, customer_name, start_date, end_date
+                        FROM bookings
+                        WHERE vehicle_id = %s
+                          AND id != %s
+                          AND LOWER(status) IN ('confirmed', 'approved', 'picked up', 'ongoing')
+                          AND start_date <= %s
+                          AND end_date >= %s
+                        LIMIT 1
+                    """, (t_vid, booking_id, b['end_date'], b['start_date']))
+                    conflict = cur.fetchone()
+                    if conflict:
+                        conf_cname = conflict.get('customer_name') or 'another booking'
+                        v_name = f"{target_veh.get('brand','')} {target_veh.get('model','')} ({target_veh.get('plate_number','')})".strip()
+                        return jsonify({
+                            "error": f"Cannot transfer to {v_name}: already booked by {conf_cname} ({conflict.get('start_date')} to {conflict.get('end_date')})."
+                        }), 409
+
+                    cur.execute("UPDATE bookings SET vehicle_id = %s WHERE id = %s", (t_vid, booking_id))
+                    reassigned_vehicle = True
+                    target_veh_info = f"{target_veh.get('brand','')} {target_veh.get('model','')} ({target_veh.get('plate_number','')})".strip()
+
+                    # Update vehicle statuses
+                    if (target_veh.get('status') or '').lower() not in ('maintenance', 'repair', 'sold'):
+                        cur.execute("UPDATE vehicles SET status = 'Booked' WHERE id = %s", (t_vid,))
+
+                    if old_vehicle_id:
+                        cur.execute("""
+                            SELECT id FROM bookings
+                            WHERE vehicle_id = %s
+                              AND id != %s
+                              AND LOWER(status) IN ('confirmed', 'approved', 'picked up', 'ongoing')
+                            LIMIT 1
+                        """, (old_vehicle_id, booking_id))
+                        has_remaining = cur.fetchone()
+                        if not has_remaining:
+                            cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s AND LOWER(status) = 'booked'", (old_vehicle_id,))
+            except (ValueError, TypeError):
+                return jsonify({"error": "Invalid vehicle_id"}), 400
 
         try:
             total_price = min(10000000.0, max(0.0, float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0))))

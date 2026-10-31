@@ -7784,6 +7784,17 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                 <!-- Injected via JS -->
             </div>
 
+            <!-- Vehicle / Unit Assignment & Transfer -->
+            <div style="margin-bottom: 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-bottom: 6px;">
+                    <span><i class="fas fa-car" style="color: #0284c7; margin-right: 5px;"></i> Assigned Vehicle / Unit</span>
+                    <span id="quickVehicleTransferBadge" style="font-size: 0.68rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 10px;">Transfer Unit</span>
+                </label>
+                <select id="quickVehicleSelect" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
+                    <!-- Options injected via JS -->
+                </select>
+            </div>
+
             <!-- Color Selection (User Select Colors for Flexibility) -->
             <div style="margin-bottom: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
                 <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 8px;">
@@ -12279,8 +12290,8 @@ input:checked + .ctrl-slider:before {
 
         // 2. Local PC development (only if explicitly running on port 5000)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            if (window.location.port === '5000') {
-                return 'http://localhost:5000';
+            if (window.location.port === '5000' || window.location.port === '9999') {
+                return window.location.origin;
             }
             return 'https://autoride-booking-system.vercel.app';
         }
@@ -19168,6 +19179,21 @@ input:checked + .ctrl-slider:before {
             const subEl = document.getElementById('quickModalSubtitle');
             if (subEl) subEl.textContent = `Booking #${b.id} • ${b.brand || ''} ${b.model || ''} (${b.plate_number || 'No Plate'})`;
 
+            // Assigned Vehicle Dropdown
+            const vehSelect = document.getElementById('quickVehicleSelect');
+            if (vehSelect) {
+                let optionsHtml = '';
+                const vehiclesList = (typeof this.getOrderedVehicles === 'function' ? this.getOrderedVehicles() : this.vehicles) || [];
+                vehiclesList.forEach(v => {
+                    const isSelected = String(v.id) === String(b.vehicle_id);
+                    const brand = v.brand || '';
+                    const model = v.model || '';
+                    const plate = v.plate_number ? `(${v.plate_number})` : '';
+                    optionsHtml += `<option value="${v.id}" ${isSelected ? 'selected' : ''}>${brand} ${model} ${plate}</option>`;
+                });
+                vehSelect.innerHTML = optionsHtml;
+            }
+
             // Active Color
             const activeColorObj = this.getBookingColor(b);
             this.selectedColor = b.calendar_color || activeColorObj.bg;
@@ -19353,6 +19379,8 @@ input:checked + .ctrl-slider:before {
             }
             const paymentMethod = document.getElementById('quickPaymentMethod')?.value || 'Cash';
             const applyToCustomer = document.getElementById('quickApplyToCustomer')?.checked ?? true;
+            const vehicleIdVal = document.getElementById('quickVehicleSelect')?.value;
+            const vehicleId = vehicleIdVal ? parseInt(vehicleIdVal, 10) : undefined;
 
             const btn = document.getElementById('btnSaveQuickPricing');
             if (btn) {
@@ -19380,6 +19408,7 @@ input:checked + .ctrl-slider:before {
                         balance_amount: bal,
                         payment_status: paymentStatus,
                         payment_method: paymentMethod,
+                        vehicle_id: vehicleId,
                         calendar_color: this.selectedColor,
                         apply_to_customer: applyToCustomer,
                         requester_id: currentAdminId,
