@@ -7790,9 +7790,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     <span><i class="fas fa-car" style="color: #0284c7; margin-right: 5px;"></i> Assigned Vehicle / Unit</span>
                     <span id="quickVehicleTransferBadge" style="font-size: 0.68rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 10px;">Transfer Unit</span>
                 </label>
-                <select id="quickVehicleSelect" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
+                <select id="quickVehicleSelect" onchange="FleetCalendar.onQuickVehicleSelectChange()" style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; cursor: pointer;">
                     <!-- Options injected via JS -->
                 </select>
+                <!-- Live Transfer Feedback & Conflict Card -->
+                <div id="quickTransferAlertCard" style="display: none; margin-top: 10px; border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.45;"></div>
             </div>
 
             <!-- Color Selection (User Select Colors for Flexibility) -->
@@ -19179,17 +19181,39 @@ input:checked + .ctrl-slider:before {
             const subEl = document.getElementById('quickModalSubtitle');
             if (subEl) subEl.textContent = `Booking #${b.id} • ${b.brand || ''} ${b.model || ''} (${b.plate_number || 'No Plate'})`;
 
-            // Assigned Vehicle Dropdown
+            // Reset Transfer Alert Card and Save button
+            const alertCard = document.getElementById('quickTransferAlertCard');
+            if (alertCard) {
+                alertCard.style.display = 'none';
+                alertCard.innerHTML = '';
+            }
+            const saveBtnEl = document.getElementById('btnSaveQuickPricing');
+            if (saveBtnEl) saveBtnEl.disabled = false;
+
+            // Assigned Vehicle Dropdown with Rates and Conflict Status
             const vehSelect = document.getElementById('quickVehicleSelect');
             if (vehSelect) {
                 let optionsHtml = '';
                 const vehiclesList = (typeof this.getOrderedVehicles === 'function' ? this.getOrderedVehicles() : this.vehicles) || [];
                 vehiclesList.forEach(v => {
-                    const isSelected = String(v.id) === String(b.vehicle_id);
+                    const isCurrent = String(v.id) === String(b.vehicle_id);
                     const brand = v.brand || '';
                     const model = v.model || '';
                     const plate = v.plate_number ? `(${v.plate_number})` : '';
-                    optionsHtml += `<option value="${v.id}" ${isSelected ? 'selected' : ''}>${brand} ${model} ${plate}</option>`;
+                    const dailyRate = parseFloat(v.daily_rate || 0);
+                    const rateFormatted = dailyRate > 0 ? `₱${Math.round(dailyRate).toLocaleString()}/d` : 'No Rate';
+                    
+                    const conflict = isCurrent ? null : this.checkVehicleConflict(v.id, b.id, b.start_date, b.end_date);
+                    let tag = '';
+                    if (isCurrent) {
+                        tag = ' [CURRENT]';
+                    } else if (conflict) {
+                        tag = ` ⚠️ [CONFLICT: ${conflict.type === 'booking' ? conflict.customer : 'Blocked'}]`;
+                    } else {
+                        tag = ' ✅ [AVAILABLE]';
+                    }
+
+                    optionsHtml += `<option value="${v.id}" data-rate="${dailyRate}" data-conflict="${conflict ? '1' : '0'}" ${isCurrent ? 'selected' : ''}>${brand} ${model} ${plate} — ${rateFormatted}${tag}</option>`;
                 });
                 vehSelect.innerHTML = optionsHtml;
             }
@@ -19440,6 +19464,147 @@ input:checked + .ctrl-slider:before {
             if (modal) {
                 modal.style.display = 'none';
                 if (typeof modalClose === 'function') modalClose();
+            }
+        },
+
+        checkVehicleConflict(targetVehicleId, currentBookingId, startDate, endDate) {
+            if (!targetVehicleId || !startDate || !endDate) return null;
+            const sDate = String(startDate).split('T')[0].split(' ')[0];
+            const eDate = String(endDate).split('T')[0].split(' ')[0];
+            if (!sDate || !eDate) return null;
+
+            // 1. Check active overlapping bookings
+            const conflictBooking = (this.bookings || []).find(bk => {
+                if (String(bk.id) === String(currentBookingId)) return false;
+                if (String(bk.vehicle_id) !== String(targetVehicleId)) return false;
+                const st = (bk.status || '').toLowerCase().trim();
+                if (['cancelled', 'rejected'].includes(st)) return false;
+                const bkStart = String(bk.start_date || '').split('T')[0].split(' ')[0];
+                const bkEnd = String(bk.end_date || '').split('T')[0].split(' ')[0];
+                if (!bkStart || !bkEnd) return false;
+                return sDate <= bkEnd && eDate >= bkStart;
+            });
+
+            if (conflictBooking) {
+                const sPretty = conflictBooking.start_date ? new Date(conflictBooking.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric'}) : '';
+                const ePretty = conflictBooking.end_date ? new Date(conflictBooking.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric'}) : '';
+                return {
+                    type: 'booking',
+                    customer: conflictBooking.customer_name || 'Another Client',
+                    start: sPretty,
+                    end: ePretty
+                };
+            }
+
+            // 2. Check overlapping blackout blocks
+            const conflictBlackout = (this.blackouts || []).find(bo => {
+                const aff = !bo.affected_vehicles || bo.affected_vehicles === 'all' || 
+                            bo.affected_vehicles.split(',').map(x => x.trim()).includes(String(targetVehicleId));
+                if (!aff) return false;
+                const boStart = String(bo.start_date || '').split('T')[0].split(' ')[0];
+                const boEnd = String(bo.end_date || '').split('T')[0].split(' ')[0];
+                if (!boStart || !boEnd) return false;
+                return sDate <= boEnd && eDate >= boStart;
+            });
+
+            if (conflictBlackout) {
+                const sPretty = conflictBlackout.start_date ? new Date(conflictBlackout.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric'}) : '';
+                const ePretty = conflictBlackout.end_date ? new Date(conflictBlackout.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric'}) : '';
+                return {
+                    type: 'blackout',
+                    reason: conflictBlackout.reason || 'Maintenance / Blackout Block',
+                    start: sPretty,
+                    end: ePretty
+                };
+            }
+
+            return null;
+        },
+
+        onQuickVehicleSelectChange() {
+            const b = (this.bookings || []).find(x => x.id == this.activeBookingId);
+            if (!b) return;
+
+            const sel = document.getElementById('quickVehicleSelect');
+            if (!sel) return;
+            const opt = sel.options[sel.selectedIndex];
+            const targetVid = sel.value;
+            const alertCard = document.getElementById('quickTransferAlertCard');
+            const saveBtn = document.getElementById('btnSaveQuickPricing');
+
+            if (String(targetVid) === String(b.vehicle_id)) {
+                if (alertCard) {
+                    alertCard.style.display = 'none';
+                    alertCard.innerHTML = '';
+                }
+                if (saveBtn) saveBtn.disabled = false;
+                return;
+            }
+
+            const conflict = this.checkVehicleConflict(targetVid, b.id, b.start_date, b.end_date);
+            if (conflict) {
+                if (alertCard) {
+                    alertCard.style.display = 'block';
+                    alertCard.style.background = '#fef2f2';
+                    alertCard.style.border = '1.5px solid #f87171';
+                    alertCard.style.color = '#991b1b';
+                    alertCard.innerHTML = `
+                        <div style="display:flex; align-items:flex-start; gap:8px;">
+                            <i class="fas fa-exclamation-triangle" style="color:#dc2626; font-size:1.15rem; margin-top:2px;"></i>
+                            <div style="flex:1;">
+                                <div style="font-weight:900; font-size:0.82rem; text-transform:uppercase; color:#dc2626; letter-spacing:0.3px;">Schedule Conflict Detected</div>
+                                <div style="margin-top:2px; font-weight:700; color:#1e293b;">
+                                    ${conflict.type === 'booking' 
+                                        ? `Unit is already booked by <strong style="color:#dc2626;">${conflict.customer}</strong> (${conflict.start} &rarr; ${conflict.end}).` 
+                                        : `Unit is blocked for <strong style="color:#dc2626;">${conflict.reason}</strong> (${conflict.start} &rarr; ${conflict.end}).`}
+                                </div>
+                                <div style="margin-top:5px; font-size:0.71rem; color:#b91c1c; font-weight:800; background:rgba(220,38,38,0.1); padding:3px 8px; border-radius:6px; display:inline-block;">
+                                    <i class="fas fa-ban"></i> Transfer locked for this vehicle to prevent double-booking.
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                if (saveBtn) saveBtn.disabled = true;
+            } else {
+                if (saveBtn) saveBtn.disabled = false;
+                const sTime = b.start_date ? new Date(b.start_date).getTime() : 0;
+                const eTime = b.end_date ? new Date(b.end_date).getTime() : 0;
+                const diffDays = Math.max(1, Math.round(Math.abs(eTime - sTime) / (1000 * 60 * 60 * 24)));
+                const newDailyRate = parseFloat(opt ? opt.dataset.rate : 0) || 0;
+                const newTotal = newDailyRate > 0 ? (newDailyRate * diffDays) : parseFloat(b.total_price || 0);
+                const amountPaid = parseFloat(b.amount_paid || 0);
+                const kulang = Math.max(0, newTotal - amountPaid);
+                const sobra = amountPaid > newTotal ? (amountPaid - newTotal) : 0;
+
+                const totalInp = document.getElementById('quickTotalPrice');
+                if (totalInp && newDailyRate > 0) {
+                    totalInp.value = newTotal;
+                    this.recalcQuickBalance();
+                }
+
+                if (alertCard) {
+                    alertCard.style.display = 'block';
+                    alertCard.style.background = '#f0fdf4';
+                    alertCard.style.border = '1.5px solid #86efac';
+                    alertCard.style.color = '#14532d';
+                    alertCard.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span style="font-weight:900; color:#15803d; font-size:0.8rem;"><i class="fas fa-check-circle" style="color:#16a34a;"></i> Unit Available (${diffDays} day${diffDays > 1 ? 's' : ''} @ ₱${Math.round(newDailyRate).toLocaleString()}/d)</span>
+                            <span style="font-size:0.68rem; font-weight:800; background:#dcfce7; color:#15803d; padding:2px 7px; border-radius:8px;">Clear Schedule</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top:6px; padding-top:6px; border-top:1px dashed #bbf7d0; font-size:0.75rem;">
+                            <div>New Total: <strong style="color:#0f172a;">₱${Math.round(newTotal).toLocaleString()}</strong></div>
+                            <div>Paid: <strong style="color:#16a34a;">₱${Math.round(amountPaid).toLocaleString()}</strong></div>
+                        </div>
+                        <div style="margin-top:6px; padding-top:6px; border-top:1px dashed #bbf7d0; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:800; text-transform:uppercase; font-size:0.75rem;">${sobra > 0 ? 'Sobra / Credit:' : 'Kulang na Babayaran:'}</span>
+                            <strong style="font-size:0.95rem; font-weight:900; color:${sobra > 0 ? '#0284c7' : (kulang > 0 ? '#dc2626' : '#15803d')};">
+                                ₱${Math.round(sobra > 0 ? sobra : kulang).toLocaleString()}
+                            </strong>
+                        </div>
+                    `;
+                }
             }
         },
 
