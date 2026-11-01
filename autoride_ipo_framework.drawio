@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="Electron" agent="Antigravity Draw.io Engine" version="24.7.17" type="device">
+  <diagram id="autoride_conceptual_framework_ipo" name="Conceptual Framework (IPO Model)">
+    <mxGraphModel dx="2400" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- HEADER TITLE -->
+        <mxCell id="header_title" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=22;fontStyle=1;fontFamily=Segoe UI,Helvetica;fontColor=#0f172a;" value="CONCEPTUAL FRAMEWORK: INPUT - PROCESS - OUTPUT (IPO) MODEL" vertex="1">
+          <mxGeometry x="525" y="20" width="950" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="header_sub" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontFamily=Segoe UI,Helvetica;fontColor=#64748b;" value="AutoRide Online Vehicle Booking &amp; Fleet Management System with Closed-Loop Cybernetic Feedback Architecture" vertex="1">
+          <mxGeometry x="525" y="55" width="950" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 1. INPUT SWIMLANE ==================== -->
+        <mxCell id="box_input" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;horizontal=1;startSize=44;rounded=1;arcSize=8;fillColor=#f0f9ff;strokeColor=#0284c7;strokeWidth=2.5;fontColor=#0369a1;fontSize=16;fontFamily=Segoe UI,Helvetica;collapsible=0;" value="1. INPUT" vertex="1">
+          <mxGeometry x="80" y="100" width="520" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="input_def" parent="1" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=10;rounded=1;arcSize=6;fillColor=#e0f2fe;strokeColor=#38bdf8;strokeWidth=1;fontColor=#0369a1;fontSize=11;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;" value="&lt;b&gt;Definition:&lt;/b&gt; Raw materials, user data, resources, and policy constraints entering the system to initiate operations." vertex="1">
+          <mxGeometry x="100" y="155" width="480" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="input_content" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;" value="&lt;b&gt;&lt;font color=&#39;#0284c7&#39; style=&#39;font-size:13px;&#39;&gt;A. USER CREDENTIALS &amp; DIGITAL KYC DATA&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Customer Registration:&lt;/b&gt; Full name, mobile contact, email, and Google OAuth credentials.&lt;br&gt;&amp;bull; &lt;b&gt;Digital KYC Uploads:&lt;/b&gt; High-resolution photos of Driver&#39;s License (front &amp; back) and Government IDs.&lt;br&gt;&amp;bull; &lt;b&gt;Emergency Contact Details:&lt;/b&gt; Verified primary contact and guarantor information.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#0284c7&#39; style=&#39;font-size:13px;&#39;&gt;B. RESERVATION PARAMETERS &amp; FINANCIAL INPUTS&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Schedule &amp; Unit Selection:&lt;/b&gt; Target vehicle model, pickup and drop-off dates/times, and destination.&lt;br&gt;&amp;bull; &lt;b&gt;Add-On Selection:&lt;/b&gt; Child safety seats, comprehensive collision insurance, and extra driver option.&lt;br&gt;&amp;bull; &lt;b&gt;Payment Data:&lt;/b&gt; Payment mode (Downpayment vs Full), PayMongo GCash/Maya/Card details, or Cash on Pickup.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#0284c7&#39; style=&#39;font-size:13px;&#39;&gt;C. FLEET INVENTORY &amp; OPERATIONAL POLICIES&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Vehicle Fleet Records:&lt;/b&gt; Unit plate numbers, brand, model, daily rental rates, and transmission types.&lt;br&gt;&amp;bull; &lt;b&gt;Business &amp; Safety Policies:&lt;/b&gt; Security deposit rules, overtime late fee matrix, and strict collision lockout rules.&lt;br&gt;&amp;bull; &lt;b&gt;Hardware Infrastructure:&lt;/b&gt; Client mobile devices (Android), Admin dispatch PCs, and internet connection." vertex="1">
+          <mxGeometry x="100" y="210" width="480" height="465" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 2. PROCESS SWIMLANE ==================== -->
+        <mxCell id="box_process" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;horizontal=1;startSize=44;rounded=1;arcSize=8;fillColor=#f5f3ff;strokeColor=#7c3aed;strokeWidth=2.5;fontColor=#6d28d9;fontSize=16;fontFamily=Segoe UI,Helvetica;collapsible=0;" value="2. PROCESS" vertex="1">
+          <mxGeometry x="680" y="100" width="640" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="process_def" parent="1" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=10;rounded=1;arcSize=6;fillColor=#ede9fe;strokeColor=#a78bfa;strokeWidth=1;fontColor=#5b21b6;fontSize=11;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;" value="&lt;b&gt;Definition:&lt;/b&gt; The transformation stage converting inputs into outputs via specialized algorithms, cloud services, and APIs." vertex="1">
+          <mxGeometry x="700" y="155" width="600" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="process_content" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;" value="&lt;b&gt;&lt;font color=&#39;#7c3aed&#39; style=&#39;font-size:13px;&#39;&gt;A. APPLICATION PRESENTATION &amp; CROSS-PLATFORM TOOLS&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Frontend Web Interface:&lt;/b&gt; HTML5, CSS3, Modern JavaScript (ES6+), FontAwesome 6, and reactive DOM handling.&lt;br&gt;&amp;bull; &lt;b&gt;Mobile Compilation:&lt;/b&gt; Apache Cordova / Capacitor generating native Android APKs for field dispatchers &amp; renters.&lt;br&gt;&amp;bull; &lt;b&gt;Visual Fleet Calendar Grid:&lt;/b&gt; Multi-unit Gantt scheduling timeline with real-time drag-and-drop reassignment.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#7c3aed&#39; style=&#39;font-size:13px;&#39;&gt;B. TRANSFORMATION ENGINES &amp; BUSINESS LOGIC&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Backend API Engine:&lt;/b&gt; Python 3 Flask RESTful API with modular blueprints routing requests &amp; session auth.&lt;br&gt;&amp;bull; &lt;b&gt;Algorithmic Collision Detection:&lt;/b&gt; Validates vehicle schedules down to the minute to prevent duplicate reservations.&lt;br&gt;&amp;bull; &lt;b&gt;Dynamic Pricing &amp; Balance Engine:&lt;/b&gt; Instant computation of total prices, deposits, payments, and balances due.&lt;br&gt;&amp;bull; &lt;b&gt;Accelerated Dispatch Workflows:&lt;/b&gt; 1-click Hand Over Key, 1-click Return Key, No-Show, and Extension logic.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#7c3aed&#39; style=&#39;font-size:13px;&#39;&gt;C. CLOUD DATA, STORAGE &amp; THIRD-PARTY INTEGRATIONS&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Cloud Database:&lt;/b&gt; PostgreSQL (Supabase / Neon DB) enforcing ACID transactions &amp; relational integrity.&lt;br&gt;&amp;bull; &lt;b&gt;Cloud Storage Buckets:&lt;/b&gt; Supabase Storage for encrypted driver licenses, valid IDs, and inspection proofs.&lt;br&gt;&amp;bull; &lt;b&gt;Payment Gateway Integration:&lt;/b&gt; PayMongo API &amp; webhooks for real-time GCash, Maya, and Card settlement.&lt;br&gt;&amp;bull; &lt;b&gt;Automated Communications:&lt;/b&gt; Semaphore SMS API and SMTP email dispatch for real-time booking alerts." vertex="1">
+          <mxGeometry x="700" y="210" width="600" height="465" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 3. OUTPUT SWIMLANE ==================== -->
+        <mxCell id="box_output" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;horizontal=1;startSize=44;rounded=1;arcSize=8;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=2.5;fontColor=#15803d;fontSize=16;fontFamily=Segoe UI,Helvetica;collapsible=0;" value="3. OUTPUT" vertex="1">
+          <mxGeometry x="1400" y="100" width="520" height="600" as="geometry" />
+        </mxCell>
+        <mxCell id="output_def" parent="1" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=10;rounded=1;arcSize=6;fillColor=#dcfce7;strokeColor=#4ade80;strokeWidth=1;fontColor=#166534;fontSize=11;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;" value="&lt;b&gt;Definition:&lt;/b&gt; Deliverables, completed transactions, reports, and system states produced by the transformation stage." vertex="1">
+          <mxGeometry x="1420" y="155" width="480" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="output_content" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;\" value="&lt;b&gt;&lt;font color=&#39;#16a34a&#39; style=&#39;font-size:13px;&#39;&gt;A. OPERATIONAL &amp; CUSTOMER DELIVERABLES&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Tamper-Proof Verified Profiles:&lt;/b&gt; KYC customer accounts with 3-state validation (Pending, Approved, Rejected).&lt;br&gt;&amp;bull; &lt;b&gt;100% Conflict-Free Bookings:&lt;/b&gt; Confirmed vehicle reservations verified free of scheduling overlaps.&lt;br&gt;&amp;bull; &lt;b&gt;Digital E-Receipts &amp; Itineraries:&lt;/b&gt; Automated booking vouchers with itemized pricing, payments, and QR codes.&lt;br&gt;&amp;bull; &lt;b&gt;Instant Alerts &amp; Notifications:&lt;/b&gt; Real-time SMS and email confirmations sent on status transitions.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#16a34a&#39; style=&#39;font-size:13px;&#39;&gt;B. ADMINISTRATIVE &amp; FLEET DELIVERABLES&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Live Fleet Dispatch Control:&lt;/b&gt; Visual multi-month timeline tracking active assignments and vehicle statuses.&lt;br&gt;&amp;bull; &lt;b&gt;Digital Inspection Proofs:&lt;/b&gt; Pre-pickup and post-return 360&amp;deg; photo evidence, odometer logs, and fuel tracking.&lt;br&gt;&amp;bull; &lt;b&gt;Financial Ledgers &amp; Excel Reports:&lt;/b&gt; Automated daily revenue aggregation and Excel spreadsheet exports.&lt;br&gt;&lt;br&gt;&lt;b&gt;&lt;font color=&#39;#16a34a&#39; style=&#39;font-size:13px;&#39;&gt;C. FINAL SOFTWARE DELIVERABLE&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Autoride Car Rental System:&lt;/b&gt; Deployed omni-channel platform operating on Desktop Web and Android Mobile APK." vertex="1">
+          <mxGeometry x="1420" y="210" width="480" height="465" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 4. FEEDBACK LOOP SWIMLANE ==================== -->
+        <mxCell id="box_feedback" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;horizontal=1;startSize=44;rounded=1;arcSize=8;fillColor=#fffbeb;strokeColor=#d97706;strokeWidth=2.5;strokeDasharray=4;fontColor=#b45309;fontSize=16;fontFamily=Segoe UI,Helvetica;collapsible=0;" value="4. CYBERNETIC CLOSED-LOOP FEEDBACK (Continuous Evaluation &amp; Real-Time Recalibration)" vertex="1">
+          <mxGeometry x="80" y="780" width="1840" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback_def" parent="1" style="text;html=1;align=center;verticalAlign=middle;spacingLeft=15;spacingRight=15;rounded=1;arcSize=6;fillColor=#fef3c7;strokeColor=#f59e0b;strokeWidth=1;fontColor=#92400e;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;" value="&lt;b&gt;Definition:&lt;/b&gt; The self-regulating mechanism that continuously evaluates outputs, routing operational metrics back into the Inputs (to calibrate inventory and user eligibility) and the Process (to trigger collision locks, reconcile balances, and optimize performance)." vertex="1">
+          <mxGeometry x="110" y="835" width="1780" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Feedback Card A -->
+        <mxCell id="fb_card_a" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;" value="&lt;b&gt;&lt;font color=&#39;#d97706&#39; style=&#39;font-size:13px;&#39;&gt;A. REAL-TIME OPERATIONAL FEEDBACK&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Instant Collision Alert &amp; Button Lock:&lt;/b&gt; Real-time banner alert blocks overlapping date saves, immediately correcting scheduling errors.&lt;br&gt;&amp;bull; &lt;b&gt;Dynamic PayMongo Webhook Sync:&lt;/b&gt; Webhook signals dynamically update payment status from &lt;i&gt;Unpaid&lt;/i&gt; to &lt;i&gt;Partially Paid&lt;/i&gt; or &lt;i&gt;Paid&lt;/i&gt;.&lt;br&gt;&amp;bull; &lt;b&gt;Unsaved Changes Warning Guard:&lt;/b&gt; Prevents accidental data loss by prompting confirmation if modal is closed with uncommitted edits." vertex="1">
+          <mxGeometry x="110" y="885" width="560" height="230" as="geometry" />
+        </mxCell>
+        
+        <!-- Feedback Card B -->
+        <mxCell id="fb_card_b" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;" value="&lt;b&gt;&lt;font color=&#39;#d97706&#39; style=&#39;font-size:13px;&#39;&gt;B. CUSTOMER, RISK &amp; COMPLIANCE FEEDBACK&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;KYC Verification &amp; Strike System:&lt;/b&gt; Customer violations or failed license verifications automatically update booking eligibility in the Input stage.&lt;br&gt;&amp;bull; &lt;b&gt;Customer Ratings &amp; Reviews:&lt;/b&gt; Post-rental reviews dynamically calibrate vehicle satisfaction indexes and driver badges.&lt;br&gt;&amp;bull; &lt;b&gt;Timestamped Activity Audit Trail:&lt;/b&gt; Admin overrides and status changes are recorded in &lt;i&gt;activity_logs&lt;/i&gt; for complete accountability." vertex="1">
+          <mxGeometry x="720" y="885" width="560" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- Feedback Card C -->
+        <mxCell id="fb_card_c" parent="1" style="text;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingRight=12;spacingTop=12;spacingBottom=12;rounded=1;arcSize=6;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;fontColor=#1e293b;fontSize=11.5;fontFamily=Segoe UI,Helvetica;whiteSpace=wrap;lineHeight=1.4;" value="&lt;b&gt;&lt;font color=&#39;#d97706&#39; style=&#39;font-size:13px;&#39;&gt;C. FLEET STATE &amp; SYSTEM RECALIBRATION&lt;/font&gt;&lt;/b&gt;&lt;br&gt;&amp;bull; &lt;b&gt;Instant 1-Click Return Release:&lt;/b&gt; Clicking &lt;i&gt;Return Key&lt;/i&gt; automatically restores vehicle status to &lt;b&gt;Available&lt;/b&gt; for incoming booking inputs.&lt;br&gt;&amp;bull; &lt;b&gt;Return Inspection Data Integration:&lt;/b&gt; Odometer increments and fuel readings automatically update vehicle maintenance schedules.&lt;br&gt;&amp;bull; &lt;b&gt;System Telemetry &amp; Error Monitoring:&lt;/b&gt; API performance metrics feed back into backend optimization and code enhancements." vertex="1">
+          <mxGeometry x="1330" y="885" width="560" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== FLOW CONNECTORS & ARROWS ==================== -->
+        <!-- 1. Input -> Process -->
+        <mxCell id="edge_in_to_proc" edge="1" parent="1" source="box_input" target="box_process" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=3.5;endArrow=block;endFill=1;fontSize=12;fontStyle=1;fontFamily=Segoe UI;fontColor=#0369a1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="Data Ingestion &amp; Resource Allocation" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 2. Process -> Output -->
+        <mxCell id="edge_proc_to_out" edge="1" parent="1" source="box_process" target="box_output" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=3.5;endArrow=block;endFill=1;fontSize=12;fontStyle=1;fontFamily=Segoe UI;fontColor=#15803d;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="Transformation, Execution &amp; Generation" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 3. Output -> Feedback Loop -->
+        <mxCell id="edge_out_to_fb" edge="1" parent="1" source="box_output" target="box_feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=3;dashed=1;dashPattern=6 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#b45309;labelBackgroundColor=#fffbeb;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1660" y="740" />
+              <mxPoint x="1660" y="780" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="Operational Deliverables, Rental Outcomes &amp; Audit Logs" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 4. Feedback -> Input (Closed-Loop Return) -->
+        <mxCell id="edge_fb_to_in" edge="1" parent="1" source="box_feedback" target="box_input" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=3;dashed=1;dashPattern=6 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#b45309;labelBackgroundColor=#fffbeb;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="780" />
+              <mxPoint x="340" y="700" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="&#x21BB; Return Loop to Input: Calibrated Inventory, Returned Units &amp; KYC Status" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 5. Feedback -> Process (Closed-Loop Optimization) -->
+        <mxCell id="edge_fb_to_proc" edge="1" parent="1" source="box_feedback" target="box_process" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7c3aed;strokeWidth=2.5;dashed=1;dashPattern=4 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#6d28d9;labelBackgroundColor=#f5f3ff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="780" />
+              <mxPoint x="1000" y="700" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="&#x26A1; Return Loop to Process: Collision Interception, Balance Sync &amp; Code Telemetry" as="geometry" relative="1" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

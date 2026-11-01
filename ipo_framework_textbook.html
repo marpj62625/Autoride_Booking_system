@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoRide System - Conceptual Framework (IPO Model)</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+        body { background: #0f172a; color: #1e293b; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .diagram-container { width: 100%; max-width: 1400px; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.35); padding: 36px 32px; border: 1px solid #e2e8f0; }
+        
+        .diagram-header { text-align: center; margin-bottom: 28px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; }
+        .diagram-header h1 { font-size: 1.7rem; font-weight: 900; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.5px; }
+        .diagram-header p { font-size: 0.95rem; color: #64748b; margin: 0; }
+        
+        /* Top Row: Input -> Process -> Output */
+        .ipo-row { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: stretch; gap: 14px; position: relative; margin-bottom: 30px; }
+        
+        .box { border-radius: 14px; border: 2.5px solid; padding: 20px 18px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: #ffffff; }
+        .box-input { border-color: #0284c7; background: #f0f9ff; }
+        .box-process { border-color: #7c3aed; background: #f5f3ff; }
+        .box-output { border-color: #16a34a; background: #f0fdf4; }
+        
+        .box-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1.5px solid #e2e8f0; }
+        .box-title { font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
+        .box-input .box-title { color: #0284c7; }
+        .box-process .box-title { color: #7c3aed; }
+        .box-output .box-title { color: #16a34a; }
+        
+        .definition-banner { font-size: 0.76rem; font-weight: 600; padding: 7px 10px; border-radius: 6px; margin-bottom: 12px; line-height: 1.4; }
+        .def-input { background: #e0f2fe; color: #0369a1; border-left: 3px solid #0284c7; }
+        .def-process { background: #ede9fe; color: #5b21b6; border-left: 3px solid #7c3aed; }
+        .def-output { background: #dcfce7; color: #166534; border-left: 3px solid #16a34a; }
+        
+        .flow-arrow-col { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0 4px; }
+        .flow-arrow { font-size: 1.8rem; font-weight: 900; }
+        .arrow-input { color: #0284c7; }
+        .arrow-process { color: #16a34a; }
+        .flow-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; text-align: center; writing-mode: vertical-rl; transform: rotate(180deg); }
+        
+        .content-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; font-size: 0.8rem; line-height: 1.5; color: #334155; margin-bottom: 10px; }
+        .content-card:last-child { margin-bottom: 0; }
+        .section-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .label-blue { color: #0284c7; }
+        .label-purple { color: #7c3aed; }
+        .label-green { color: #16a34a; }
+        .label-amber { color: #d97706; }
+        
+        .tool-badge { display: inline-block; background: #ede9fe; color: #5b21b6; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; border: 1px solid #ddd6fe; margin-right: 2px; }
+        
+        ul.styled-list { margin: 0; padding-left: 18px; }
+        ul.styled-list li { margin-bottom: 4px; }
+        ul.styled-list li:last-child { margin-bottom: 0; }
+        
+        /* Bottom Container: Feedback Loop */
+        .feedback-container { border-radius: 16px; border: 2.5px dashed #d97706; background: #fffbeb; padding: 22px 24px; position: relative; }
+        .feedback-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1.5px solid #fde68a; }
+        .feedback-title { font-size: 1.15rem; font-weight: 900; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
+        .def-feedback { background: #fef3c7; color: #92400e; border-left: 3px solid #d97706; font-size: 0.78rem; font-weight: 600; padding: 8px 12px; border-radius: 6px; margin-bottom: 16px; }
+        
+        .feedback-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .fb-card { background: #ffffff; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; }
+        
+        .return-loop-banner { margin-top: 16px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #92400e; }
+        .return-loop-banner span { display: flex; align-items: center; gap: 6px; }
+    </style>
+</head>
+<body>
+
+<div class="diagram-container">
+    <div class="diagram-header">
+        <h1>CONCEPTUAL FRAMEWORK (IPO MODEL WITH FEEDBACK LOOP)</h1>
+        <p>AutoRide Online Vehicle Booking & Fleet Management System with Cybernetic Closed-Loop Feedback</p>
+    </div>
+
+    <!-- Top Row: Input -> Process -> Output -->
+    <div class="ipo-row">
+        <!-- 1. INPUT -->
+        <div class="box box-input">
+            <div class="box-header">
+                <span class="box-title">1. INPUT</span>
+            </div>
+            <div class="definition-banner def-input">
+                <b>Definition:</b> Raw materials, data, resources, or requirements that enter a system to start a task.
+            </div>
+            
+            <div class="content-card">
+                <div class="section-label label-blue">A. User & Operational Requirements</div>
+                <ul class="styled-list">
+                    <li><b>Customer Credentials:</b> Full name, contact number, email, and Google OAuth profile.</li>
+                    <li><b>Digital KYC Documents:</b> High-resolution photo uploads of Driver's License & Government IDs.</li>
+                    <li><b>Booking Parameters:</b> Vehicle model selection, pickup/drop-off schedule, and destination.</li>
+                    <li><b>Financial Inputs:</b> Downpayment or full payment amounts, GCash/Maya/Card payment details.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-blue">B. Hardware & Infrastructure</div>
+                <ul class="styled-list">
+                    <li>User smartphones (Android/iOS) and admin desktop/laptop dispatch workstations.</li>
+                    <li>High-speed internet / Wi-Fi connection and vehicle GPS tracking hardware.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-blue">C. Business Policies & Rules</div>
+                <ul class="styled-list">
+                    <li>Daily vehicle rates, security deposit matrix, and double-booking conflict prevention rules.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Arrow Input -> Process -->
+        <div class="flow-arrow-col">
+            <span class="flow-label">Data Ingestion</span>
+            <span class="flow-arrow arrow-input">➔</span>
+        </div>
+
+        <!-- 2. PROCESS -->
+        <div class="box box-process">
+            <div class="box-header">
+                <span class="box-title">2. PROCESS</span>
+            </div>
+            <div class="definition-banner def-process">
+                <b>Definition:</b> The transformation phase that converts your inputs into final deliverables using specialized development tools & engines.
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-purple">A. System Development & UI Tools</div>
+                <ul class="styled-list">
+                    <li><span class="tool-badge">HTML5 / CSS3 / ES6+</span> Responsive modern web interfaces & reactive DOM handling.</li>
+                    <li><span class="tool-badge">Leaflet.js & OpenStreetMap</span> Interactive GPS maps, live location picking & fleet route tracking.</li>
+                    <li><span class="tool-badge">Capacitor & Android Studio</span> Compilation of cross-platform native Android mobile APKs.</li>
+                    <li><span class="tool-badge">FontAwesome 6</span> Consistent visual icons, status indicators, and modal UI components.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-purple">B. Transformation Engines & Backend Logic</div>
+                <ul class="styled-list">
+                    <li><span class="tool-badge">Python / Flask REST API</span> Routing endpoints, session validation, and database operations.</li>
+                    <li><span class="tool-badge">Collision Detection Algorithm</span> Algorithmic overlap checking that detects schedule conflicts and locks overlapping units.</li>
+                    <li><span class="tool-badge">Dynamic Balance Engine</span> Instant computation of total prices, deposits, and remaining balances due.</li>
+                    <li><span class="tool-badge">Multi-Month Fleet Scheduler</span> Interactive visual dispatch timeline managing vehicle availability.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-purple">C. Database, Cloud & Integration APIs</div>
+                <ul class="styled-list">
+                    <li><span class="tool-badge">Supabase Cloud PostgreSQL</span> Relational transactions, schema constraints, and Row Level Security.</li>
+                    <li><span class="tool-badge">Supabase Storage</span> Encrypted cloud storage buckets for Driver's Licenses and receipts.</li>
+                    <li><span class="tool-badge">PayMongo API</span> Automated e-wallet (GCash, Maya) and credit card payment processing.</li>
+                    <li><span class="tool-badge">Semaphore SMS & SMTP Email</span> Real-time automated multi-channel customer dispatch alerts.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Arrow Process -> Output -->
+        <div class="flow-arrow-col">
+            <span class="flow-label">Generation</span>
+            <span class="flow-arrow arrow-process">➔</span>
+        </div>
+
+        <!-- 3. OUTPUT -->
+        <div class="box box-output">
+            <div class="box-header">
+                <span class="box-title">3. OUTPUT</span>
+            </div>
+            <div class="definition-banner def-output">
+                <b>Definition:</b> The final result or product generated by the transformation phase.
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-green">A. Operational & Customer Deliverables</div>
+                <ul class="styled-list">
+                    <li><b>Tamper-Proof KYC Profiles:</b> Approved customer verification status with audit-ready driver records.</li>
+                    <li><b>100% Conflict-Free Bookings:</b> Guaranteed reservations verified by real-time collision prevention.</li>
+                    <li><b>Instant Digital E-Receipts:</b> Automated booking vouchers with itemized pricing and payment references.</li>
+                    <li><b>Automated Dispatch Notifications:</b> Timely SMS and email reservation confirmations.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-green">B. Administrative Deliverables</div>
+                <ul class="styled-list">
+                    <li><b>Centralized Fleet Dashboard:</b> Live vehicle dispatching across Available, Reserved, and Maintenance states.</li>
+                    <li><b>Financial Ledgers:</b> Daily revenue aggregation, balance tracking, and Excel audit export.</li>
+                </ul>
+            </div>
+
+            <div class="content-card">
+                <div class="section-label label-green">C. System Deliverable</div>
+                <ul class="styled-list">
+                    <li><b>AutoRide System:</b> Dual-platform vehicle rental and fleet management system (Web & Android).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Feedback Loop -->
+    <div class="feedback-container">
+        <div class="feedback-header">
+            <span class="feedback-title">4. FEEDBACK LOOP (Continuous Cybernetic Evaluation)</span>
+        </div>
+        <div class="def-feedback">
+            <b>Definition & Feedback Function:</b> The feedback loop acts as the self-regulating mechanism of the IPO framework. It continuously monitors and analyzes the Outputs, feeding real-time operational data and user evaluations back into the Inputs (to calibrate resources, requirements, and vehicle availability) and the Process (to optimize algorithms, software tools, and business rules).
+        </div>
+
+        <div class="feedback-grid">
+            <div class="fb-card">
+                <div class="section-label label-amber">A. Real-Time Operational Feedback</div>
+                <ul class="styled-list" style="font-size: 0.78rem;">
+                    <li><b>Instant Collision Warning:</b> Immediate banner alert and button lock when overlapping dates are selected.</li>
+                    <li><b>Dynamic Payment Sync:</b> PayMongo webhooks instantly update booking status from <i>Unpaid</i> to <i>Partially Paid</i> or <i>Paid</i>.</li>
+                    <li><b>Unsaved Changes Guard:</b> Custom modal warning triggers when navigating away with unsaved booking edits.</li>
+                </ul>
+            </div>
+
+            <div class="fb-card">
+                <div class="section-label label-amber">B. Customer & Experience Feedback</div>
+                <ul class="styled-list" style="font-size: 0.78rem;">
+                    <li><b>User Ratings & Reviews:</b> Post-rental customer reviews dynamically adjust unit satisfaction metrics.</li>
+                    <li><b>Audit Trail Logging:</b> Timestamped admin dispatch actions maintain operational accountability.</li>
+                    <li><b>Dispute Resolution:</b> Customer feedback informs refund policies and driver security deposit handling.</li>
+                </ul>
+            </div>
+
+            <div class="fb-card">
+                <div class="section-label label-amber">C. Maintenance & System Optimization</div>
+                <ul class="styled-list" style="font-size: 0.78rem;">
+                    <li><b>Vehicle Return Reports:</b> Mileage, fuel, and inspection logs trigger maintenance states, updating Input inventory.</li>
+                    <li><b>Completed Rental Release:</b> Returned vehicles automatically transition back to Available for new inputs.</li>
+                    <li><b>Telemetry & Error Logs:</b> System performance monitoring feeds back into Process code updates.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="return-loop-banner">
+            <span>🔄 <b>Return Loop to INPUT:</b> Inventory availability updates, revised customer KYC status, and adjusted booking rules.</span>
+            <span>⚡ <b>Return Loop to PROCESS:</b> Performance telemetry, algorithmic adjustments, and software feature refinements.</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
