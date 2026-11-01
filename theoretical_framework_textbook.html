@@ -3,70 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoRide System - Theoretical Framework (IPO Model)</title>
+    <title>AutoRide System - Theoretical Framework (30px Typography)</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
-        body { background: #0f172a; color: #1e293b; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        .diagram-container { width: 100%; max-width: 1440px; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.35); padding: 36px 32px; border: 1px solid #e2e8f0; }
+        body { background: #0f172a; color: #1e293b; margin: 0; padding: 60px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .diagram-container { width: 100%; max-width: 2200px; background: #ffffff; border-radius: 28px; box-shadow: 0 35px 80px rgba(0,0,0,0.45); padding: 50px 48px; border: 2px solid #e2e8f0; }
         
-        .diagram-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 18px; }
-        .diagram-header h1 { font-size: 1.65rem; font-weight: 900; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.5px; text-transform: uppercase; }
-        .diagram-header p { font-size: 0.9rem; color: #64748b; margin: 0; }
+        .diagram-header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #f1f5f9; padding-bottom: 30px; }
+        .diagram-header h1 { font-size: 2.6rem; font-weight: 900; color: #0f172a; margin: 0 0 12px 0; letter-spacing: -0.5px; text-transform: uppercase; }
+        .diagram-header p { font-size: 1.35rem; color: #64748b; font-weight: 600; margin: 0; }
 
         /* Benchmark Row */
-        .benchmark-section { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 16px; margin-bottom: 24px; }
-        .benchmark-title { font-size: 0.85rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .benchmark-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-        .bench-card { border-radius: 10px; padding: 12px 14px; font-size: 0.8rem; line-height: 1.5; border: 1.5px solid; }
+        .benchmark-section { background: #f8fafc; border: 2.5px solid #cbd5e1; border-radius: 20px; padding: 28px; margin-bottom: 40px; }
+        .benchmark-title { font-size: 1.45rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .benchmark-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+        .bench-card { border-radius: 16px; padding: 24px 26px; font-size: 1.25rem; line-height: 1.6; border: 2.5px solid; }
         .bench-a { background: #fff1f2; border-color: #f43f5e; color: #475569; }
         .bench-b { background: #fefce8; border-color: #ca8a04; color: #475569; }
         .bench-c { background: #f0fdf4; border-color: #16a34a; color: #1e293b; font-weight: 500; }
-        .bench-card h4 { margin: 0 0 6px 0; font-size: 0.88rem; font-weight: 800; }
+        .bench-card h4 { margin: 0 0 12px 0; font-size: 1.45rem; font-weight: 800; }
         .bench-a h4 { color: #be123c; }
         .bench-b h4 { color: #a16207; }
         .bench-c h4 { color: #15803d; }
         
         /* Top Row: Input -> Process -> Output */
-        .ipo-row { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: stretch; gap: 14px; position: relative; margin-bottom: 24px; }
+        .ipo-row { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: stretch; gap: 24px; position: relative; margin-bottom: 40px; }
         
-        .box { border-radius: 14px; border: 2.5px solid; padding: 18px 16px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: #ffffff; }
+        .box { border-radius: 20px; border: 3.5px solid; padding: 32px 30px; display: flex; flex-direction: column; box-shadow: 0 6px 18px rgba(0,0,0,0.04); background: #ffffff; }
         .box-input { border-color: #0284c7; background: #f0f9ff; }
         .box-process { border-color: #7c3aed; background: #f5f3ff; }
         .box-output { border-color: #16a34a; background: #f0fdf4; }
         
-        .box-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1.5px solid #e2e8f0; }
-        .box-title { font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
+        .box-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; }
+        .box-title { font-size: 1.65rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
         .box-input .box-title { color: #0284c7; }
         .box-process .box-title { color: #7c3aed; }
         .box-output .box-title { color: #16a34a; }
         
-        .definition-banner { font-size: 0.74rem; font-weight: 700; padding: 6px 9px; border-radius: 6px; margin-bottom: 10px; line-height: 1.4; }
+        .definition-banner { font-size: 1.25rem; font-weight: 700; padding: 10px 14px; border-radius: 10px; margin-bottom: 18px; line-height: 1.4; }
         .box-input .definition-banner { background: #e0f2fe; color: #0369a1; }
         .box-process .definition-banner { background: #ede9fe; color: #6d28d9; }
         .box-output .definition-banner { background: #dcfce7; color: #15803d; }
         
-        .box-content { font-size: 0.8rem; line-height: 1.6; color: #334155; }
-        .box-content ul { margin: 6px 0 0 0; padding-left: 18px; }
-        .box-content li { margin-bottom: 6px; }
+        .box-content { font-size: 1.3rem; line-height: 1.7; color: #334155; }
+        .box-content ul { margin: 10px 0 0 0; padding-left: 24px; }
+        .box-content li { margin-bottom: 10px; }
         .box-content strong { color: #0f172a; }
         
-        .arrow-connector { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; }
-        .arrow-line { width: 32px; height: 3.5px; border-radius: 2px; }
-        .arrow-head { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+        .arrow-connector { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; }
+        .arrow-line { width: 44px; height: 6px; border-radius: 3px; }
+        .arrow-head { width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
         .arrow-input .arrow-line { background: #0284c7; }
-        .arrow-input .arrow-head { border-left: 11px solid #0284c7; }
+        .arrow-input .arrow-head { border-left: 18px solid #0284c7; }
         .arrow-process .arrow-line { background: #7c3aed; }
-        .arrow-process .arrow-head { border-left: 11px solid #7c3aed; }
+        .arrow-process .arrow-head { border-left: 18px solid #7c3aed; }
         
         /* Bottom Row: Feedback Loop */
-        .feedback-box { border-radius: 14px; border: 2.5px dashed #d97706; background: #fffbeb; padding: 18px 22px; position: relative; }
-        .feedback-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #fde68a; padding-bottom: 10px; margin-bottom: 12px; }
-        .feedback-title { font-size: 1.05rem; font-weight: 900; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
-        .feedback-subtitle { font-size: 0.78rem; font-weight: 600; color: #92400e; }
+        .feedback-box { border-radius: 20px; border: 3.5px dashed #d97706; background: #fffbeb; padding: 32px 36px; position: relative; }
+        .feedback-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #fde68a; padding-bottom: 16px; margin-bottom: 20px; }
+        .feedback-title { font-size: 1.6rem; font-weight: 900; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
+        .feedback-subtitle { font-size: 1.2rem; font-weight: 700; color: #92400e; }
         
-        .feedback-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-        .feedback-card { background: #ffffff; border-radius: 10px; padding: 12px 14px; border: 1px solid #fde68a; font-size: 0.78rem; line-height: 1.55; color: #475569; }
-        .feedback-card h4 { margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #b45309; }
+        .feedback-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+        .feedback-card { background: #ffffff; border-radius: 14px; padding: 22px 24px; border: 1.5px solid #fde68a; font-size: 1.25rem; line-height: 1.65; color: #475569; }
+        .feedback-card h4 { margin: 0 0 10px 0; font-size: 1.4rem; font-weight: 800; color: #b45309; }
     </style>
 </head>
 <body>
