@@ -89,6 +89,26 @@
 
 
     <style>
+        /* Sleek Modern Modal Scrollbar */
+        #fleetBookingModal .modal-content {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        #fleetBookingModal .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        #fleetBookingModal .modal-content::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 10px 0;
+        }
+        #fleetBookingModal .modal-content::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+        #fleetBookingModal .modal-content::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+    
 
 
 
@@ -7764,9 +7784,9 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
     <!-- FLEET BOOKING QUICK DETAILS & WORKING PRICING PANEL -->
     <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { if(event.stopPropagation) event.stopPropagation(); if(event.stopImmediatePropagation) event.stopImmediatePropagation(); FleetCalendar.requestCloseQuickModal(); }">
-        <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 16px 20px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span id="quickModalColorBadge" style="width: 22px; height: 22px; border-radius: 6px; background: #fde047; display: inline-block; border: 1.5px solid rgba(0,0,0,0.2);"></span>
                     <div>
@@ -7780,12 +7800,12 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
 
             <!-- Booking Summary Card -->
-            <div id="quickModalSummaryCard" style="background: #f8fafc; border-radius: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; margin-bottom: 14px; font-size: 0.78rem; line-height: 1.5;">
+            <div id="quickModalSummaryCard" style="background: #f8fafc; border-radius: 12px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; font-size: 0.78rem; line-height: 1.5;">
                 <!-- Injected via JS -->
             </div>
 
             <!-- Vehicle / Unit Assignment & Transfer -->
-            <div style="margin-bottom: 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+            <div style="margin-bottom: 10px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 12px;">
                 <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-bottom: 6px;">
                     <span><i class="fas fa-car" style="color: #0284c7; margin-right: 5px;"></i> Assigned Vehicle / Unit</span>
                     <span id="quickVehicleTransferBadge" style="font-size: 0.68rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 10px;">Transfer Unit</span>
@@ -7819,7 +7839,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
 
             <!-- Color Selection (User Select Colors for Flexibility) -->
-            <div style="margin-bottom: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+            <div style="margin-bottom: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px;">
                 <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 8px;">
                     <i class="fas fa-palette" style="color: #6366f1; margin-right: 4px;"></i> Customer / Booking Color
                 </label>
@@ -7839,7 +7859,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
 
             <!-- Working Pricing & Payments Section -->
-            <div style="background: #ffffff; border: 1.5px solid #bbf7d0; border-radius: 14px; padding: 14px; margin-bottom: 16px; background: #f0fdf4;">
+            <div style="background: #ffffff; border: 1.5px solid #bbf7d0; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; background: #f0fdf4;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <label style="font-size: 0.75rem; font-weight: 800; color: #166534; text-transform: uppercase; margin: 0;">
                         <i class="fas fa-coins" style="color: #16a34a; margin-right: 4px;"></i> Direct Pricing & Payment Update
@@ -7892,7 +7912,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
 
             <!-- Workflow Actions Bar (Hand Over Key, Pickup Inspect, No Show) -->
-            <div id="quickModalWorkflowActions" style="display: none; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;"></div>
+            <div id="quickModalWorkflowActions" style="display: none; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;"></div>
 
             <!-- Footer Buttons -->
             <div style="display: flex; gap: 8px;">
@@ -19409,11 +19429,14 @@ input:checked + .ctrl-slider:before {
                     }
                 } else if (bStatus === 'picked up' || bStatus === 'ongoing') {
                     actionsHtml += `
-                        <button type="button" onclick="FleetCalendar.quickExtendBooking(${b.id})" style="flex: 1; min-width: 120px; padding: 10px 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <i class="fas fa-calendar-plus"></i> Extend Booking
+                        <button type="button" onclick="FleetCalendar.quickCompleteBooking(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
+                            <i class="fas fa-undo-alt"></i> Return Key
                         </button>
-                        <button type="button" onclick="FleetCalendar.quickReturnInspect(${b.id})" style="flex: 1; min-width: 120px; padding: 10px 12px; background: #f59e0b; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <button type="button" onclick="FleetCalendar.quickReturnInspect(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #f59e0b; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                             <i class="fas fa-clipboard-check"></i> Return Inspect
+                        </button>
+                        <button type="button" onclick="FleetCalendar.quickExtendBooking(${b.id})" style="flex: 1; min-width: 105px; padding: 10px 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-calendar-plus"></i> Extend
                         </button>
                     `;
                 }
@@ -19771,6 +19794,13 @@ input:checked + .ctrl-slider:before {
         async confirmSaveQuickChanges() {
             this.cancelQuickUnsavedPrompt();
             await this.saveQuickPricing();
+        },
+
+        quickCompleteBooking(bId) {
+            this.closeQuickModal();
+            if (typeof Bookings !== 'undefined' && typeof Bookings.complete === 'function') {
+                Bookings.complete(bId);
+            }
         },
 
         quickHandOverKey(bId) {
@@ -23982,8 +24012,9 @@ function toggleNewsletterModal(show = true) {
                 }
             }
             if (st === 'picked up' || st === 'ongoing') {
-                actionBtns += `<button onclick="Bookings.openExtendModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#0284c7;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-calendar-plus"></i>Extend Booking</button>`;
+                actionBtns += `<button onclick="Bookings.complete(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,177,79,0.35);"><i class="fas fa-undo-alt"></i>Return Key</button>`;
                 actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
+                actionBtns += `<button onclick="Bookings.openExtendModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#0284c7;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-calendar-plus"></i>Extend Booking</button>`;
             }
             if (isSuperAdmin) {
                 actionBtns += `<button onclick="Bookings.openSuperAdminEditModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-edit"></i>Edit Details</button>`;
@@ -25190,22 +25221,18 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                if (res.ok) {
-
-
-
-                    showNotification('Booking Completed!', 'success');
-
-
-
-                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
-
-
-
+                                if (res.ok) {
+                    showNotification('Booking Completed! Vehicle returned & Available.', 'success');
+                    const bdm = document.getElementById('bookingDetailsModal');
+                    if (bdm) bdm.style.display = 'none';
+                    if (typeof modalClose === 'function') modalClose();
                     this.refresh();
-
-
-
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
+                        FleetCalendar.loadBookings();
+                    }
+                    if (typeof Vehicles !== 'undefined' && typeof Vehicles.refresh === 'function') {
+                        Vehicles.refresh();
+                    }
                 } else {
 
 
