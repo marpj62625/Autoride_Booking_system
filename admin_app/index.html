@@ -25205,27 +25205,52 @@ function toggleNewsletterModal(show = true) {
         },
 
         async complete(id) {
-
-
-
             if (!confirm('Confirm vehicle has been returned?')) return;
 
-
-
-            showAdminBlockingUI(true);
+            if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(true);
             try {
+                const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                const adminId = adminUser ? adminUser.id : 0;
 
+                const res = await fetch(`${API_URL}/bookings/${id}/complete`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Id': String(adminId)
+                    },
+                    body: JSON.stringify({ admin_id: adminId })
+                });
 
+                if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
 
-                const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
-
-
-
-                                if (res.ok) {
+                if (res.ok) {
                     showNotification('Booking Completed! Vehicle returned & Available.', 'success');
+
+                    // Immediately update local caches
+                    if (this.data && Array.isArray(this.data)) {
+                        const localB = this.data.find(x => x.id == id || x.booking_id == id);
+                        if (localB) {
+                            localB.status = 'Completed';
+                            localB.completed_at = new Date().toISOString();
+                        }
+                    }
+                    if (typeof FleetCalendar !== 'undefined' && Array.isArray(FleetCalendar.bookings)) {
+                        const fcB = FleetCalendar.bookings.find(x => x.id == id || x.booking_id == id);
+                        if (fcB) {
+                            fcB.status = 'Completed';
+                            fcB.completed_at = new Date().toISOString();
+                        }
+                    }
+
+                    // Close any open modals
                     const bdm = document.getElementById('bookingDetailsModal');
                     if (bdm) bdm.style.display = 'none';
                     if (typeof modalClose === 'function') modalClose();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.closeQuickModal === 'function') {
+                        FleetCalendar.closeQuickModal();
+                    }
+
+                    // Refresh all views
                     this.refresh();
                     if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
                         FleetCalendar.loadBookings();
@@ -25234,26 +25259,13 @@ function toggleNewsletterModal(show = true) {
                         Vehicles.refresh();
                     }
                 } else {
-
-
-
-                    const data = await res.json();
-
-
-
-                    showNotification(data.error || 'Failed', 'error');
-
-
-
+                    const data = await res.json().catch(() => ({}));
+                    showNotification(data.error || 'Failed to complete booking', 'error');
                 }
-
-
-
             } catch (err) {
-                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
-
-
-
+                if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
+                showNotification('Network error: ' + err.message, 'error');
+            }
         },
 
 
@@ -25957,35 +25969,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        async complete(id) {
-
-
-
-            if (!confirm('Mark this vehicle as returned?')) return;
-
-
-
-            try {
-
-
-
-                const res = await apiFetch(`bookings/${id}/complete`, { method: 'PUT' });
-
-
-
-                if (res.ok) { showNotification('Vehicle returned successfully!', 'success'); this.refresh(); }
-
-
-
-                else { showNotification('Failed: ' + res.status, 'error'); }
-
-
-
-            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
-
-
-
-        },
+        
 
 
 
