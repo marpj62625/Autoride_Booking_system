@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoRide System - Theoretical Framework (IPO Model)</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+        body { background: #0f172a; color: #1e293b; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .diagram-container { width: 100%; max-width: 1440px; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.35); padding: 36px 32px; border: 1px solid #e2e8f0; }
+        
+        .diagram-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 18px; }
+        .diagram-header h1 { font-size: 1.65rem; font-weight: 900; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.5px; text-transform: uppercase; }
+        .diagram-header p { font-size: 0.9rem; color: #64748b; margin: 0; }
+
+        /* Benchmark Row */
+        .benchmark-section { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 16px; margin-bottom: 24px; }
+        .benchmark-title { font-size: 0.85rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .benchmark-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .bench-card { border-radius: 10px; padding: 12px 14px; font-size: 0.8rem; line-height: 1.5; border: 1.5px solid; }
+        .bench-a { background: #fff1f2; border-color: #f43f5e; color: #475569; }
+        .bench-b { background: #fefce8; border-color: #ca8a04; color: #475569; }
+        .bench-c { background: #f0fdf4; border-color: #16a34a; color: #1e293b; font-weight: 500; }
+        .bench-card h4 { margin: 0 0 6px 0; font-size: 0.88rem; font-weight: 800; }
+        .bench-a h4 { color: #be123c; }
+        .bench-b h4 { color: #a16207; }
+        .bench-c h4 { color: #15803d; }
+        
+        /* Top Row: Input -> Process -> Output */
+        .ipo-row { display: grid; grid-template-columns: 1fr auto 1.15fr auto 1fr; align-items: stretch; gap: 14px; position: relative; margin-bottom: 24px; }
+        
+        .box { border-radius: 14px; border: 2.5px solid; padding: 18px 16px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: #ffffff; }
+        .box-input { border-color: #0284c7; background: #f0f9ff; }
+        .box-process { border-color: #7c3aed; background: #f5f3ff; }
+        .box-output { border-color: #16a34a; background: #f0fdf4; }
+        
+        .box-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1.5px solid #e2e8f0; }
+        .box-title { font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
+        .box-input .box-title { color: #0284c7; }
+        .box-process .box-title { color: #7c3aed; }
+        .box-output .box-title { color: #16a34a; }
+        
+        .definition-banner { font-size: 0.74rem; font-weight: 700; padding: 6px 9px; border-radius: 6px; margin-bottom: 10px; line-height: 1.4; }
+        .box-input .definition-banner { background: #e0f2fe; color: #0369a1; }
+        .box-process .definition-banner { background: #ede9fe; color: #6d28d9; }
+        .box-output .definition-banner { background: #dcfce7; color: #15803d; }
+        
+        .box-content { font-size: 0.8rem; line-height: 1.6; color: #334155; }
+        .box-content ul { margin: 6px 0 0 0; padding-left: 18px; }
+        .box-content li { margin-bottom: 6px; }
+        .box-content strong { color: #0f172a; }
+        
+        .arrow-connector { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; }
+        .arrow-line { width: 32px; height: 3.5px; border-radius: 2px; }
+        .arrow-head { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+        .arrow-input .arrow-line { background: #0284c7; }
+        .arrow-input .arrow-head { border-left: 11px solid #0284c7; }
+        .arrow-process .arrow-line { background: #7c3aed; }
+        .arrow-process .arrow-head { border-left: 11px solid #7c3aed; }
+        
+        /* Bottom Row: Feedback Loop */
+        .feedback-box { border-radius: 14px; border: 2.5px dashed #d97706; background: #fffbeb; padding: 18px 22px; position: relative; }
+        .feedback-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #fde68a; padding-bottom: 10px; margin-bottom: 12px; }
+        .feedback-title { font-size: 1.05rem; font-weight: 900; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; }
+        .feedback-subtitle { font-size: 0.78rem; font-weight: 600; color: #92400e; }
+        
+        .feedback-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .feedback-card { background: #ffffff; border-radius: 10px; padding: 12px 14px; border: 1px solid #fde68a; font-size: 0.78rem; line-height: 1.55; color: #475569; }
+        .feedback-card h4 { margin: 0 0 6px 0; font-size: 0.85rem; font-weight: 800; color: #b45309; }
+    </style>
+</head>
+<body>
+
+<div class="diagram-container">
+    <div class="diagram-header">
+        <h1>Theoretical Framework: AutoRide Fleet & Booking Ecosystem</h1>
+        <p>Anchored on General Systems Theory (von Bertalanffy, 1968), Cybernetic Control Theory (Wiener, 1948), and Comparative Benchmark Against Existing Systems</p>
+    </div>
+
+    <!-- Comparative Benchmark Section -->
+    <div class="benchmark-section">
+        <div class="benchmark-title">Theoretical Anchor 1: Comparative Benchmark Matrix (Existing Systems vs. Proposed Autoride System)</div>
+        <div class="benchmark-grid">
+            <div class="bench-card bench-a">
+                <h4>Existing System A: Traditional Manual / Messenger Setup</h4>
+                &bull; <b>Mechanism:</b> Paper logbooks, Facebook Messenger chats, unlinked spreadsheets<br/>
+                &bull; <b>Scheduling Defect:</b> Zero collision prevention; high frequency of double-bookings<br/>
+                &bull; <b>Dispatch Latency:</b> 15&ndash;25 minutes per vehicle handover (handwritten forms & keys)<br/>
+                &bull; <b>Payment Proof:</b> Unverified manual GCash screenshots prone to tampering
+            </div>
+            <div class="bench-card bench-b">
+                <h4>Existing System B: International SaaS (HQ Rental / Rentcentric)</h4>
+                &bull; <b>Mechanism:</b> Enterprise cloud SaaS built for global corporate rental conglomerates<br/>
+                &bull; <b>Cost Prohibitive:</b> Heavy recurring USD subscription fees per vehicle/month<br/>
+                &bull; <b>Localization Gap:</b> Lacks native Philippine QRPh, Maya, GCash API integrations<br/>
+                &bull; <b>Consignor Handling:</b> No native multi-party peer consignor profit-sharing architecture
+            </div>
+            <div class="bench-card bench-c">
+                <h4>Proposed System: Autoride Full-Stack Ecosystem</h4>
+                &bull; <b>Cybernetic Architecture:</b> Closed-loop feedback with automated fleet state calibration<br/>
+                &bull; <b>Collision Prevention:</b> Minute-accurate timeline algorithm guaranteeing 0% overlaps<br/>
+                &bull; <b>Rapid 1-Click Operations:</b> Hand Over Key & Return Key turnaround under 30 seconds<br/>
+                &bull; <b>Native Localization:</b> PayMongo automated webhooks (GCash/Maya) & Consignor splits
+            </div>
+        </div>
+    </div>
+
+    <!-- Core IPO Row -->
+    <div class="ipo-row">
+        <!-- 1. INPUT -->
+        <div class="box box-input">
+            <div class="box-header">
+                <span class="box-title">1. Theoretical Input</span>
+            </div>
+            <div class="definition-banner">GST Environmental Ingestion & Foundations</div>
+            <div class="box-content">
+                <strong>A. Theoretical Paradigms:</strong>
+                <ul>
+                    <li><strong>General Systems Theory:</strong> Enterprise viewed as holistic, interrelated subsystems.</li>
+                    <li><strong>Cybernetics (Wiener, 1948):</strong> Feedback loops for error-correcting homeostasis.</li>
+                </ul>
+                <strong>B. Empirical Existing System Defect Baseline:</strong>
+                <ul>
+                    <li>Scheduling collisions & manual logging errors in Traditional Setup.</li>
+                    <li>Cost-prohibitive subscriptions & lack of PH fintech in Enterprise SaaS.</li>
+                </ul>
+                <strong>C. Domain Ingestion:</strong>
+                <ul>
+                    <li>Customer KYC & LTO Validated Licensure.</li>
+                    <li>Fleet Asset Matrix & Consignor Revenue Shares.</li>
+                    <li>PayMongo GCash/Maya & Cash parameters.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Input -> Process Arrow -->
+        <div class="arrow-connector arrow-input">
+            <div style="display:flex; align-items:center;">
+                <div class="arrow-line"></div>
+                <div class="arrow-head"></div>
+            </div>
+        </div>
+
+        <!-- 2. PROCESS -->
+        <div class="box box-process">
+            <div class="box-header">
+                <span class="box-title">2. Theoretical Process</span>
+            </div>
+            <div class="definition-banner">Dynamic Transformation & Cybernetic Rules Engine</div>
+            <div class="box-content">
+                <strong>A. Comparative Synthesis & Modeling:</strong>
+                <ul>
+                    <li>Translating Manual & SaaS pain-points into automated software logic.</li>
+                    <li><strong>Symmetrical 2-Sides Modeling:</strong> Unified database driving Web & Mobile tools.</li>
+                </ul>
+                <strong>B. Algorithmic Transformation Engines:</strong>
+                <ul>
+                    <li><strong>Collision Prevention Engine:</strong> Real-time schedule overlap interceptor.</li>
+                    <li><strong>Rapid 1-Click Dispatch:</strong> Hand Over Key & Return Key instant state transitions.</li>
+                    <li><strong>Dual Digital Inspection:</strong> Timestamped departure vs return photo evidence.</li>
+                    <li><strong>Automated Finance:</strong> Dynamic pricing, late penalties, and consignor splits.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Process -> Output Arrow -->
+        <div class="arrow-connector arrow-process">
+            <div style="display:flex; align-items:center;">
+                <div class="arrow-line"></div>
+                <div class="arrow-head"></div>
+            </div>
+        </div>
+
+        <!-- 3. OUTPUT -->
+        <div class="box box-output">
+            <div class="box-header">
+                <span class="box-title">3. Theoretical Output</span>
+            </div>
+            <div class="definition-banner">Validated Artifacts & System Deliverables</div>
+            <div class="box-content">
+                <strong>A. Verified Software Artifact:</strong>
+                <ul>
+                    <li><strong>The Autoride System:</strong> Fully functional responsive web platform & Android mobile APK prototype.</li>
+                    <li>100% feature symmetry between desktop suite and mobile yard tools.</li>
+                </ul>
+                <strong>B. Operational Deliverables:</strong>
+                <ul>
+                    <li><strong>Zero-Collision Guarantee:</strong> 0% double-booking occurrence validated.</li>
+                    <li><strong>Accelerated Dispatch:</strong> Turnaround reduced from 25 min to &lt;30 sec.</li>
+                    <li><strong>Cryptographic QR Vouchers:</strong> Real-time contract verification.</li>
+                    <li><strong>Immutable Audit Trails:</strong> Automated accountability logging.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. CYBERNETIC FEEDBACK LOOP -->
+    <div class="feedback-box">
+        <div class="feedback-header">
+            <span class="feedback-title">4. Cybernetic Closed-Loop Feedback Mechanism</span>
+            <span class="feedback-subtitle">&larr; Continuous Self-Regulation, Recalibration &amp; Error Correction &rarr;</span>
+        </div>
+        <div class="feedback-grid">
+            <div class="feedback-card">
+                <h4>&#x21BB; Loop A: Operational Fleet State Feedback</h4>
+                &bull; <b>Automatic Unit Recalibration:</b> Clicking <i>Return Key</i> instantly triggers database mutation, releasing the vehicle back to <b>Available</b>.<br/>
+                &bull; <b>Maintenance Routing:</b> Damage or high mileage routes unit to Maintenance blackout.<br/>
+                &bull; <b>Feeds into Input:</b> Restores true physical inventory equilibrium.
+            </div>
+            <div class="feedback-card">
+                <h4>&#x26A1; Loop B: Dynamic Collision & Financial Telemetry</h4>
+                &bull; <b>Live Interception:</b> Every booking triggers algorithmic collision checks returning instant conflict flags before saving.<br/>
+                &bull; <b>Webhook Reconciliation:</b> PayMongo automated webhooks re-calculate balances in real-time.<br/>
+                &bull; <b>Feeds into Process:</b> Calibrates transformation rules.
+            </div>
+            <div class="feedback-card">
+                <h4>&#x1F6E1; Loop C: ISO/IEC 25010 Quality Feedback</h4>
+                &bull; <b>Quality Evaluation:</b> Prototype evaluated on Functional Suitability, Reliability, Usability, Performance.<br/>
+                &bull; <b>Field Telemetry:</b> Dispatch speeds and user feedback inform continuous iteration.<br/>
+                &bull; <b>Feeds into Input & Process:</b> Ensures rigorous academic validation.
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

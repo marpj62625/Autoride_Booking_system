@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-01T23:58:00.000Z" agent="Antigravity-DrawIO-Engine" version="2.0.2" type="device">
+  <diagram id="autoride_theoretical_framework" name="Theoretical Framework (IPO Model)">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1400" background="#f8fafc" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== HEADER ZONE ==================== -->
+        <mxCell id="header_container" value="&lt;div style=&quot;text-align: center;&quot;&gt;&lt;b style=&quot;font-size: 20px; color: #ffffff;&quot;&gt;THEORETICAL FRAMEWORK: AUTORIDE FLEET &amp;amp; BOOKING ECOSYSTEM&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size: 12px; color: #94a3b8;&quot;&gt;Anchored on General Systems Theory (Ludwig von Bertalanffy, 1968), Cybernetic Control Theory (Norbert Wiener, 1948), and Comparative Benchmark Against Existing Systems&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#1e293b;strokeWidth=2;shadow=1;align=center;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="60" y="30" width="1880" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== BENCHMARK MATRIX (EXISTING VS PROPOSED) ==================== -->
+        <mxCell id="box_benchmark_wrapper" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cbd5e1;strokeWidth=1.5;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="1880" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="benchmark_title" value="THEORETICAL ANCHOR 1: COMPARATIVE BENCHMARK MATRIX (EXISTING SYSTEMS VS. PROPOSED AUTORIDE SYSTEM)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#334155;strokeColor=#1e293b;strokeWidth=1;fontSize=12;fontStyle=1;fontFamily=Segoe UI;fontColor=#f8fafc;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="152" width="1840" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Existing System A -->
+        <mxCell id="card_exist_a" value="&lt;div style=&quot;padding: 4px 8px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#be123c; font-size:12px;&quot;&gt;Existing System A: Traditional Manual / Messenger Setup&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10.5px; color:#475569; line-height:1.5;&quot;&gt;&amp;bull; &lt;b&gt;Mechanism:&lt;/b&gt; Paper logbooks, Facebook Messenger chats, unlinked spreadsheets&lt;br/&gt;&amp;bull; &lt;b&gt;Scheduling Defect:&lt;/b&gt; Zero collision prevention; high frequency of catastrophic double-bookings&lt;br/&gt;&amp;bull; &lt;b&gt;Dispatch Latency:&lt;/b&gt; 15&amp;ndash;25 minutes per vehicle handover (handwritten forms &amp;amp; keys)&lt;br/&gt;&amp;bull; &lt;b&gt;Payment Proof:&lt;/b&gt; Unverified manual GCash screenshots prone to tampering&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fff1f2;strokeColor=#f43f5e;strokeWidth=1.5;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="80" y="195" width="580" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Existing System B -->
+        <mxCell id="card_exist_b" value="&lt;div style=&quot;padding: 4px 8px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#a16207; font-size:12px;&quot;&gt;Existing System B: International SaaS (HQ Rental / Rentcentric)&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10.5px; color:#475569; line-height:1.5;&quot;&gt;&amp;bull; &lt;b&gt;Mechanism:&lt;/b&gt; Enterprise cloud SaaS built for global corporate rental conglomerates&lt;br/&gt;&amp;bull; &lt;b&gt;Cost Prohibitive:&lt;/b&gt; Heavy recurring USD subscription fees per vehicle/month&lt;br/&gt;&amp;bull; &lt;b&gt;Localization Gap:&lt;/b&gt; Lacks native Philippine QRPh, Maya, GCash API integrations&lt;br/&gt;&amp;bull; &lt;b&gt;Consignor Handling:&lt;/b&gt; No native multi-party peer consignor profit-sharing architecture&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#ca8a04;strokeWidth=1.5;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="710" y="195" width="580" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Proposed System -->
+        <mxCell id="card_proposed" value="&lt;div style=&quot;padding: 4px 8px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#15803d; font-size:12px;&quot;&gt;Proposed System: Autoride Full-Stack Ecosystem&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:10.5px; color:#1e293b; line-height:1.5;&quot;&gt;&amp;bull; &lt;b&gt;Cybernetic Architecture:&lt;/b&gt; Closed-loop feedback with automated fleet state calibration&lt;br/&gt;&amp;bull; &lt;b&gt;Collision Prevention:&lt;/b&gt; Minute-accurate timeline algorithm guaranteeing 0% overlaps&lt;br/&gt;&amp;bull; &lt;b&gt;Rapid 1-Click Operations:&lt;/b&gt; Hand Over Key &amp;amp; Return Key turnaround under 30 seconds&lt;br/&gt;&amp;bull; &lt;b&gt;Native Localization:&lt;/b&gt; PayMongo automated webhooks (GCash/Maya) &amp;amp; Consignor splits&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=2;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="195" width="580" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CORE IPO MODEL ZONE ==================== -->
+        
+        <!-- 1. INPUT BOX -->
+        <mxCell id="box_input" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f0f9ff;strokeColor=#0284c7;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="370" width="580" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="input_header" value="1. THEORETICAL INPUT (GST INGESTION)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#0284c7;strokeColor=#0369a1;strokeWidth=1;fontSize=13;fontStyle=1;fontFamily=Segoe UI;fontColor=#ffffff;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="385" width="540" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="input_def" value="Environmental Ingestion &amp; Foundational Frameworks" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e0f2fe;strokeColor=#0284c7;strokeWidth=1.2;fontSize=11;fontStyle=1;fontFamily=Segoe UI;fontColor=#0369a1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="432" width="540" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="input_content" value="&lt;div style=&quot;padding: 10px 14px; text-align: left; font-size: 11px; line-height: 1.6; color: #1e293b;&quot;&gt;
+&lt;b style=&quot;color:#0369a1; font-size:12px;&quot;&gt;A. Theoretical Paradigms &amp;amp; Principles:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; &lt;b&gt;General Systems Theory (von Bertalanffy, 1968):&lt;/b&gt; Conceptualizes car rental enterprise as holistic, interrelated subsystems (Client, Dispatch, DB, Finance)&lt;br/&gt;
+&amp;bull; &lt;b&gt;Cybernetics (Wiener, 1948):&lt;/b&gt; Information feedback loops for self-regulation and error-correcting homeostasis&lt;br/&gt;
+&lt;hr style=&quot;border: 0; border-top: 1px dashed #bae6fd; margin: 8px 0;&quot;/&gt;
+&lt;b style=&quot;color:#0369a1; font-size:12px;&quot;&gt;B. Empirical Existing System Defect Baseline:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; Scheduling collisions &amp;amp; lack of real-time multi-staff calendar locks in Manual Setup&lt;br/&gt;
+&amp;bull; Prohibitive recurring subscription cost &amp;amp; lack of PH fintech in Enterprise SaaS&lt;br/&gt;
+&lt;hr style=&quot;border: 0; border-top: 1px dashed #bae6fd; margin: 8px 0;&quot;/&gt;
+&lt;b style=&quot;color:#0369a1; font-size:12px;&quot;&gt;C. Domain Data &amp;amp; Operational Parameters:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; Customer KYC &amp;amp; Licensure (LTO Validated IDs, contact profiles)&lt;br/&gt;
+&amp;bull; Fleet Asset Ingestion (Units, daily rates, owner-consignor shares)&lt;br/&gt;
+&amp;bull; Temporal Schedules &amp;amp; Blackout Rules (2-month fleet timeline grid)&lt;br/&gt;
+&amp;bull; Financial rails (PayMongo GCash/Maya &amp;amp; Cash downpayment/balance)
+&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#bae6fd;strokeWidth=1;align=left;verticalAlign=top;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="80" y="475" width="540" height="435" as="geometry" />
+        </mxCell>
+
+        <!-- 2. PROCESS BOX -->
+        <mxCell id="box_process" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f5f3ff;strokeColor=#7c3aed;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="370" width="580" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="process_header" value="2. THEORETICAL PROCESS (TRANSFORMATION)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#7c3aed;strokeColor=#6d28d9;strokeWidth=1;fontSize=13;fontStyle=1;fontFamily=Segoe UI;fontColor=#ffffff;align=center;" vertex="1" parent="1">
+          <mxGeometry x="730" y="385" width="540" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="process_def" value="Dynamic Transformation, Synthesis &amp; Cybernetic Rules Engine" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;strokeWidth=1.2;fontSize=11;fontStyle=1;fontFamily=Segoe UI;fontColor=#6d28d9;" vertex="1" parent="1">
+          <mxGeometry x="730" y="432" width="540" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="process_content" value="&lt;div style=&quot;padding: 10px 14px; text-align: left; font-size: 11px; line-height: 1.6; color: #1e293b;&quot;&gt;
+&lt;b style=&quot;color:#6d28d9; font-size:12px;&quot;&gt;A. Comparative Synthesis &amp;amp; Gap Remediation:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; Systems analysis translating Manual/SaaS pain-points into automated software logic&lt;br/&gt;
+&amp;bull; Symmetrical 2-Sides Modeling: Unified database powering Web &amp;amp; Mobile clients&lt;br/&gt;
+&lt;hr style=&quot;border: 0; border-top: 1px dashed #ddd6fe; margin: 8px 0;&quot;/&gt;
+&lt;b style=&quot;color:#6d28d9; font-size:12px;&quot;&gt;B. Cybernetic Rules &amp;amp; Algorithmic Engines:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; &lt;b&gt;Collision Prevention Algorithm:&lt;/b&gt; Real-time schedule overlap interceptor protecting unit availability across all channels&lt;br/&gt;
+&amp;bull; &lt;b&gt;1-Click Rapid Key Dispatch:&lt;/b&gt; Instant state transitions (&lt;i&gt;Hand Over Key&lt;/i&gt; &amp;rarr; &lt;i&gt;picked up&lt;/i&gt;; &lt;i&gt;Return Key&lt;/i&gt; &amp;rarr; &lt;i&gt;completed&lt;/i&gt;) bypassing clunky paperwork&lt;br/&gt;
+&amp;bull; &lt;b&gt;Dual Multi-Angle Digital Inspection:&lt;/b&gt; Standardized departure vs. return photographic evidence &amp;amp; odometer/fuel logging&lt;br/&gt;
+&amp;bull; &lt;b&gt;Automated Financial Calculations:&lt;/b&gt; Dynamic pricing, late penalties, extension delta computations, &amp;amp; consignor commission shares
+&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ddd6fe;strokeWidth=1;align=left;verticalAlign=top;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="730" y="475" width="540" height="435" as="geometry" />
+        </mxCell>
+
+        <!-- 3. OUTPUT BOX -->
+        <mxCell id="box_output" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="370" width="580" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="output_header" value="3. THEORETICAL OUTPUT (SYSTEM CONTRIBUTION)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#16a34a;strokeColor=#15803d;strokeWidth=1;fontSize=13;fontStyle=1;fontFamily=Segoe UI;fontColor=#ffffff;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="385" width="540" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="output_def" value="Validated Artifacts, System Deliverables &amp; State Mutations" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;strokeWidth=1.2;fontSize=11;fontStyle=1;fontFamily=Segoe UI;fontColor=#15803d;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="432" width="540" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="output_content" value="&lt;div style=&quot;padding: 10px 14px; text-align: left; font-size: 11px; line-height: 1.6; color: #1e293b;&quot;&gt;
+&lt;b style=&quot;color:#15803d; font-size:12px;&quot;&gt;A. Verified Operational Software Artifact:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; &lt;b&gt;The Autoride System:&lt;/b&gt; Fully functional responsive web platform &amp;amp; Android mobile application prototype&lt;br/&gt;
+&amp;bull; 100% feature symmetry between desktop administrative suite and mobile yard tools&lt;br/&gt;
+&lt;hr style=&quot;border: 0; border-top: 1px dashed #bbf7d0; margin: 8px 0;&quot;/&gt;
+&lt;b style=&quot;color:#15803d; font-size:12px;&quot;&gt;B. Operational Deliverables &amp;amp; Outcomes:&lt;/b&gt;&lt;br/&gt;
+&amp;bull; &lt;b&gt;Zero-Collision Guarantee:&lt;/b&gt; 0% double-booking occurrence validated across operational testing&lt;br/&gt;
+&amp;bull; &lt;b&gt;Accelerated Dispatch:&lt;/b&gt; Turnaround time reduced from 25 min (manual) to &amp;lt;30 sec (digital)&lt;br/&gt;
+&amp;bull; &lt;b&gt;Cryptographic QR Rental Vouchers:&lt;/b&gt; Real-time proof of reservation &amp;amp; contract validation&lt;br/&gt;
+&amp;bull; &lt;b&gt;Tamper-Resistant Audit Records:&lt;/b&gt; Automated logs of staff actions, vehicle transitions, and payments
+&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#bbf7d0;strokeWidth=1;align=left;verticalAlign=top;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="475" width="540" height="435" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 4. FEEDBACK LOOP ZONE ==================== -->
+        <mxCell id="box_feedback" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#fffbeb;strokeColor=#d97706;strokeWidth=2;dashed=1;dashPattern=6 4;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="970" width="1880" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="fb_header" value="4. CYBERNETIC CLOSED-LOOP FEEDBACK MECHANISM (WIENER'S CONTROL &amp; EQUILIBRIUM)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#d97706;strokeColor=#b45309;strokeWidth=1;fontSize=13;fontStyle=1;fontFamily=Segoe UI;fontColor=#ffffff;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="985" width="1840" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="feedback_def" value="Real-time closed-loop data telemetry that regulates, corrects, and continuously balances system inputs &amp; transformations" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;strokeWidth=1.2;fontSize=11;fontStyle=1;fontFamily=Segoe UI;fontColor=#b45309;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1030" width="1840" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Feedback Card 1 -->
+        <mxCell id="fb_card_a" value="&lt;div style=&quot;padding: 10px 14px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#b45309; font-size:12px;&quot;&gt;&amp;#x21BB; Loop A: Operational Fleet State Feedback&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:11px; color:#475569; line-height:1.6;&quot;&gt;&amp;bull; &lt;b&gt;Automatic Unit Recalibration:&lt;/b&gt; Clicking &lt;i&gt;Return Key&lt;/i&gt; instantly triggers a database state mutation, releasing the vehicle back to &lt;b&gt;Available&lt;/b&gt; inventory.&lt;br/&gt;&amp;bull; &lt;b&gt;Maintenance Routing:&lt;/b&gt; If return inspection flags damage or high mileage, unit is auto-rerouted to Maintenance blackout status.&lt;br/&gt;&amp;bull; &lt;b&gt;Target Destination:&lt;/b&gt; Feeds directly into &lt;b&gt;Theoretical Input&lt;/b&gt; to maintain exact real-world inventory equilibrium.&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1075" width="580" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- Feedback Card 2 -->
+        <mxCell id="fb_card_b" value="&lt;div style=&quot;padding: 10px 14px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#b45309; font-size:12px;&quot;&gt;&amp;#x26A1; Loop B: Dynamic Collision &amp; Financial Telemetry&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:11px; color:#475569; line-height:1.6;&quot;&gt;&amp;bull; &lt;b&gt;Live Timeline Interception:&lt;/b&gt; Every booking attempt triggers algorithmic date collision checks against ongoing reservations, returning immediate conflict flags.&lt;br/&gt;&amp;bull; &lt;b&gt;Webhook Reconciliation:&lt;/b&gt; PayMongo automated payment responses re-calculate outstanding balances, updating payment status in real-time.&lt;br/&gt;&amp;bull; &lt;b&gt;Target Destination:&lt;/b&gt; Feeds back into &lt;b&gt;Theoretical Process&lt;/b&gt; to dynamically calibrate transformation rules.&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="710" y="1075" width="580" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- Feedback Card 3 -->
+        <mxCell id="fb_card_c" value="&lt;div style=&quot;padding: 10px 14px; text-align: left;&quot;&gt;&lt;b style=&quot;color:#b45309; font-size:12px;&quot;&gt;&amp;#x1F6E1; Loop C: ISO/IEC 25010 Quality &amp; Evaluation Feedback&lt;/b&gt;&lt;br/&gt;&lt;span style=&quot;font-size:11px; color:#475569; line-height:1.6;&quot;&gt;&amp;bull; &lt;b&gt;Quality Evaluation:&lt;/b&gt; Prototype performance assessed against ISO/IEC 25010 metrics (Functional Suitability, Reliability, Usability, Performance Efficiency).&lt;br/&gt;&amp;bull; &lt;b&gt;User Experience Telemetry:&lt;/b&gt; Dispatch completion times, error recovery rates, and stakeholder evaluations feed back into system iterative development.&lt;br/&gt;&amp;bull; &lt;b&gt;Target Destination:&lt;/b&gt; Closed loop to both &lt;b&gt;Input &amp;amp; Process&lt;/b&gt; ensuring academic and operational rigor.&lt;/span&gt;&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#fde68a;strokeWidth=1.5;align=left;verticalAlign=middle;fontFamily=Segoe UI;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="1075" width="580" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CONNECTORS ==================== -->
+        
+        <!-- 1. Benchmark -> Input -->
+        <mxCell id="edge_bench_to_in" edge="1" parent="1" source="box_benchmark_wrapper" target="box_input" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=8;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2.5;endArrow=block;endFill=1;fontSize=11;fontStyle=1;fontFamily=Segoe UI;fontColor=#334155;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="350" />
+              <mxPoint x="350" y="370" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="Synthesizes Theoretical &amp; Empirical Defect Baseline" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 2. Input -> Process -->
+        <mxCell id="edge_in_to_proc" edge="1" parent="1" source="box_input" target="box_process" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0284c7;strokeWidth=3.5;endArrow=block;endFill=1;fontSize=12;fontStyle=1;fontFamily=Segoe UI;fontColor=#0369a1;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="Ingestion &amp; Modeling" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 3. Process -> Output -->
+        <mxCell id="edge_proc_to_out" edge="1" parent="1" source="box_process" target="box_output" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7c3aed;strokeWidth=3.5;endArrow=block;endFill=1;fontSize=12;fontStyle=1;fontFamily=Segoe UI;fontColor=#6d28d9;labelBackgroundColor=#ffffff;">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="Transformation &amp; Synthesis" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 4. Output -> Feedback Loop -->
+        <mxCell id="edge_out_to_fb" edge="1" parent="1" source="box_output" target="box_feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=3;dashed=1;dashPattern=6 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#15803d;labelBackgroundColor=#f0fdf4;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1650" y="940" />
+              <mxPoint x="1650" y="970" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="Operational Deliverables &amp; Performance Telemetry" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 5. Feedback -> Input (Closed-Loop Return) -->
+        <mxCell id="edge_fb_to_in" edge="1" parent="1" source="box_feedback" target="box_input" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=3;dashed=1;dashPattern=6 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#b45309;labelBackgroundColor=#fffbeb;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="970" />
+              <mxPoint x="350" y="930" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="&#x21BB; Return Loop to Input: Calibrated Inventory &amp; Quality Parameters" as="geometry" relative="1" />
+        </mxCell>
+
+        <!-- 6. Feedback -> Process (Closed-Loop Optimization) -->
+        <mxCell id="edge_fb_to_proc" edge="1" parent="1" source="box_feedback" target="box_process" style="edgeStyle=orthogonalEdgeStyle;rounded=1;arcSize=10;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7c3aed;strokeWidth=2.5;dashed=1;dashPattern=4 4;endArrow=block;endFill=1;fontSize=11.5;fontStyle=1;fontFamily=Segoe UI;fontColor=#6d28d9;labelBackgroundColor=#f5f3ff;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="970" />
+              <mxPoint x="1000" y="930" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="&#x26A1; Return Loop to Process: Collision Telemetry &amp; System Optimization" as="geometry" relative="1" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
