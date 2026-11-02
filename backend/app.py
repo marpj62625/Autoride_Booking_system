@@ -3765,6 +3765,8 @@ def admin_users_list():
             d['completed_bookings'] = completed
             d['total_bookings'] = int(d.get('total_bookings') or 0)
             d['total_spent'] = float(d.get('total_spent') or 0)
+            d['auth_provider'] = d.get('auth_provider') or ''
+            d['is_admin_registered'] = bool(d.get('auth_provider') == 'admin_walkin')
             
             is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
             d['is_regular_customer'] = is_reg
@@ -8183,6 +8185,81 @@ def create_walkin_booking():
         if len(emergency_rel) > 30:
             return jsonify({"error": "Emergency relationship cannot exceed 30 characters"}), 400
 
+        # Auto-register walk-in renter in users table so subsequent bookings can instantly search and pull info
+        if not user_id and customer_name:
+            try:
+                import re as _re
+                clean_phone_digits = _re.sub(r'[^0-9+]', '', customer_phone or '')
+                matched_user = None
+                if clean_phone_digits and len(clean_phone_digits) >= 7:
+                    cur.execute("SELECT id FROM users WHERE phone = %s OR phone = %s LIMIT 1", (customer_phone, clean_phone_digits))
+                    matched_user = cur.fetchone()
+
+                if matched_user:
+                    user_id = matched_user['id']
+                else:
+                    name_parts = customer_name.strip().split()
+                    f_name = name_parts[0] if name_parts else customer_name
+                    l_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+                    clean_digits = _re.sub(r'[^0-9]', '', customer_phone or '')
+                    if not clean_digits:
+                        import time as _t
+                        clean_digits = str(int(_t.time()))
+
+                    base_walkin_email = f"walkin_{clean_digits}@autoride.internal"
+                    cur.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(%s) LIMIT 1", (base_walkin_email,))
+                    if cur.fetchone():
+                        import time as _t
+                        base_walkin_email = f"walkin_{clean_digits}_{int(_t.time())}@autoride.internal"
+
+                    cur.execute("""
+                        INSERT INTO users (
+                            full_name, first_name, last_name, email, phone,
+                            role, is_verified, is_frozen, auth_provider, created_at
+                        ) VALUES (
+                            %s, %s, %s, %s, %s,
+                            'user', 2, FALSE, 'admin_walkin', NOW()
+                        ) RETURNING id
+                    """, (customer_name, f_name, l_name, base_walkin_email, customer_phone))
+                    new_u = cur.fetchone()
+                    if new_u:
+                        user_id = new_u['id']
+
+            except Exception as _reg_err:
+                print(f"WARN auto-register walk-in renter: {_reg_err}")
+
+        # Synchronize address & emergency contacts into license_details
+        if user_id:
+            try:
+                cur.execute("SELECT user_id FROM license_details WHERE user_id = %s", (user_id,))
+                ld_row = cur.fetchone()
+                if ld_row:
+                    cur.execute("""
+                        UPDATE license_details SET
+                            full_name = COALESCE(NULLIF(%s, ''), full_name),
+                            address = COALESCE(NULLIF(%s, ''), address),
+                            emergency_contact_name = COALESCE(NULLIF(%s, ''), emergency_contact_name),
+                            emergency_contact_phone = COALESCE(NULLIF(%s, ''), emergency_contact_phone),
+                            emergency_contact_relationship = COALESCE(NULLIF(%s, ''), emergency_contact_relationship),
+                            updated_at = NOW()
+                        WHERE user_id = %s
+                    """, (customer_name, customer_address, emergency_name, emergency_phone, emergency_rel, user_id))
+                else:
+                    cur.execute("""
+                        INSERT INTO license_details (
+                            user_id, full_name, address,
+                            emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+                            created_at, updated_at
+                        ) VALUES (
+                            %s, %s, %s,
+                            %s, %s, %s,
+                            NOW(), NOW()
+                        )
+                    """, (user_id, customer_name, customer_address, emergency_name, emergency_phone, emergency_rel))
+            except Exception as _ld_err:
+                print(f"WARN sync walk-in license_details: {_ld_err}")
+
         # Verify vehicle exists and is operational
         cur.execute("SELECT id, brand, model, plate_number, daily_rate, status FROM vehicles WHERE id = %s", (vehicle_id,))
         veh = cur.fetchone()
@@ -8317,6 +8394,7 @@ def create_walkin_booking():
             "booking_id": new_booking_id,
             "customer_name": customer_name,
             "user_id": user_id,
+            "is_admin_registered": True,
             "status": status
         }), 201
 

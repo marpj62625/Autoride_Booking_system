@@ -11644,6 +11644,7 @@ input:checked + .ctrl-slider:before {
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)">Unverified</button>
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)">Frozen</button>
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('violations', this)"><i class="fas fa-exclamation-triangle" style="margin-right:5px;color:#d97706;"></i>With Violations</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('admin_reg', this)"><i class="fas fa-user-plus" style="margin-right:5px;color:#0284c7;"></i>Admin Reg</button>
     </div>
 
 
@@ -38020,14 +38021,18 @@ function toggleNewsletterModal(show = true) {
             let html = '';
             matches.forEach(m => {
                 const safeName = (m.full_name || 'Customer').replace(/"/g, '&quot;');
-                const safeEmail = (m.email || '').replace(/"/g, '&quot;');
+                const isWalkin = !!(m.is_admin_registered || m.auth_provider === 'admin_walkin');
+                const safeEmail = (m.email && !m.email.includes('@autoride.internal') ? m.email : (isWalkin ? 'Walk-In Customer' : '')).replace(/"/g, '&quot;');
                 const safePhone = (m.phone || '').replace(/"/g, '&quot;');
+                const badgeHtml = isWalkin ? '<span style="background:rgba(2,132,199,0.15);color:#0284c7;padding:2px 7px;border-radius:12px;font-size:0.62rem;font-weight:800;margin-left:6px;border:1px solid rgba(2,132,199,0.3);"><i class="fas fa-user-plus" style="margin-right:3px;"></i>Admin Reg</span>' : '';
                 html += `
                     <div onclick="WalkinBooking.selectCustomer(${m.id})" 
                          style="padding: 10px 14px; border-bottom: 1px solid var(--border, #e2e8f0); cursor: pointer; transition: background 0.15s;"
                          onmouseover="this.style.background='rgba(0,177,79,0.06)'" onmouseout="this.style.background='transparent'">
-                        <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main, #0f172a);">${safeName}</div>
-                        <div style="font-size: 0.72rem; color: var(--text-muted, #64748b);">${safeEmail} • ${safePhone}</div>
+                        <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main, #0f172a); display:flex; align-items:center;">
+                            ${safeName} ${badgeHtml}
+                        </div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted, #64748b);">${safeEmail ? safeEmail + ' • ' : ''}${safePhone || 'No phone'}</div>
                     </div>
                 `;
             });
@@ -38480,6 +38485,11 @@ function toggleNewsletterModal(show = true) {
                 if (typeof loadDashboardData === 'function') {
                     loadDashboardData();
                 }
+                // Reload customers cache and Renter Management so newly registered walkin renter appears immediately
+                this.loadCustomers();
+                if (window.UserMgmt && typeof window.UserMgmt.refresh === 'function') {
+                    window.UserMgmt.refresh();
+                }
 
             } catch (err) {
                 console.error('Error submitting walk-in booking:', err);
@@ -38775,6 +38785,7 @@ function toggleNewsletterModal(show = true) {
 
             else if (this._filter === 'frozen') list = list.filter(u => u.is_frozen);
             else if (this._filter === 'violations') list = list.filter(u => (u.violation_strikes > 0 || u.booking_suspension_until || u.violation_permanently_restricted));
+            else if (this._filter === 'admin_reg') list = list.filter(u => (u.is_admin_registered || u.auth_provider === 'admin_walkin'));
 
 
 
@@ -38883,6 +38894,10 @@ function toggleNewsletterModal(show = true) {
                     ? `<span style="background:rgba(234,179,8,0.18);color:#eab308;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(234,179,8,0.4);"><i class="fas fa-crown" style="font-size:0.55rem;margin-right:2px;"></i>REGULAR VIP</span>`
                     : '';
 
+                const adminRegBadge = (u.is_admin_registered || u.auth_provider === 'admin_walkin')
+                    ? `<span style="background:rgba(2,132,199,0.15);color:#0284c7;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(2,132,199,0.3);"><i class="fas fa-user-plus" style="font-size:0.55rem;margin-right:2px;"></i>ADMIN REG</span>`
+                    : '';
+
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
 
@@ -38958,7 +38973,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}</div>
+                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}${adminRegBadge}</div>
 
 
 
