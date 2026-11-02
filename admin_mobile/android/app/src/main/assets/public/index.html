@@ -7721,7 +7721,7 @@
 
     <!-- FLEET BOOKING QUICK DETAILS
     <!-- Merge Confirmation Modal -->
-    <div id="fleetMergeModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10006; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);">
+    <div id="fleetMergeModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000025; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-width: 520px; width: 92%;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -12863,6 +12863,10 @@ input:checked + .ctrl-slider:before {
                     if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) FleetCalendar.cancelQuickUnsavedPrompt();
                     return;
                 }
+                if (topModal.id === 'fleetMergeModal') {
+                    if (typeof FleetCalendar !== 'undefined' && FleetCalendar.closeMergeModal) FleetCalendar.closeMergeModal();
+                    return;
+                }
                 if (topModal.id === 'fleetBookingModal') {
                     if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) FleetCalendar.requestCloseQuickModal();
                     return;
@@ -12902,6 +12906,10 @@ input:checked + .ctrl-slider:before {
             }
             if (topModal.id === 'fleetQuickUnsavedModal') {
                 if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) FleetCalendar.cancelQuickUnsavedPrompt();
+                return true;
+            }
+            if (topModal.id === 'fleetMergeModal') {
+                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.closeMergeModal) FleetCalendar.closeMergeModal();
                 return true;
             }
             if (topModal.id === 'fleetBookingModal') {
@@ -19294,6 +19302,12 @@ async edit(id) { this.openModal(id); },
 
             this._mergeData = { primary: b1, secondary: b2 };
 
+            const bookingModal = document.getElementById('fleetBookingModal');
+            if (bookingModal && bookingModal.style.display !== 'none') {
+                this._returnToBookingIdOnMergeCancel = this.activeBookingId;
+                bookingModal.style.display = 'none';
+            }
+
             const body = document.getElementById('fleetMergeModalBody');
             if (!body) return;
 
@@ -19355,6 +19369,11 @@ async edit(id) { this.openModal(id); },
             const modal = document.getElementById('fleetMergeModal');
             if (modal) modal.style.display = 'none';
             this._mergeData = null;
+            if (this._returnToBookingIdOnMergeCancel) {
+                this._returnToBookingIdOnMergeCancel = null;
+                const bookingModal = document.getElementById('fleetBookingModal');
+                if (bookingModal) bookingModal.style.display = 'flex';
+            }
         },
 
         executeMerge() {
@@ -19392,6 +19411,7 @@ async edit(id) { this.openModal(id); },
                     if (typeof showToast === 'function') showToast(data.error, 'error');
                 } else {
                     if (typeof showToast === 'function') showToast(data.message || 'Bookings merged successfully.', 'success');
+                    FleetCalendar._returnToBookingIdOnMergeCancel = null;
                     FleetCalendar.closeMergeModal();
                     FleetCalendar.closeQuickModal();
                     if (typeof FleetCalendar.loadAndRender === 'function') FleetCalendar.loadAndRender();
