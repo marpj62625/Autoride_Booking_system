@@ -8215,13 +8215,13 @@ def create_walkin_booking():
 
                     cur.execute("""
                         INSERT INTO users (
-                            full_name, first_name, last_name, email, phone,
+                            first_name, last_name, email, phone,
                             role, is_verified, is_frozen, auth_provider, created_at
                         ) VALUES (
-                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s,
                             'user', 2, FALSE, 'admin_walkin', NOW()
                         ) RETURNING id
-                    """, (customer_name, f_name, l_name, base_walkin_email, customer_phone))
+                    """, (f_name, l_name, base_walkin_email, customer_phone))
                     new_u = cur.fetchone()
                     if new_u:
                         user_id = new_u['id']
