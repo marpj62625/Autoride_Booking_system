@@ -13816,7 +13816,13 @@ input:checked + .ctrl-slider:before {
                     if (mergeText) {
                         const custShort = (adjacent.customer_name || 'Customer').substring(0, 22);
                         mergeText.textContent = `Combine with #${adjacent.id} (${custShort} • ₱${Number(adjacent.total_price || 0).toLocaleString()})?`;
-                    }
+                    }
+                } else {
+                    mergeBanner.style.display = 'none';
+                    this._pendingMergeAdjacent = null;
+                }
+            }
+
             const unmergeBanner = document.getElementById('quickModalUnmergeBanner');
             if (unmergeBanner) {
                 const isCons = (typeof isConsignor === 'function' && isConsignor());
@@ -13831,13 +13837,8 @@ input:checked + .ctrl-slider:before {
                     unmergeBanner.style.display = 'none';
                 }
             }
-
-                } else {
-                    mergeBanner.style.display = 'none';
-                    this._pendingMergeAdjacent = null;
-                }
-            }
-const isConsignorUser = (typeof isConsignor === 'function' && isConsignor());
+
+            const isConsignorUser = (typeof isConsignor === 'function' && isConsignor());
             if (isConsignorUser) {
                 ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
                     const el = document.getElementById(id);
