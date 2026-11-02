@@ -19463,6 +19463,258 @@ def update_booking_quick_pricing(booking_id):
         if 'cur' in locals(): cur.close()
 
 # ==================== PENALTIES ====================
+# ─── Smart Booking Merge & Calendar Typo Management ───────────────────
+@app.route('/admin/bookings/merge', methods=['POST'])
+@app.route('/api/admin/bookings/merge', methods=['POST'])
+def merge_bookings():
+    """
+    Combines two adjacent/split bookings (even with typo in customer name) into one continuous booking.
+    Reassigns payments, calculates combined duration and price, archives secondary booking,
+    and logs the activity.
+    """
+    data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access.", "code": "FORBIDDEN"}), 403
+
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    primary_id = data.get('primary_id') or data.get('primary_booking_id')
+    secondary_id = data.get('secondary_id') or data.get('secondary_booking_id')
+    unified_name = (data.get('unified_customer_name') or '').strip()
+    admin_id = data.get('admin_id') or 1
+    admin_name = data.get('admin_name') or 'Admin'
+
+    if not primary_id or not secondary_id or primary_id == secondary_id:
+        return jsonify({"error": "Two different booking IDs (primary and secondary) are required."}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM bookings WHERE id = %s", (primary_id,))
+        b1 = cur.fetchone()
+        cur.execute("SELECT * FROM bookings WHERE id = %s", (secondary_id,))
+        b2 = cur.fetchone()
+
+        if not b1 or not b2:
+            return jsonify({"error": "One or both bookings could not be found."}), 404
+
+        # Calculate merged dates
+        s1 = str(b1['start_date'])
+        s2 = str(b2['start_date'])
+        e1 = str(b1['end_date'])
+        e2 = str(b2['end_date'])
+
+        # Earliest start
+        if s1 < s2 or (s1 == s2 and str(b1.get('start_time') or '') <= str(b2.get('start_time') or '')):
+            merged_start_date = b1['start_date']
+            merged_start_time = b1.get('start_time') or '08:00'
+        else:
+            merged_start_date = b2['start_date']
+            merged_start_time = b2.get('start_time') or '08:00'
+
+        # Latest end
+        if e1 > e2 or (e1 == e2 and str(b1.get('end_time') or '') >= str(b2.get('end_time') or '')):
+            merged_end_date = b1['end_date']
+            merged_end_time = b1.get('end_time') or '18:00'
+        else:
+            merged_end_date = b2['end_date']
+            merged_end_time = b2.get('end_time') or '18:00'
+
+        # Financial merge
+        tot1 = float(b1.get('total_price') or 0)
+        tot2 = float(b2.get('total_price') or 0)
+        paid1 = float(b1.get('amount_paid') or 0)
+        paid2 = float(b2.get('amount_paid') or 0)
+
+        merged_total = tot1 + tot2
+        merged_paid = paid1 + paid2
+        merged_balance = max(0.0, merged_total - merged_paid)
+        merged_payment_status = 'Paid' if merged_paid >= merged_total and merged_total > 0 else ('Partially Paid' if merged_paid > 0 else 'Unpaid')
+
+        # Customer name
+        final_cust_name = unified_name or b1.get('customer_name') or b2.get('customer_name') or 'Customer'
+
+        # Update primary booking
+        cur.execute("""
+            UPDATE bookings
+            SET start_date = %s,
+                start_time = %s,
+                end_date = %s,
+                end_time = %s,
+                customer_name = %s,
+                total_price = %s,
+                amount_paid = %s,
+                balance_amount = %s,
+                payment_status = %s,
+                rental_purpose = COALESCE(NULLIF(rental_purpose, ''), 'Merged Multi-Day Booking')
+            WHERE id = %s
+        """, (
+            merged_start_date, merged_start_time,
+            merged_end_date, merged_end_time,
+            final_cust_name,
+            merged_total, merged_paid, merged_balance,
+            merged_payment_status,
+            primary_id
+        ))
+
+        # Re-link payments from secondary to primary
+        try:
+            cur.execute("UPDATE payments SET booking_id = %s WHERE booking_id = %s", (primary_id, secondary_id))
+        except Exception:
+            pass
+
+        # Archive secondary booking
+        cur.execute("""
+            UPDATE bookings
+            SET is_archived = TRUE,
+                status = 'Archived',
+                archived_at = NOW(),
+                archived_by = %s,
+                archive_reason = %s
+            WHERE id = %s
+        """, (
+            admin_name,
+            f"Merged into Booking #{primary_id} ({final_cust_name})",
+            secondary_id
+        ))
+
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action='BOOKING_MERGED',
+            target_type='BOOKING',
+            target_id=str(primary_id),
+            details=f"Merged Booking #{secondary_id} into #{primary_id}. New Range: {merged_start_date} to {merged_end_date}, Total: ₱{merged_total:,.2f}"
+        )
+
+        return jsonify({
+            "success": True,
+            "message": f"Successfully merged Booking #{secondary_id} into #{primary_id}.",
+            "primary_id": primary_id,
+            "secondary_id": secondary_id,
+            "merged_booking": {
+                "id": primary_id,
+                "customer_name": final_cust_name,
+                "start_date": str(merged_start_date),
+                "end_date": str(merged_end_date),
+                "total_price": merged_total,
+                "amount_paid": merged_paid,
+                "payment_status": merged_payment_status
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/bookings/<int:booking_id>/quick-rename', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/quick-rename', methods=['POST'])
+def quick_rename_booking(booking_id):
+    """Allows admin to correct customer name typos directly from the Fleet Calendar Quick Modal."""
+    data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access.", "code": "FORBIDDEN"}), 403
+
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    new_name = (data.get('customer_name') or '').strip()
+    if not new_name or len(new_name) < 2:
+        return jsonify({"error": "Valid customer name (at least 2 characters) is required."}), 400
+
+    admin_id = data.get('admin_id') or 1
+    admin_name = data.get('admin_name') or 'Admin'
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, customer_name FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{booking_id} not found."}), 404
+
+        old_name = b.get('customer_name') or ''
+        cur.execute("UPDATE bookings SET customer_name = %s WHERE id = %s", (new_name, booking_id))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action='BOOKING_RENAMED',
+            target_type='BOOKING',
+            target_id=str(booking_id),
+            details=f"Corrected customer typo from '{old_name}' to '{new_name}'"
+        )
+
+        return jsonify({
+            "success": True,
+            "booking_id": booking_id,
+            "old_name": old_name,
+            "customer_name": new_name,
+            "message": f"Customer name updated to '{new_name}'."
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/bookings/<int:booking_id>/quick-delete', methods=['POST', 'DELETE'])
+@app.route('/api/admin/bookings/<int:booking_id>/quick-delete', methods=['POST', 'DELETE'])
+def quick_delete_booking(booking_id):
+    """Allows admin to safely delete/archive an accidental or duplicate booking from the Fleet Calendar."""
+    data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access.", "code": "FORBIDDEN"}), 403
+
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    admin_id = data.get('admin_id') or 1
+    admin_name = data.get('admin_name') or 'Admin'
+    reason = (data.get('reason') or 'Deleted via Fleet Calendar').strip()
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, customer_name, status, is_archived FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{booking_id} not found."}), 404
+
+        # Archive/delete booking
+        cur.execute("""
+            UPDATE bookings
+            SET is_archived = TRUE,
+                status = 'Archived',
+                archived_at = NOW(),
+                archived_by = %s,
+                archive_reason = %s
+            WHERE id = %s
+        """, (admin_name, reason, booking_id))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action='BOOKING_DELETED_CALENDAR',
+            target_type='BOOKING',
+            target_id=str(booking_id),
+            details=f"Archived Booking #{booking_id} ({b.get('customer_name')}). Reason: {reason}"
+        )
+
+        return jsonify({
+            "success": True,
+            "booking_id": booking_id,
+            "message": f"Booking #{booking_id} has been safely archived/deleted."
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/admin/bookings/<int:booking_id>/penalties', methods=['GET'])
 @app.route('/api/admin/bookings/<int:booking_id>/penalties', methods=['GET'])
 def get_booking_penalties(booking_id):
