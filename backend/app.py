@@ -19714,38 +19714,56 @@ def unmerge_booking(booking_id):
         secondary_id = b2['id']
 
         # Determine restoration values
-        if snapshot and snapshot.get('primary'):
-            p_snap = snapshot['primary']
-            s_snap = snapshot.get('secondary') or {}
-            
-            restored_s_date = p_snap.get('start_date') or b1['start_date']
-            restored_s_time = p_snap.get('start_time') or '08:00'
-            restored_e_date = p_snap.get('end_date') or b1['end_date']
-            restored_e_time = p_snap.get('end_time') or '18:00'
-            restored_cust = p_snap.get('customer_name') or b1.get('customer_name')
+        b2_s = str(b2['start_date'])
+        b2_e = str(b2['end_date'])
+        p_snap = snapshot.get('primary') if snapshot else None
+        s_snap = snapshot.get('secondary') if snapshot else None
+
+        # Financial restoration
+        if p_snap:
             restored_tot = float(p_snap.get('total_price') or 0)
             restored_paid = float(p_snap.get('amount_paid') or 0)
             restored_bal = float(p_snap.get('balance_amount') or 0)
             restored_pay_status = p_snap.get('payment_status') or 'Paid'
+            restored_cust = p_snap.get('customer_name') or b1.get('customer_name')
             restored_purpose = p_snap.get('rental_purpose')
-            restored_b2_status = s_snap.get('status') or 'Confirmed'
-            b2_pay_ids = s_snap.get('payment_ids') or []
         else:
-            # Fallback calculation using b2's intact values
             b2_tot = float(b2.get('total_price') or 0)
             b2_paid = float(b2.get('amount_paid') or 0)
             restored_tot = max(0.0, float(b1.get('total_price') or 0) - b2_tot)
             restored_paid = max(0.0, float(b1.get('amount_paid') or 0) - b2_paid)
             restored_bal = max(0.0, restored_tot - restored_paid)
             restored_pay_status = 'Paid' if restored_paid >= restored_tot and restored_tot > 0 else ('Partially Paid' if restored_paid > 0 else 'Unpaid')
-            restored_s_date = b1['start_date']
-            restored_s_time = b1.get('start_time') or '08:00'
-            restored_e_date = b1['end_date']
-            restored_e_time = b1.get('end_time') or '18:00'
             restored_cust = b1.get('customer_name')
             restored_purpose = None
-            restored_b2_status = 'Confirmed' if b2.get('status') == 'Archived' else (b2.get('status') or 'Confirmed')
-            b2_pay_ids = []
+
+        restored_b2_status = (s_snap.get('status') if s_snap else None) or ('Confirmed' if b2.get('status') == 'Archived' else (b2.get('status') or 'Confirmed'))
+        b2_pay_ids = s_snap.get('payment_ids') if s_snap else []
+
+        # Mathematical date separation: ensure primary and secondary do not overlap
+        b1_curr_s = str(p_snap.get('start_date') if p_snap else b1['start_date'])
+        if b1_curr_s <= b2_s:
+            # Primary was the earlier booking (e.g. Nov 2 to Nov 3)
+            # Secondary was the later booking (e.g. Nov 3 to Nov 4)
+            restored_s_date = b1_curr_s
+            restored_s_time = (p_snap.get('start_time') if p_snap else None) or b1.get('start_time') or '08:00'
+            p_snap_end = str(p_snap.get('end_date')) if (p_snap and p_snap.get('end_date')) else ''
+            if p_snap_end and p_snap_end <= b2_s:
+                restored_e_date = p_snap_end
+            else:
+                restored_e_date = b2['start_date']
+            restored_e_time = (p_snap.get('end_time') if p_snap else None) or b1.get('start_time') or '18:00'
+        else:
+            # Secondary was the earlier booking
+            # Primary was the later booking
+            restored_e_date = str(p_snap.get('end_date') if p_snap else b1['end_date'])
+            restored_e_time = (p_snap.get('end_time') if p_snap else None) or b1.get('end_time') or '18:00'
+            p_snap_start = str(p_snap.get('start_date')) if (p_snap and p_snap.get('start_date')) else ''
+            if p_snap_start and p_snap_start >= b2_e:
+                restored_s_date = p_snap_start
+            else:
+                restored_s_date = b2['end_date']
+            restored_s_time = (p_snap.get('start_time') if p_snap else None) or b2.get('end_time') or '08:00'
 
         # 1. Update primary booking b1 (revert back)
         cur.execute("""

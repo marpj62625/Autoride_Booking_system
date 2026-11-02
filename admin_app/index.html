@@ -4654,6 +4654,8 @@
         html.role-consignor #quickModalUnmergeBanner,
         body.role-consignor #quickModalUnmergeBanner,
         html.role-consignor #fleetMergeModal,
+        html.role-consignor #fleetUnmergeModal,
+        body.role-consignor #fleetUnmergeModal,
         body.role-consignor #fleetMergeModal {
             display: none !important;
         }
@@ -7859,6 +7861,31 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
             </div>
         </div>
     </div>
+
+    <!-- Undo Merge Confirmation Modal -->
+    <div id="fleetUnmergeModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000025; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-width: 500px; width: 92%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Undo Booking Merge</h3>
+                        <p style="margin: 0; font-size: 0.72rem; color: #64748b;">Separate combined booking back into original rentals</p>
+                    </div>
+                </div>
+                <button type="button" onclick="FleetCalendar.closeUnmergeModal()" style="background: none; border: none; font-size: 1.2rem; color: #64748b; cursor: pointer;">&times;</button>
+            </div>
+            <div id="fleetUnmergeModalBody" style="font-size: 0.8rem; line-height: 1.5;"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <button type="button" onclick="FleetCalendar.closeUnmergeModal()" style="padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnConfirmExecuteUnmerge" onclick="FleetCalendar.executeUnmerge()" style="padding: 8px 18px; background: #d97706; color: white; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3);">
+                    <i class="fas fa-undo"></i> Confirm & Undo Merge
+                </button>
+            </div>
+        </div>
+    </div>
  & WORKING PRICING PANEL -->
     <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { if(event.stopPropagation) event.stopPropagation(); if(event.stopImmediatePropagation) event.stopImmediatePropagation(); FleetCalendar.requestCloseQuickModal(); }">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 16px 20px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
@@ -7934,7 +7961,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         Combined rental duration. Click to restore original bookings.
                     </div>
                 </div>
-                <button type="button" class="btn-quick-unmerge" id="btnQuickModalUndoMerge" onclick="FleetCalendar.confirmUndoMerge()" style="background: #d97706; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 5px rgba(217, 119, 6, 0.3);">
+                <button type="button" class="btn-quick-unmerge" id="btnQuickModalUndoMerge" onclick="FleetCalendar.openUnmergeModal()" style="background: #d97706; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 5px rgba(217, 119, 6, 0.3);">
                     <i class="fas fa-undo"></i> Undo Merge
                 </button>
             </div>
@@ -19879,78 +19906,65 @@ input:checked + .ctrl-slider:before {
             }
         },
 
-        confirmUndoMerge() {
+        openUnmergeModal() {
             const bId = this.activeBookingId;
             if (!bId) return;
-            if (!confirm(`Are you sure you want to undo the merge for Booking #${bId}? Both bookings will be restored to their original dates, prices, and separate slots.`)) {
-                return;
+            const b = (this.bookings || []).find(x => x.id == bId);
+            if (!b) return;
+
+            const modal = document.getElementById('fleetUnmergeModal');
+            const body = document.getElementById('fleetUnmergeModalBody');
+            if (!modal || !body) return;
+
+            const bookingModal = document.getElementById('fleetBookingModal');
+            if (bookingModal && bookingModal.style.display !== 'none') {
+                this._returnToBookingIdOnUnmergeCancel = bId;
+                bookingModal.style.display = 'none';
             }
-            this.executeUnmerge(bId);
+
+            body.innerHTML = `
+                <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                    <div style="font-weight: 800; color: #92400e; font-size: 0.82rem; margin-bottom: 6px;">
+                        <i class="fas fa-exclamation-triangle"></i> Separate Booking #${b.id}
+                    </div>
+                    <p style="margin: 0; color: #78350f; font-size: 0.78rem; line-height: 1.5;">
+                        Are you sure you want to undo this merge? The combined rental will be split back into its original separate bookings, restoring individual dates, pricing, and slots on the calendar.
+                    </p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; font-size: 0.74rem; color: #475569;">
+                    <i class="fas fa-info-circle" style="color: #6366f1;"></i> The archived secondary booking will be reactivated and restored to the fleet schedule immediately.
+                </div>
+            `;
+
+            modal.style.zIndex = '1000025';
+            modal.style.display = 'flex';
         },
 
-        async executeUnmerge(bId) {
-            const btn = document.getElementById('btnQuickModalUndoMerge');
+        closeUnmergeModal() {
+            const modal = document.getElementById('fleetUnmergeModal');
+            if (modal) modal.style.display = 'none';
+            if (this._returnToBookingIdOnUnmergeCancel) {
+                this._returnToBookingIdOnUnmergeCancel = null;
+                const bookingModal = document.getElementById('fleetBookingModal');
+                if (bookingModal) bookingModal.style.display = 'flex';
+            }
+        },
+
+        executeUnmerge() {
+            const bId = this.activeBookingId;
+            if (!bId) return;
+
+            const btn = document.getElementById('btnConfirmExecuteUnmerge');
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restoring...';
             }
-            const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-            try {
-                const res = await fetch(`${API_BASE}/admin/bookings/${bId}/unmerge`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        admin_id: adminUser ? adminUser.id : 1,
-                        admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
-                    })
-                });
-                const data = await res.json();
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-undo"></i> Undo Merge';
-                }
-                if (data.error) {
-                    if (typeof showToast === 'function') showToast(data.error, 'error');
-                } else {
-                    if (typeof showToast === 'function') showToast(data.message || 'Bookings successfully unmerged!', 'success');
-                    FleetCalendar.closeQuickModal();
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
-                        FleetCalendar.refresh();
-                    }
-                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
-                        Bookings.refresh();
-                    }
-                }
-            } catch (err) {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-undo"></i> Undo Merge';
-                }
-                if (typeof showToast === 'function') showToast('Unmerge failed: ' + err.message, 'error');
-            }
-        },
-
-        executeMerge() {
-            if (!this._mergeData) return;
-            const primary = this._mergeData.primary;
-            const secondary = this._mergeData.secondary;
-            const nameInput = document.getElementById('mergeUnifiedCustName');
-            const unifiedName = nameInput ? nameInput.value.trim() : primary.customer_name;
-
-            const btn = document.getElementById('btnConfirmExecuteMerge');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Merging...';
-            }
 
             const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
-            fetch(`${API_BASE}/admin/bookings/merge`, {
+            fetch(`${API_BASE}/admin/bookings/${bId}/unmerge`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    primary_id: primary.id,
-                    secondary_id: secondary.id,
-                    unified_customer_name: unifiedName,
                     admin_id: adminUser ? adminUser.id : 1,
                     admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
                 })
@@ -19959,28 +19973,33 @@ input:checked + .ctrl-slider:before {
             .then(data => {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-check"></i> Confirm & Merge Bookings';
+                    btn.innerHTML = '<i class="fas fa-undo"></i> Confirm & Undo Merge';
                 }
                 if (data.error) {
                     if (typeof showToast === 'function') showToast(data.error, 'error');
                 } else {
-                    if (typeof showToast === 'function') showToast(data.message || 'Bookings merged successfully.', 'success');
-                    FleetCalendar._returnToBookingIdOnMergeCancel = null;
-                    FleetCalendar.closeMergeModal();
+                    if (typeof showToast === 'function') showToast(data.message || 'Bookings successfully unmerged!', 'success');
+                    this._returnToBookingIdOnUnmergeCancel = null;
+                    FleetCalendar.closeUnmergeModal();
                     FleetCalendar.closeQuickModal();
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
-                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                        FleetCalendar.refresh();
+                    }
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                        Bookings.refresh();
+                    }
                 }
             })
             .catch(err => {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-check"></i> Confirm & Merge Bookings';
+                    btn.innerHTML = '<i class="fas fa-undo"></i> Confirm & Undo Merge';
                 }
-                if (typeof showToast === 'function') showToast('Merge failed: ' + err.message, 'error');
+                if (typeof showToast === 'function') showToast('Unmerge failed: ' + err.message, 'error');
             });
         },
-openBookingQuickModal(bId) {
+
+        openBookingQuickModal(bId) {
             this.hideTooltip();
             const b = (this.bookings || []).find(x => x.id == bId);
             if (!b) return;
