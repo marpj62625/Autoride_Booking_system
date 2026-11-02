@@ -1589,7 +1589,10 @@ def migrate_archive_columns():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archived_by VARCHAR(100) DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archive_reason VARCHAR(255) DEFAULT NULL")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS merged_into_id INTEGER DEFAULT NULL")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pre_merge_snapshot JSONB DEFAULT NULL")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_is_archived ON bookings (is_archived, status)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_merged_into ON bookings (merged_into_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs (created_at)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_notifications_cleanup ON notifications (is_read, created_at)")
         commit_db()
@@ -18950,6 +18953,8 @@ def get_fleet_bookings():
                 COALESCE(b.calendar_color, '') AS calendar_color,
                 COALESCE(b.destination, '') AS destination,
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
+                b.merged_into_id,
+                b.pre_merge_snapshot,
                 v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
                 v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location, v.vehicle_image,
                 COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
@@ -19087,6 +19092,8 @@ def export_fleet_calendar_excel():
                 COALESCE(b.calendar_color, '') AS calendar_color,
                 COALESCE(b.destination, '') AS destination,
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
+                b.merged_into_id,
+                b.pre_merge_snapshot,
                 v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
                 v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location,
                 COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
@@ -19535,6 +19542,44 @@ def merge_bookings():
         # Customer name
         final_cust_name = unified_name or b1.get('customer_name') or b2.get('customer_name') or 'Customer'
 
+        # Record pre-merge snapshot for full Undo / Unmerge capability
+        try:
+            cur.execute("SELECT id FROM payments WHERE booking_id = %s", (secondary_id,))
+            sec_pay_ids = [r['id'] for r in cur.fetchall()]
+        except Exception:
+            sec_pay_ids = []
+
+        import json
+        pre_merge_snapshot = {
+            "primary": {
+                "id": b1['id'],
+                "start_date": str(b1['start_date']),
+                "start_time": str(b1.get('start_time') or '08:00'),
+                "end_date": str(b1['end_date']),
+                "end_time": str(b1.get('end_time') or '18:00'),
+                "customer_name": b1.get('customer_name'),
+                "total_price": float(b1.get('total_price') or 0),
+                "amount_paid": float(b1.get('amount_paid') or 0),
+                "balance_amount": float(b1.get('balance_amount') or 0),
+                "payment_status": b1.get('payment_status'),
+                "rental_purpose": b1.get('rental_purpose')
+            },
+            "secondary": {
+                "id": b2['id'],
+                "status": b2.get('status') or 'Confirmed',
+                "customer_name": b2.get('customer_name'),
+                "start_date": str(b2['start_date']),
+                "start_time": str(b2.get('start_time') or '08:00'),
+                "end_date": str(b2['end_date']),
+                "end_time": str(b2.get('end_time') or '18:00'),
+                "total_price": float(b2.get('total_price') or 0),
+                "amount_paid": float(b2.get('amount_paid') or 0),
+                "balance_amount": float(b2.get('balance_amount') or 0),
+                "payment_status": b2.get('payment_status'),
+                "payment_ids": sec_pay_ids
+            }
+        }
+
         # Update primary booking
         cur.execute("""
             UPDATE bookings
@@ -19547,7 +19592,8 @@ def merge_bookings():
                 amount_paid = %s,
                 balance_amount = %s,
                 payment_status = %s,
-                rental_purpose = COALESCE(NULLIF(rental_purpose, ''), 'Merged Multi-Day Booking')
+                rental_purpose = COALESCE(NULLIF(rental_purpose, ''), 'Merged Multi-Day Booking'),
+                pre_merge_snapshot = %s
             WHERE id = %s
         """, (
             merged_start_date, merged_start_time,
@@ -19555,6 +19601,7 @@ def merge_bookings():
             final_cust_name,
             merged_total, merged_paid, merged_balance,
             merged_payment_status,
+            json.dumps(pre_merge_snapshot),
             primary_id
         ))
 
@@ -19564,18 +19611,20 @@ def merge_bookings():
         except Exception:
             pass
 
-        # Archive secondary booking
+        # Archive secondary booking and mark merged_into_id
         cur.execute("""
             UPDATE bookings
             SET is_archived = TRUE,
                 status = 'Archived',
                 archived_at = NOW(),
                 archived_by = %s,
-                archive_reason = %s
+                archive_reason = %s,
+                merged_into_id = %s
             WHERE id = %s
         """, (
             admin_name,
             f"Merged into Booking #{primary_id} ({final_cust_name})",
+            primary_id,
             secondary_id
         ))
 
@@ -19608,6 +19657,163 @@ def merge_bookings():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/bookings/<int:booking_id>/unmerge', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/unmerge', methods=['POST'])
+def unmerge_booking(booking_id):
+    """
+    Undoes a previous booking merge.
+    Restores primary booking to original dates and pricing.
+    Restores secondary booking from archived status back to active confirmed status.
+    Restores payments back to their original bookings.
+    """
+    data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access.", "code": "FORBIDDEN"}), 403
+
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    admin_id = data.get('admin_id') or 1
+    admin_name = data.get('admin_name') or 'Admin'
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM bookings WHERE id = %s", (booking_id,))
+        b1 = cur.fetchone()
+        if not b1:
+            return jsonify({"error": f"Booking #{booking_id} not found."}), 404
+
+        import json
+        snapshot = None
+        if b1.get('pre_merge_snapshot'):
+            try:
+                snapshot = b1['pre_merge_snapshot'] if isinstance(b1['pre_merge_snapshot'], dict) else json.loads(b1['pre_merge_snapshot'])
+            except Exception:
+                pass
+
+        b2 = None
+        if snapshot and snapshot.get('secondary') and snapshot['secondary'].get('id'):
+            cur.execute("SELECT * FROM bookings WHERE id = %s", (snapshot['secondary']['id'],))
+            b2 = cur.fetchone()
+
+        if not b2:
+            # Find by merged_into_id or archive_reason
+            cur.execute("""
+                SELECT * FROM bookings 
+                WHERE merged_into_id = %s 
+                   OR (is_archived = TRUE AND archive_reason LIKE %s)
+                ORDER BY id DESC LIMIT 1
+            """, (booking_id, f"Merged into Booking #{booking_id}%"))
+            b2 = cur.fetchone()
+
+        if not b2:
+            return jsonify({"error": f"No merged secondary booking found for Booking #{booking_id}."}), 400
+
+        secondary_id = b2['id']
+
+        # Determine restoration values
+        if snapshot and snapshot.get('primary'):
+            p_snap = snapshot['primary']
+            s_snap = snapshot.get('secondary') or {}
+            
+            restored_s_date = p_snap.get('start_date') or b1['start_date']
+            restored_s_time = p_snap.get('start_time') or '08:00'
+            restored_e_date = p_snap.get('end_date') or b1['end_date']
+            restored_e_time = p_snap.get('end_time') or '18:00'
+            restored_cust = p_snap.get('customer_name') or b1.get('customer_name')
+            restored_tot = float(p_snap.get('total_price') or 0)
+            restored_paid = float(p_snap.get('amount_paid') or 0)
+            restored_bal = float(p_snap.get('balance_amount') or 0)
+            restored_pay_status = p_snap.get('payment_status') or 'Paid'
+            restored_purpose = p_snap.get('rental_purpose')
+            restored_b2_status = s_snap.get('status') or 'Confirmed'
+            b2_pay_ids = s_snap.get('payment_ids') or []
+        else:
+            # Fallback calculation using b2's intact values
+            b2_tot = float(b2.get('total_price') or 0)
+            b2_paid = float(b2.get('amount_paid') or 0)
+            restored_tot = max(0.0, float(b1.get('total_price') or 0) - b2_tot)
+            restored_paid = max(0.0, float(b1.get('amount_paid') or 0) - b2_paid)
+            restored_bal = max(0.0, restored_tot - restored_paid)
+            restored_pay_status = 'Paid' if restored_paid >= restored_tot and restored_tot > 0 else ('Partially Paid' if restored_paid > 0 else 'Unpaid')
+            restored_s_date = b1['start_date']
+            restored_s_time = b1.get('start_time') or '08:00'
+            restored_e_date = b1['end_date']
+            restored_e_time = b1.get('end_time') or '18:00'
+            restored_cust = b1.get('customer_name')
+            restored_purpose = None
+            restored_b2_status = 'Confirmed' if b2.get('status') == 'Archived' else (b2.get('status') or 'Confirmed')
+            b2_pay_ids = []
+
+        # 1. Update primary booking b1 (revert back)
+        cur.execute("""
+            UPDATE bookings
+            SET start_date = %s,
+                start_time = %s,
+                end_date = %s,
+                end_time = %s,
+                customer_name = %s,
+                total_price = %s,
+                amount_paid = %s,
+                balance_amount = %s,
+                payment_status = %s,
+                rental_purpose = %s,
+                pre_merge_snapshot = NULL
+            WHERE id = %s
+        """, (
+            restored_s_date, restored_s_time,
+            restored_e_date, restored_e_time,
+            restored_cust,
+            restored_tot, restored_paid, restored_bal,
+            restored_pay_status,
+            restored_purpose,
+            booking_id
+        ))
+
+        # 2. Update secondary booking b2 (unarchive and restore)
+        cur.execute("""
+            UPDATE bookings
+            SET is_archived = FALSE,
+                status = %s,
+                archived_at = NULL,
+                archived_by = NULL,
+                archive_reason = NULL,
+                merged_into_id = NULL
+            WHERE id = %s
+        """, (restored_b2_status, secondary_id))
+
+        # 3. Re-link payments back to secondary if known
+        if b2_pay_ids:
+            try:
+                cur.execute("UPDATE payments SET booking_id = %s WHERE id = ANY(%s)", (secondary_id, b2_pay_ids))
+            except Exception:
+                pass
+
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action='BOOKING_UNMERGED',
+            target_type='BOOKING',
+            target_id=str(booking_id),
+            details=f"Undid merge between Booking #{booking_id} and #{secondary_id}. Both bookings restored."
+        )
+
+        return jsonify({
+            "success": True,
+            "message": f"Successfully unmerged Booking #{booking_id} and #{secondary_id}.",
+            "primary_id": booking_id,
+            "secondary_id": secondary_id
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 
 
 @app.route('/admin/bookings/<int:booking_id>/quick-rename', methods=['POST'])

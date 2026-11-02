@@ -4652,6 +4652,8 @@
         body.role-consignor .btn-quick-rename,
         html.role-consignor #quickModalMergeBanner,
         body.role-consignor #quickModalMergeBanner,
+        html.role-consignor #quickModalUnmergeBanner,
+        body.role-consignor #quickModalUnmergeBanner,
         html.role-consignor #fleetMergeModal,
         body.role-consignor #fleetMergeModal {
             display: none !important;
@@ -7823,6 +7825,21 @@
                 </div>
                 <button type="button" class="btn-quick-merge" id="btnQuickModalMerge" onclick="FleetCalendar.triggerMergeFromModal()" style="background: #4f46e5; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);">
                     <i class="fas fa-object-group"></i> Merge
+                </button>
+            </div>
+
+            <!-- Unmerge / Undo Merge Banner -->
+            <div id="quickModalUnmergeBanner" style="display: none; background: #fef3c7; border: 1.5px dashed #f59e0b; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; align-items: center; justify-content: space-between; gap: 10px;">
+                <div>
+                    <div style="font-size: 0.68rem; font-weight: 800; color: #92400e; text-transform: uppercase;">
+                        <i class="fas fa-link"></i> Merged Continuous Rental
+                    </div>
+                    <div id="quickModalUnmergeText" style="font-size: 0.75rem; color: #78350f; margin-top: 2px;">
+                        Combined rental duration. Click to restore original bookings.
+                    </div>
+                </div>
+                <button type="button" class="btn-quick-unmerge" id="btnQuickModalUndoMerge" onclick="FleetCalendar.confirmUndoMerge()" style="background: #d97706; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 5px rgba(217, 119, 6, 0.3);">
+                    <i class="fas fa-undo"></i> Undo Merge
                 </button>
             </div>
 
@@ -19228,7 +19245,8 @@ async edit(id) { this.openModal(id); },
                     if (b) b.customer_name = newName.trim();
                     const titleEl = document.getElementById('quickModalTitle');
                     if (titleEl) titleEl.textContent = newName.trim();
-                    if (typeof FleetCalendar.loadAndRender === 'function') FleetCalendar.loadAndRender();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
                 }
             })
             .catch(err => {
@@ -19265,7 +19283,8 @@ async edit(id) { this.openModal(id); },
                 } else {
                     if (typeof showToast === 'function') showToast(data.message || 'Booking deleted.', 'success');
                     FleetCalendar.closeQuickModal();
-                    if (typeof FleetCalendar.loadAndRender === 'function') FleetCalendar.loadAndRender();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
                 }
             })
             .catch(err => {
@@ -19361,6 +19380,57 @@ async edit(id) { this.openModal(id); },
             }
         },
 
+        confirmUndoMerge() {
+            const bId = this.activeBookingId;
+            if (!bId) return;
+            if (!confirm(`Are you sure you want to undo the merge for Booking #${bId}? Both bookings will be restored to their original dates, prices, and separate slots.`)) {
+                return;
+            }
+            this.executeUnmerge(bId);
+        },
+
+        async executeUnmerge(bId) {
+            const btn = document.getElementById('btnQuickModalUndoMerge');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restoring...';
+            }
+            const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            try {
+                const res = await fetch(`${API_BASE}/admin/bookings/${bId}/unmerge`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_id: adminUser ? adminUser.id : 1,
+                        admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
+                    })
+                });
+                const data = await res.json();
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-undo"></i> Undo Merge';
+                }
+                if (data.error) {
+                    if (typeof showToast === 'function') showToast(data.error, 'error');
+                } else {
+                    if (typeof showToast === 'function') showToast(data.message || 'Bookings successfully unmerged!', 'success');
+                    FleetCalendar.closeQuickModal();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                        FleetCalendar.refresh();
+                    }
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                        Bookings.refresh();
+                    }
+                }
+            } catch (err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-undo"></i> Undo Merge';
+                }
+                if (typeof showToast === 'function') showToast('Unmerge failed: ' + err.message, 'error');
+            }
+        },
+
         executeMerge() {
             if (!this._mergeData) return;
             const primary = this._mergeData.primary;
@@ -19399,7 +19469,8 @@ async edit(id) { this.openModal(id); },
                     FleetCalendar._returnToBookingIdOnMergeCancel = null;
                     FleetCalendar.closeMergeModal();
                     FleetCalendar.closeQuickModal();
-                    if (typeof FleetCalendar.loadAndRender === 'function') FleetCalendar.loadAndRender();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
                 }
             })
             .catch(err => {
@@ -19561,7 +19632,22 @@ openBookingQuickModal(bId) {
                     if (mergeText) {
                         const custShort = (adjacent.customer_name || 'Customer').substring(0, 22);
                         mergeText.textContent = `Combine with #${adjacent.id} (${custShort} • ₱${Number(adjacent.total_price || 0).toLocaleString()})?`;
+                    }
+            const unmergeBanner = document.getElementById('quickModalUnmergeBanner');
+            if (unmergeBanner) {
+                const isCons = (typeof isConsignor === 'function' && isConsignor());
+                const isMerged = !!(b.pre_merge_snapshot || b.merged_into_id || (this.bookings || []).some(x => x.merged_into_id == b.id) || (b.rental_purpose && b.rental_purpose.includes('Merged')));
+                if (isMerged && !isCons) {
+                    unmergeBanner.style.display = 'flex';
+                    const unmergeText = document.getElementById('quickModalUnmergeText');
+                    if (unmergeText) {
+                        unmergeText.textContent = 'Combined rental duration. Click to restore original bookings.';
                     }
+                } else {
+                    unmergeBanner.style.display = 'none';
+                }
+            }
+
                 } else {
                     mergeBanner.style.display = 'none';
                     this._pendingMergeAdjacent = null;
