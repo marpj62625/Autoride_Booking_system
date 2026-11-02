@@ -18284,7 +18284,7 @@ async edit(id) { this.openModal(id); },
 
             const totalSlots = allDays.length * 2;
             const slotWidth = 32; // Exact locked width in px per AM/PM slot (64px per day)
-            const branchColWidth = 34; // Area / Branch vertical strip width in px
+            const branchColWidth = 36; // Area / Branch vertical strip width in px
             const vehColWidth = 180; // Vehicle column width in px
             const totalTableWidth = branchColWidth + vehColWidth + (totalSlots * slotWidth);
 
@@ -18320,7 +18320,9 @@ async edit(id) { this.openModal(id); },
             // Branch and Vehicle cells span 3 rows (or 2 if 1 month)
             const headerRowSpan = isTwoMonths ? 3 : 2;
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.65rem; vertical-align: middle; box-sizing: border-box; letter-spacing: 0.5px;">AREA</th>
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
+                <span style="display: block; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap; text-align: center; text-transform: uppercase; line-height: 1;">AREA</span>
+            </th>
             <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
