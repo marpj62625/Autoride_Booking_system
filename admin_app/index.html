@@ -11190,11 +11190,15 @@ input:checked + .ctrl-slider:before {
                     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:12px;">
                         <!-- Location -->
                         <div style="grid-column:1 / -1;">
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Location</label>
-                            <select id="vLocation" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
-                                <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
-                                <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
-                            </select>
+                            <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:600; color:var(--text-primary, #ffffff); margin-bottom:5px;">
+                                <span>Area / Branch Location <span style="color:#ef4444;">*</span></span>
+                                <span style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">Select existing or type new area</span>
+                            </label>
+                            <input list="vLocationList" id="vLocation" required placeholder="e.g. Tanauan/Sto. Tomas, Batangas" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <datalist id="vLocationList">
+                                <option value="Tanauan/Sto. Tomas, Batangas">Tanauan Branch</option>
+                                <option value="San Pablo City, Laguna">San Pablo City (SPC) Branch</option>
+                            </datalist>
                         </div>
 
                         <!-- Odometer -->
@@ -12031,6 +12035,14 @@ input:checked + .ctrl-slider:before {
                 <div style="display: inline-flex; background: var(--surface-solid); padding: 2px; border-radius: 8px; border: 1px solid var(--border); gap: 2px;">
                     <button type="button" id="fcView2MonthsBtn" onclick="FleetCalendar.setViewMonths(2)" title="View 2 consecutive months in one screen" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; background: #00B14F; color: white;">2 Months</button>
                     <button type="button" id="fcView1MonthBtn" onclick="FleetCalendar.setViewMonths(1)" title="View single month" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-muted);">1 Month</button>
+                </div>
+                <!-- Area / Branch Filter -->
+                <div id="fleetCalendarBranchWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
+                    <i class="fas fa-map-marker-alt" style="font-size: 0.72rem; color: #ea580c;"></i>
+                    <select id="fleetCalendarBranchSelect" onchange="FleetCalendar.onBranchFilterChange(this.value)" title="Filter by Area / Branch"
+                            style="background: transparent; border: none; font-size: 0.74rem; font-weight: 700; color: var(--text-main); outline: none; cursor: pointer; padding: 2px 0;">
+                        <option value="all">All Branches (Grouped)</option>
+                    </select>
                 </div>
                 <!-- Sort Presets Dropdown & Reset (Option C) -->
                 <div id="fleetCalendarSortWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
@@ -16368,6 +16380,30 @@ input:checked + .ctrl-slider:before {
             }
         },
 
+        syncLocationDatalist() {
+            const listEl = document.getElementById('vLocationList');
+            if (!listEl) return;
+            const standard = ['Tanauan/Sto. Tomas, Batangas', 'San Pablo City, Laguna'];
+            const custom = [];
+            (this.data || []).forEach(v => {
+                if (v.location && typeof v.location === 'string') {
+                    const loc = v.location.trim();
+                    if (loc && !standard.includes(loc) && !custom.includes(loc)) {
+                        custom.push(loc);
+                    }
+                }
+            });
+            let html = '';
+            standard.forEach(loc => {
+                const label = loc.toLowerCase().includes('tanauan') ? 'Tanauan Branch' : (loc.toLowerCase().includes('san pablo') ? 'San Pablo City (SPC) Branch' : loc);
+                html += `<option value="${loc}">${label}</option>`;
+            });
+            custom.forEach(loc => {
+                html += `<option value="${loc}">${loc}</option>`;
+            });
+            listEl.innerHTML = html;
+        },
+
         openModal(id = null) {
             document.getElementById('editId').value = id || '';
             document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
@@ -16396,6 +16432,7 @@ input:checked + .ctrl-slider:before {
                 ltoExpInput.min = todayStr;
                 ltoExpInput.max = maxDate;
             }
+            if (typeof this.syncLocationDatalist === 'function') this.syncLocationDatalist();
 
             if (id) {
                 const v = this.data.find(x => x.id == id);
@@ -18280,10 +18317,76 @@ input:checked + .ctrl-slider:before {
         blackouts: [],
         vehicles: [],
         searchQuery: '',
+        branchFilter: 'all',
         activeBookingId: null,
         selectedColor: null,
         sortMode: 'default',
         customOrder: [],
+
+        onBranchFilterChange(val) {
+            this.branchFilter = val || 'all';
+            this.render();
+        },
+
+        getVehicleBranch(v) {
+            const rawLoc = String(v.location || '').trim();
+            const locLower = rawLoc.toLowerCase();
+
+            // 1. Tanauan Branch
+            if (locLower.includes('tanauan') || locLower.includes('batangas') || locLower.includes('sto. tomas')) {
+                return {
+                    key: 'tanauan',
+                    name: 'Tanauan Branch',
+                    shortName: 'TANAUAN',
+                    themeColor: '#ea580c',
+                    borderColor: '#f97316',
+                    bgColor: '#fff7ed',
+                    textColor: '#c2410c',
+                    order: 1
+                };
+            }
+
+            // 2. San Pablo City (SPC) Branch
+            if (locLower.includes('san pablo') || locLower.includes('spc') || locLower.includes('laguna')) {
+                return {
+                    key: 'spc',
+                    name: 'San Pablo City Branch',
+                    shortName: 'SPC',
+                    themeColor: '#dc2626',
+                    borderColor: '#ef4444',
+                    bgColor: '#fef2f2',
+                    textColor: '#b91c1c',
+                    order: 2
+                };
+            }
+
+            // 3. Dynamic Handler for ANY Future Branch (Lipa, Calamba, Manila, etc.)
+            const cleanName = rawLoc ? rawLoc.split(/[\/,]+/)[0].trim() : 'OTHER';
+            const short = cleanName.length > 8 ? cleanName.substring(0, 8).toUpperCase() : cleanName.toUpperCase();
+            const branchKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+            const futurePalettes = [
+                { theme: '#4f46e5', border: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
+                { theme: '#0d9488', border: '#14b8a6', bg: '#f0fdfa', text: '#0f766e' },
+                { theme: '#9333ea', border: '#a855f7', bg: '#faf5ff', text: '#7e22ce' },
+                { theme: '#0284c7', border: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1' },
+                { theme: '#d97706', border: '#f59e0b', bg: '#fffbeb', text: '#b45309' }
+            ];
+            let hash = 0;
+            for (let i = 0; i < branchKey.length; i++) hash = branchKey.charCodeAt(i) + ((hash << 5) - hash);
+            const pal = futurePalettes[Math.abs(hash) % futurePalettes.length];
+
+            return {
+                key: branchKey,
+                name: `${cleanName} Branch`,
+                shortName: short || 'BRANCH',
+                themeColor: pal.theme,
+                borderColor: pal.border,
+                bgColor: pal.bg,
+                textColor: pal.text,
+                order: 10 + (Math.abs(hash) % 80)
+            };
+        },
 
         getVehicleCategory(v) {
             if (v.category && String(v.category).trim()) return String(v.category).trim();
@@ -18355,22 +18458,18 @@ input:checked + .ctrl-slider:before {
             this.hideTooltip();
             this._suppressTooltipUntil = Date.now() + 1500;
             const fullOrdered = this.getOrderedVehicles();
-            const currentView = this.searchQuery ? fullOrdered.filter(v => {
-                const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
-                if (matchVeh) return true;
-                return (this.bookings || []).some(b => {
-                    if (String(b.vehicle_id) !== String(v.id)) return false;
-                    return (b.customer_name || '').toLowerCase().includes(this.searchQuery) ||
-                           String(b.id).includes(this.searchQuery);
-                });
-            }) : fullOrdered;
+            const currentVeh = fullOrdered.find(v => Number(v.id) === Number(vehicleId));
+            if (!currentVeh) return;
+            const branchInfo = this.getVehicleBranch(currentVeh);
 
-            const viewIdx = currentView.findIndex(v => Number(v.id) === Number(vehicleId));
-            if (viewIdx === -1) return;
-            const targetViewIdx = viewIdx + direction;
-            if (targetViewIdx < 0 || targetViewIdx >= currentView.length) return;
+            // Reorder strictly within this branch
+            const branchVehicles = fullOrdered.filter(v => this.getVehicleBranch(v).key === branchInfo.key);
+            const bIdx = branchVehicles.findIndex(v => Number(v.id) === Number(vehicleId));
+            if (bIdx === -1) return;
+            const targetBIdx = bIdx + direction;
+            if (targetBIdx < 0 || targetBIdx >= branchVehicles.length) return;
 
-            const targetVehicle = currentView[targetViewIdx];
+            const targetVehicle = branchVehicles[targetBIdx];
             const fullIdxA = fullOrdered.findIndex(v => Number(v.id) === Number(vehicleId));
             const fullIdxB = fullOrdered.findIndex(v => Number(v.id) === Number(targetVehicle.id));
             if (fullIdxA === -1 || fullIdxB === -1) return;
@@ -18680,8 +18779,9 @@ input:checked + .ctrl-slider:before {
 
             const totalSlots = allDays.length * 2;
             const slotWidth = 32; // Exact locked width in px per AM/PM slot (64px per day)
+            const branchColWidth = 34; // Area / Branch vertical strip width in px
             const vehColWidth = 180; // Vehicle column width in px
-            const totalTableWidth = vehColWidth + (totalSlots * slotWidth);
+            const totalTableWidth = branchColWidth + vehColWidth + (totalSlots * slotWidth);
 
             const calTable = document.getElementById('fleetCalendarTable');
             if (calTable) {
@@ -18692,7 +18792,8 @@ input:checked + .ctrl-slider:before {
                 calTable.style.borderCollapse = 'collapse';
 
                 // Strictly lock every column width via colgroup
-                let colgroupHtml = `<col style="width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px;">`;
+                let colgroupHtml = `<col style="width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px;">`;
+                colgroupHtml += `<col style="width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px;">`;
                 for (let i = 0; i < totalSlots; i++) {
                     colgroupHtml += `<col style="width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px;">`;
                 }
@@ -18711,10 +18812,11 @@ input:checked + .ctrl-slider:before {
                 : new Date(year1, month1, daysInMonth1, 23, 59, 59);
 
             // Tier 1 (Month Row): Sticky top: 0
-            // Vehicle cell spans 3 rows (or 2 if 1 month)
+            // Branch and Vehicle cells span 3 rows (or 2 if 1 month)
             const headerRowSpan = isTwoMonths ? 3 : 2;
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: 0; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.65rem; vertical-align: middle; box-sizing: border-box; letter-spacing: 0.5px;">AREA</th>
+            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span class="fc-vhead-text">VEHICLE / UNIT</span>
@@ -18788,6 +18890,26 @@ input:checked + .ctrl-slider:before {
 
             this.syncSortUI();
 
+            // Dynamically sync Toolbar Branch Filter options from active vehicles
+            const branchMap = new Map();
+            (this.vehicles || []).forEach(v => {
+                const b = this.getVehicleBranch(v);
+                if (!branchMap.has(b.key)) {
+                    branchMap.set(b.key, b);
+                }
+            });
+            const sortedBranches = Array.from(branchMap.values()).sort((a, b) => a.order - b.order);
+
+            const branchSelectEl = document.getElementById('fleetCalendarBranchSelect');
+            if (branchSelectEl) {
+                const curVal = this.branchFilter || 'all';
+                let optHtml = `<option value="all">All Branches (Grouped)</option>`;
+                sortedBranches.forEach(b => {
+                    optHtml += `<option value="${b.key}" ${curVal === b.key ? 'selected' : ''}>${b.name}</option>`;
+                });
+                branchSelectEl.innerHTML = optHtml;
+            }
+
             // Filter vehicles and calculate stats
             let orderedVehicles = this.getOrderedVehicles();
             let filteredVehicles = orderedVehicles;
@@ -18801,6 +18923,9 @@ input:checked + .ctrl-slider:before {
                                String(b.id).includes(this.searchQuery);
                     });
                 });
+            }
+            if (this.branchFilter && this.branchFilter !== 'all') {
+                filteredVehicles = filteredVehicles.filter(v => this.getVehicleBranch(v).key === this.branchFilter);
             }
 
             // Calculate active bookings count & utilization in this period
@@ -18841,46 +18966,79 @@ input:checked + .ctrl-slider:before {
             const calEndKey = allDays[allDays.length - 1].dateKey;
             const lastSlotOfMonth1 = isTwoMonths ? (daysInMonth1 * 2 - 1) : -1;
 
+            // Group vehicles by branch
+            const branchGroups = [];
+            const groupMap = new Map();
+            filteredVehicles.forEach(v => {
+                const bInfo = this.getVehicleBranch(v);
+                if (!groupMap.has(bInfo.key)) {
+                    const g = { branch: bInfo, vehicles: [] };
+                    groupMap.set(bInfo.key, g);
+                    branchGroups.push(g);
+                }
+                groupMap.get(bInfo.key).vehicles.push(v);
+            });
+            branchGroups.sort((a, b) => a.branch.order - b.branch.order);
+
             // Render Body Rows (Gantt Schedule with Colspan - AM & PM slots)
             let bodyHtml = "";
-            filteredVehicles.forEach((v, vIdx) => {
-                const isFirst = (vIdx === 0);
-                const isLast = (vIdx === filteredVehicles.length - 1);
-                let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
-                
-                // Sticky Vehicle Cell
-                rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
-                    style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
-                    <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
-                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
-                         onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                            <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px; flex: 1;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
-                            <div class="fc-reorder-wrap" style="display: inline-flex; gap: 2px; align-items: center; flex-shrink: 0;"
-                                 onclick="event.stopPropagation()"
-                                 onmouseenter="FleetCalendar.hideTooltip(); event.stopPropagation();"
-                                 onmouseover="FleetCalendar.hideTooltip(); event.stopPropagation();"
-                                 onmouseleave="event.stopPropagation()">
-                                <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, -1, event)" title="Move vehicle up"
-                                        ${isFirst ? 'disabled' : ''}
-                                        style="background: rgba(0,0,0,0.28); border: none; color: ${isFirst ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isFirst ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
-                                    <i class="fas fa-chevron-up"></i>
-                                </button>
-                                <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, 1, event)" title="Move vehicle down"
-                                        ${isLast ? 'disabled' : ''}
-                                        style="background: rgba(0,0,0,0.28); border: none; color: ${isLast ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isLast ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
+            branchGroups.forEach(group => {
+                const bInfo = group.branch;
+                const gVehicles = group.vehicles;
+                const gCount = gVehicles.length;
+
+                gVehicles.forEach((v, idxInGroup) => {
+                    const isFirstInBranch = (idxInGroup === 0);
+                    const isLastInBranch = (idxInGroup === gCount - 1);
+                    const topBorder = isFirstInBranch ? `border-top: 2.5px solid ${bInfo.borderColor};` : `border-top: 1px solid var(--border);`;
+                    const bottomBorder = isLastInBranch ? `border-bottom: 2.5px solid ${bInfo.borderColor};` : `border-bottom: 1px solid var(--border);`;
+
+                    let rowHtml = `<tr style="${topBorder} ${bottomBorder} transition: background 0.15s; height: 54px;">`;
+
+                    // Render Branch Vertical Banner Cell ONLY on the first row of this branch
+                    if (isFirstInBranch) {
+                        const letters = bInfo.shortName.split('').map(ch => `<span style="display:block; transform: scale(1); line-height: 1.15;">${ch}</span>`).join('');
+                        rowHtml += `<td rowspan="${gCount}" class="fc-branch-cell"
+                            style="padding: 6px 2px; text-align: center; background: ${bInfo.bgColor}; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 12; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: middle; box-shadow: 2px 0 5px rgba(0,0,0,0.04);">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-weight: 900; font-size: 0.74rem; color: ${bInfo.textColor}; letter-spacing: 0.5px; user-select: none;">
+                                ${letters}
+                            </div>
+                        </td>`;
+                    }
+
+                    // Sticky Vehicle Cell
+                    rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
+                        style="padding: 6px 8px; border: 1px solid var(--border); ${topBorder} ${bottomBorder} background: var(--surface-solid); position: sticky; left: ${branchColWidth}px; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
+                        <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
+                             onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                             onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                                <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px; flex: 1;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
+                                <div class="fc-reorder-wrap" style="display: inline-flex; gap: 2px; align-items: center; flex-shrink: 0;"
+                                     onclick="event.stopPropagation()"
+                                     onmouseenter="FleetCalendar.hideTooltip(); event.stopPropagation();"
+                                     onmouseover="FleetCalendar.hideTooltip(); event.stopPropagation();"
+                                     onmouseleave="event.stopPropagation()">
+                                    <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, -1, event)" title="Move vehicle up"
+                                            ${isFirstInBranch ? 'disabled' : ''}
+                                            style="background: rgba(0,0,0,0.28); border: none; color: ${isFirstInBranch ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isFirstInBranch ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button type="button" class="fc-reorder-btn" onclick="FleetCalendar.moveVehicle(${v.id}, 1, event)" title="Move vehicle down"
+                                            ${isLastInBranch ? 'disabled' : ''}
+                                            style="background: rgba(0,0,0,0.28); border: none; color: ${isLastInBranch ? 'rgba(255,255,255,0.3)' : '#ffffff'}; width: 17px; height: 17px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.52rem; cursor: ${isLastInBranch ? 'default' : 'pointer'}; padding: 0; line-height: 1;">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="fc-vmeta" style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
+                                <span style="font-size: 0.62rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${v.plate_number || 'NO PLATE'}</span>
+                                <span style="font-size: 0.62rem; color: #fef08a; font-weight: 800; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;" title="Daily Rental Rate">
+                                    ₱${parseFloat(v.daily_rate||0).toLocaleString()}/d <i class="fas fa-edit fc-vedit" style="font-size: 0.55rem; opacity: 0.85;"></i>
+                                </span>
                             </div>
                         </div>
-                        <div class="fc-vmeta" style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
-                            <span style="font-size: 0.62rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${v.plate_number || 'NO PLATE'}</span>
-                            <span style="font-size: 0.62rem; color: #fef08a; font-weight: 800; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;" title="Daily Rental Rate">
-                                ₱${parseFloat(v.daily_rate||0).toLocaleString()}/d <i class="fas fa-edit fc-vedit" style="font-size: 0.55rem; opacity: 0.85;"></i>
-                            </span>
-                        </div>
-                    </div>
-                </td>`;
+                    </td>`;
 
                 // Calculate slot ranges for all active bookings of vehicle v
                 const vBookings = (this.bookings || []).filter(bk => {
@@ -19021,10 +19179,11 @@ input:checked + .ctrl-slider:before {
 
                 rowHtml += `</tr>`;
                 bodyHtml += rowHtml;
+                });
             });
 
             if (filteredVehicles.length === 0) {
-                bodyHtml = `<tr><td colspan="${totalSlots + 1}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
+                bodyHtml = `<tr><td colspan="${totalSlots + 2}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
             }
             
             const bodyEl = document.getElementById('fleetCalendarBody');
