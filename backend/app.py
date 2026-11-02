@@ -19281,9 +19281,32 @@ def download_fleet_calendar_template():
 
 @app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 @app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
+
+def is_consignor_request(data=None):
+    """Checks if the current session or request is from a Consignor account."""
+    try:
+        from flask import session, request
+        user_obj = session.get('user') or {}
+        role = user_obj.get('role') or session.get('role')
+        if not role and data and isinstance(data, dict):
+            role = data.get('role')
+        if not role:
+            admin_id = request.headers.get('X-Admin-Id') or (data.get('admin_id') if isinstance(data, dict) else None)
+            if admin_id:
+                cur = get_cursor()
+                cur.execute("SELECT role FROM users WHERE id = %s", (int(admin_id),))
+                u = cur.fetchone()
+                if u:
+                    role = u.get('role')
+        return str(role).lower() == 'consignor'
+    except Exception:
+        return False
+
 def update_booking_quick_pricing(booking_id):
     """Allows admin to update pricing, amount paid, payment status, and calendar color directly from Fleet Calendar."""
     data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access. Editing bookings is not permitted.", "code": "FORBIDDEN"}), 403
     try:
         cur = get_cursor()
         cur.execute("SELECT id, user_id, vehicle_id, start_date, end_date, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color FROM bookings WHERE id = %s", (booking_id,))

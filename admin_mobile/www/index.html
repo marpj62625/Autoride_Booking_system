@@ -4642,6 +4642,45 @@
         body.role-consignor #walkinBookingModal {
             display: none !important;
         }
+        /* Consignor Quick Booking Modal: Read-only monitoring restrictions */
+        html.role-consignor #btnSaveQuickPricing,
+        body.role-consignor #btnSaveQuickPricing,
+        html.role-consignor #quickModalWorkflowActions,
+        body.role-consignor #quickModalWorkflowActions,
+        html.role-consignor button[onclick*="quickMarkPaid"],
+        body.role-consignor button[onclick*="quickMarkPaid"],
+        html.role-consignor button[onclick*="openEditScheduleForBooking"],
+        body.role-consignor button[onclick*="openEditScheduleForBooking"],
+        html.role-consignor button[onclick*="toggleVehicleDropdown"],
+        body.role-consignor button[onclick*="toggleVehicleDropdown"],
+        html.role-consignor #quickVehicleDropdownBtn,
+        body.role-consignor #quickVehicleDropdownBtn,
+        html.role-consignor .quick-color-section,
+        body.role-consignor .quick-color-section,
+        html.role-consignor #quickPaletteContainer,
+        body.role-consignor #quickPaletteContainer,
+        html.role-consignor #quickCustomColorPicker,
+        body.role-consignor #quickCustomColorPicker,
+        html.role-consignor label:has(#quickApplyToCustomer),
+        body.role-consignor label:has(#quickApplyToCustomer) {
+            display: none !important;
+        }
+
+        /* Consignor read-only input appearances */
+        html.role-consignor #quickTotalPrice,
+        body.role-consignor #quickTotalPrice,
+        html.role-consignor #quickAmountPaid,
+        body.role-consignor #quickAmountPaid,
+        html.role-consignor #quickPaymentStatus,
+        body.role-consignor #quickPaymentStatus,
+        html.role-consignor #quickPaymentMethod,
+        body.role-consignor #quickPaymentMethod {
+            pointer-events: none !important;
+            background-color: #f8fafc !important;
+            color: #475569 !important;
+            cursor: not-allowed !important;
+        }
+
         html.role-consignor .settings-layout-container,
         body.role-consignor .settings-layout-container {
             display: flex !important;
@@ -19223,6 +19262,55 @@ async edit(id) { this.openModal(id); },
                 actionsContainer.innerHTML = actionsHtml;
                 actionsContainer.style.display = actionsHtml ? 'flex' : 'none';
             }
+            // Consignor Strict Read-Only Guard
+            const isConsignorUser = (typeof isConsignor === 'function' && isConsignor());
+            if (isConsignorUser) {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = true;
+                        el.readOnly = true;
+                        el.style.background = '#f8fafc';
+                        el.style.color = '#475569';
+                        el.style.cursor = 'not-allowed';
+                    }
+                });
+                const saveBtn = document.getElementById('btnSaveQuickPricing');
+                if (saveBtn) saveBtn.style.setProperty('display', 'none', 'important');
+                const actionsCont = document.getElementById('quickModalWorkflowActions');
+                if (actionsCont) actionsCont.style.setProperty('display', 'none', 'important');
+                const markPaidBtn = document.querySelector('button[onclick*="quickMarkPaid"]');
+                if (markPaidBtn) markPaidBtn.style.setProperty('display', 'none', 'important');
+                const editPeriodBtn = summaryCard?.querySelector('button[onclick*="openEditScheduleForBooking"]');
+                if (editPeriodBtn) editPeriodBtn.style.setProperty('display', 'none', 'important');
+                const transferBtn = document.querySelector('button[onclick*="toggleVehicleDropdown"]');
+                if (transferBtn) transferBtn.style.setProperty('display', 'none', 'important');
+
+                // Consignor Badge in Modal Subtitle
+                const subEl = document.getElementById('quickModalSubtitle');
+                if (subEl && !document.getElementById('consignorQuickBadge')) {
+                    const bdg = document.createElement('span');
+                    bdg.id = 'consignorQuickBadge';
+                    bdg.innerHTML = ` <span style="background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:5px; font-size:0.65rem; font-weight:800; border:1px solid #fde68a; vertical-align:middle;"><i class="fas fa-eye"></i> Consignor View Only</span>`;
+                    subEl.appendChild(bdg);
+                }
+            } else {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        el.readOnly = (id === 'quickBalanceAmount');
+                        el.style.background = 'white';
+                        el.style.color = '';
+                        el.style.cursor = '';
+                    }
+                });
+                const saveBtn = document.getElementById('btnSaveQuickPricing');
+                if (saveBtn) saveBtn.style.display = 'flex';
+                const cBdg = document.getElementById('consignorQuickBadge');
+                if (cBdg) cBdg.remove();
+            }
+
 
             // Populate Working Pricing Fields
             const totalPrice = parseFloat(b.total_price || 0);
@@ -19377,6 +19465,11 @@ async edit(id) { this.openModal(id); },
         },
 
         quickMarkPaid() {
+            if (typeof isConsignor === 'function' && isConsignor()) {
+                if (typeof showToast === 'function') showToast('Consignors have read-only monitoring access.', 'error');
+                return;
+            }
+
             const totalInp = document.getElementById('quickTotalPrice');
             const total = Math.min(500000, Math.max(0, parseFloat(totalInp?.value || 0)));
             const paidInp = document.getElementById('quickAmountPaid');
@@ -19385,6 +19478,11 @@ async edit(id) { this.openModal(id); },
         },
 
         async saveQuickPricing() {
+            if (typeof isConsignor === 'function' && isConsignor()) {
+                if (typeof showToast === 'function') showToast('Consignors have read-only monitoring access.', 'error');
+                return;
+            }
+
             if (!this.activeBookingId) return;
 
             const total = Math.min(500000, Math.max(0, parseFloat(document.getElementById('quickTotalPrice')?.value || 0)));
@@ -28105,7 +28203,16 @@ function toggleNewsletterModal(show = true) {
             this.toggleMapInteractive(false);
             const frame = document.getElementById('blynkMapFrame');
             if (frame && (!frame.src || frame.src === 'about:blank' || frame.src.endsWith('about:blank'))) {
-                frame.src = frame.getAttribute('data-src') || 'https://car-rental-inlaguna.vercel.app/';
+                let defaultSrc = frame.getAttribute('data-src') || 'https://car-rental-inlaguna.vercel.app/';
+                if (typeof isConsignor === 'function' && isConsignor()) {
+                    const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                    const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
+                    const vehId = assignedIds.length > 0 ? assignedIds[0] : '';
+                    const isCar2 = (vehId === 18 || vehId === 35);
+                    const carNum = isCar2 ? 2 : 1;
+                    defaultSrc += (defaultSrc.includes('?') ? '&' : '?') + `consignor=true&car=${carNum}&vehicle_id=${vehId}`;
+                }
+                frame.src = defaultSrc;
             }
             await this.loadFleetVehicles();
             await this.loadLastKnownLocationFromDB();
@@ -28229,10 +28336,14 @@ function toggleNewsletterModal(show = true) {
                         this.selectedVehicleId === 18 ||
                         this.selectedVehicleId === 35
                     );
+                    const isConsignorUser = (typeof isConsignor === 'function' && isConsignor());
                     frame.contentWindow.postMessage({
                         type: 'AUTORIDE_GPS_SELECT_CAR',
                         car: isCar2 ? 2 : 1,
-                        vehicleId: this.selectedVehicleId
+                        vehicleId: this.selectedVehicleId,
+                        consignor: isConsignorUser,
+                        allowedCar: isCar2 ? 2 : 1,
+                        allowedVehicleId: this.selectedVehicleId
                     }, '*');
                 }
             } catch(e) {}
