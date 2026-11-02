@@ -18817,8 +18817,7 @@ async edit(id) { this.openModal(id); },
                                      style="flex: 1; height: 100%; min-width: 0; background: ${colorA.bg}; color: ${colorA.text}; border-top: 1.5px solid ${colorA.border}; border-bottom: 1.5px solid ${colorA.border}; ${hasLeftOutgoingConnect ? 'border-left: none;' : `border-left: 1.5px solid ${colorA.border}; border-radius: 8px 0 0 8px;`} border-right: 1.5px dashed rgba(0,0,0,0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
                                      onmouseover="this.style.filter='brightness(0.95)'"
                                      onmouseout="this.style.filter='none'">
-                                    <span style="font-size: 0.50rem; font-weight: 900; line-height: 1;">◀</span>
-                                    <span style="font-size: 0.44rem; font-weight: 800; line-height: 1; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: clip;">${timeA}</span>
+                                    <span style="font-size: 0.62rem; font-weight: 900; line-height: 1; opacity: 0.85;">◀</span>
                                 </div>
                                 <div onclick="FleetCalendar.openBookingQuickModal(${bkB.id})"
                                      onmouseenter="FleetCalendar.showBookingTooltip(event, ${bkB.id})"
@@ -18827,8 +18826,7 @@ async edit(id) { this.openModal(id); },
                                      style="flex: 1; height: 100%; min-width: 0; background: ${colorB.bg}; color: ${colorB.text}; border-top: 1.5px solid ${colorB.border}; border-bottom: 1.5px solid ${colorB.border}; ${hasRightIncomingConnect ? 'border-right: none;' : `border-right: 1.5px solid ${colorB.border}; border-radius: 0 8px 8px 0;`} border-left: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
                                      onmouseover="this.style.filter='brightness(0.95)'"
                                      onmouseout="this.style.filter='none'">
-                                    <span style="font-size: 0.50rem; font-weight: 900; line-height: 1;">▶</span>
-                                    <span style="font-size: 0.44rem; font-weight: 800; line-height: 1; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: clip;">${timeB}</span>
+                                    <span style="font-size: 0.62rem; font-weight: 900; line-height: 1; opacity: 0.85;">▶</span>
                                 </div>
                             </div>
                         </td>`;
@@ -18887,6 +18885,29 @@ async edit(id) { this.openModal(id); },
                                         ? 'box-shadow: 2px 2px 4px rgba(0,0,0,0.08);'
                                         : 'box-shadow: 0 2px 5px rgba(0,0,0,0.1);';
 
+                            const isAdjLeft = Boolean(connectsLeftFromTurnaround || (bkItem.startSlot > 0 && vBookings.some(item => item.booking.id !== bk.id && item.endSlot === bkItem.startSlot - 1)));
+                            const isAdjRight = Boolean(connectsRightToTurnaround || (bkItem.endSlot < totalSlots - 1 && vBookings.some(item => item.booking.id !== bk.id && item.startSlot === bkItem.endSlot + 1)));
+                            let timeHtml = '';
+                            if (isAdjLeft && isAdjRight) {
+                                const tStart = this.formatShortTime(bk.start_time, 'AM');
+                                const tEnd = this.formatShortTime(bk.end_time, 'PM');
+                                timeHtml = `<div style="font-size: 0.50rem; font-weight: 800; opacity: 0.92; margin-top: 1px; display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; letter-spacing: -0.2px;" title="Pickup: ${bk.start_time || 'AM'} | Return: ${bk.end_time || 'PM'}">
+                                    <span style="font-size: 0.44rem;">▶</span><span>${tStart}</span>
+                                    <span style="opacity: 0.5;">•</span>
+                                    <span style="font-size: 0.44rem;">◀</span><span>${tEnd}</span>
+                                </div>`;
+                            } else if (isAdjRight) {
+                                const tEnd = this.formatShortTime(bk.end_time, 'PM');
+                                timeHtml = `<div style="font-size: 0.50rem; font-weight: 800; opacity: 0.92; margin-top: 1px; display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; letter-spacing: -0.2px;" title="Return Time: ${bk.end_time || 'PM'}">
+                                    <span style="font-size: 0.44rem;">◀</span><span>${tEnd}</span>
+                                </div>`;
+                            } else if (isAdjLeft) {
+                                const tStart = this.formatShortTime(bk.start_time, 'AM');
+                                timeHtml = `<div style="font-size: 0.50rem; font-weight: 800; opacity: 0.92; margin-top: 1px; display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; letter-spacing: -0.2px;" title="Pickup Time: ${bk.start_time || 'AM'}">
+                                    <span style="font-size: 0.44rem;">▶</span><span>${tStart}</span>
+                                </div>`;
+                            }
+
                             rowHtml += `<td colspan="${spanSlots}"
                                 onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
                                 onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
@@ -18898,13 +18919,15 @@ async edit(id) { this.openModal(id); },
                                     <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0;">
                                         <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
                                     </div>
-                                    <div style="font-size: 0.60rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
+                                    <div style="font-size: 0.58rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 3px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
                                         <span>₱${Math.round(rate).toLocaleString()}</span>
                                         ${spanSlots > 1 ? (bal > 0 
                                             ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
-                                            : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) : ''
+                                            : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) 
+                                            : (bal > 0 ? `<span style="background: #ef4444; color: white; padding: 0 3px; border-radius: 3px; font-size: 0.48rem; font-weight: 800; flex-shrink: 0;">B</span>` : '')
                                         }
                                     </div>
+                                    ${timeHtml}
                                 </div>
                             </td>`;
 
