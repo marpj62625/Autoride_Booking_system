@@ -233,6 +233,65 @@ app.register_blueprint(ext_bp)
 app.register_blueprint(conflict_bp)
 
 
+# ── Time-Aware Schedule Collision Helpers (Same-Day Turnaround Precision) ──
+def parse_booking_time_to_minutes(time_val, is_end=False):
+    """
+    Safely converts time_val ('10:00', '1:00 PM', '13:00', '6 PM (tentative)', 'evening', None, etc.)
+    into minutes from midnight (0..1439).
+    """
+    if not time_val:
+        return 1439 if is_end else 0
+    s = str(time_val).strip().lower()
+    m = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', s)
+    if not m:
+        if 'noon' in s:
+            return 12 * 60
+        if 'afternoon' in s:
+            return 17 * 60 if is_end else 13 * 60
+        if 'evening' in s or 'night' in s:
+            return 21 * 60 if is_end else 18 * 60
+        if 'morning' in s:
+            return 12 * 60 if is_end else 8 * 60
+        return 1439 if is_end else 0
+
+    hr = int(m.group(1))
+    mn = int(m.group(2) or 0)
+    mer = m.group(3)
+
+    if mer == 'pm':
+        if hr < 12:
+            hr += 12
+    elif mer == 'am':
+        if hr == 12:
+            hr = 0
+    else:
+        if hr < 12 and any(k in s for k in ['pm', 'night', 'evening', 'afternoon', 'hapon', 'gabi']):
+            hr += 12
+        elif hr > 23:
+            hr = 23
+            mn = 59
+
+    mn = min(59, max(0, mn))
+    hr = min(23, max(0, hr))
+    return hr * 60 + mn
+
+def get_booking_dt(d_val, t_val, is_end=False):
+    if isinstance(d_val, str):
+        d_val = datetime.strptime(d_val[:10], '%Y-%m-%d').date()
+    elif isinstance(d_val, datetime):
+        d_val = d_val.date()
+    mins = parse_booking_time_to_minutes(t_val, is_end=is_end)
+    return datetime.combine(d_val, datetime.min.time()) + _dt.timedelta(minutes=mins)
+
+def check_booking_collision(b_start_d, b_start_t, b_end_d, b_end_t, req_start_d, req_start_t, req_end_d, req_end_t):
+    b_start = get_booking_dt(b_start_d, b_start_t, is_end=False)
+    b_end = get_booking_dt(b_end_d, b_end_t, is_end=True)
+    r_start = get_booking_dt(req_start_d, req_start_t, is_end=False)
+    r_end = get_booking_dt(req_end_d, req_end_t, is_end=True)
+    return (b_start < r_end) and (b_end > r_start)
+
+
+
 import threading
 import time
 
@@ -6246,9 +6305,11 @@ def book():
 
 
 
-        # ── Overlap guard: reject if the requested vehicle_id already has an active booking that overlaps ──
+        # ── Overlap guard: reject if the requested vehicle_id already has an active booking that overlaps (minute precision) ──
+        _req_st = (data.get('start_time') or '08:00').strip()
+        _req_et = (data.get('end_time') or '08:00').strip()
         cur.execute("""
-            SELECT id, start_date, end_date, status,
+            SELECT id, start_date, end_date, start_time, end_time, status,
                    (end_date + INTERVAL '1 day')::date AS next_available
             FROM bookings
             WHERE vehicle_id = %s
@@ -6256,18 +6317,23 @@ def book():
               AND start_date <= %s
               AND end_date >= %s
             ORDER BY start_date ASC
-            LIMIT 1
         """, (vehicle_id, end_date, start_date))
 
-        overlap = cur.fetchone()
-        if overlap:
-            o = dict(overlap)
-            return jsonify({
-                "error": "This vehicle is already booked from {start} to {end} (status: {status}). "
-                         "It will be available again from {next}.".format(
-                             start=str(o['start_date']), end=str(o['end_date']),
-                             status=o['status'], next=str(o['next_available']))
-            }), 409
+        b_candidates = cur.fetchall()
+        for overlap in b_candidates:
+            if check_booking_collision(
+                overlap['start_date'], overlap.get('start_time'), overlap['end_date'], overlap.get('end_time'),
+                start_date, _req_st, end_date, _req_et
+            ):
+                o = dict(overlap)
+                st_info = f" {o['start_time']}" if o.get('start_time') else ""
+                et_info = f" {o['end_time']}" if o.get('end_time') else ""
+                return jsonify({
+                    "error": "This vehicle is already booked from {start}{st} to {end}{et} (status: {status}). "
+                             "It will be available again from {next}.".format(
+                                 start=str(o['start_date']), st=st_info, end=str(o['end_date']), et=et_info,
+                                 status=o['status'], next=str(o['next_available']))
+                }), 409
 
         # ── Booking duration limit check ──
         try:
@@ -8268,7 +8334,7 @@ def create_walkin_booking():
         if (veh.get('status') or '').strip().lower() in ('maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled'):
             return jsonify({"error": f"Vehicle is currently in {veh['status']} status and cannot be booked"}), 400
 
-        # Overlap guard: Prevent conflicting bookings on this physical unit
+        # Overlap guard: Prevent conflicting bookings on this physical unit with minute-level precision
         cur.execute("""
             SELECT id, start_date, end_date, start_time, end_time, status, customer_name
             FROM bookings
@@ -8276,14 +8342,20 @@ def create_walkin_booking():
               AND status IN ('Confirmed', 'Approved', 'Picked Up', 'Ongoing')
               AND start_date <= %s
               AND end_date >= %s
-            LIMIT 1
+            ORDER BY start_date ASC
         """, (vehicle_id, end_date, start_date))
-        conflict = cur.fetchone()
-        if conflict:
-            conf_cname = conflict.get('customer_name') or 'another customer'
-            return jsonify({
-                "error": f"Vehicle {veh['brand']} {veh['model']} ({veh['plate_number']}) is already booked from {conflict['start_date']} to {conflict['end_date']} (by {conf_cname}, status: {conflict['status']})."
-            }), 409
+        candidates = cur.fetchall()
+        for cand in candidates:
+            if check_booking_collision(
+                cand['start_date'], cand.get('start_time'), cand['end_date'], cand.get('end_time'),
+                start_date, start_time, end_date, end_time
+            ):
+                conf_cname = cand.get('customer_name') or 'another customer'
+                st_info = f" ({cand['start_time']})" if cand.get('start_time') else ""
+                et_info = f" ({cand['end_time']})" if cand.get('end_time') else ""
+                return jsonify({
+                    "error": f"Vehicle {veh['brand']} {veh['model']} ({veh['plate_number']}) is already booked from {cand['start_date']}{st_info} to {cand['end_date']}{et_info} (by {conf_cname}, status: {cand['status']})."
+                }), 409
 
         # Pricing calculations
         try:
@@ -14702,9 +14774,11 @@ def check_vehicle_availability():
                     'next_available_from': str(b['end_date'])
                 }), 200
 
-        # Find any overlapping active bookings
+        # Find any overlapping active bookings with minute precision
+        req_st = (data.get('start_time') or '08:00').strip()
+        req_et = (data.get('end_time') or '08:00').strip()
         cur.execute("""
-            SELECT id, start_date, end_date, status,
+            SELECT id, start_date, end_date, start_time, end_time, status,
                    (end_date + INTERVAL '1 day')::date as next_available
             FROM bookings
             WHERE vehicle_id = %s
@@ -14712,23 +14786,27 @@ def check_vehicle_availability():
               AND start_date <= %s
               AND end_date >= %s
             ORDER BY start_date ASC
-            LIMIT 1
         """, (vehicle_id, end_date, start_date))
 
-        conflict = cur.fetchone()
-
-        if conflict:
-            c = dict(conflict)
-            return jsonify({
-                'available': False,
-                'conflict': {
-                    'booking_id': c['id'],
-                    'start_date': str(c['start_date']),
-                    'end_date': str(c['end_date']),
-                    'status': c['status']
-                },
-                'next_available_from': str(c['next_available'])
-            }), 200
+        candidates = cur.fetchall()
+        for cand in candidates:
+            if check_booking_collision(
+                cand['start_date'], cand.get('start_time'), cand['end_date'], cand.get('end_time'),
+                start_date, req_st, end_date, req_et
+            ):
+                c = dict(cand)
+                return jsonify({
+                    'available': False,
+                    'conflict': {
+                        'booking_id': c['id'],
+                        'start_date': str(c['start_date']),
+                        'start_time': c.get('start_time'),
+                        'end_date': str(c['end_date']),
+                        'end_time': c.get('end_time'),
+                        'status': c['status']
+                    },
+                    'next_available_from': str(c['next_available'])
+                }), 200
 
         # Also check if the requested end_date is close to a future booking
         # so we can warn the user about extending limits
@@ -19227,18 +19305,25 @@ def update_booking_quick_pricing(booking_id):
                     if not target_veh:
                         return jsonify({"error": "Target vehicle not found"}), 404
 
-                    # Check for schedule conflicts on target vehicle
+                    # Check for schedule conflicts on target vehicle with minute precision
                     cur.execute("""
-                        SELECT id, customer_name, start_date, end_date
+                        SELECT id, customer_name, start_date, start_time, end_date, end_time
                         FROM bookings
                         WHERE vehicle_id = %s
                           AND id != %s
                           AND LOWER(status) IN ('confirmed', 'approved', 'picked up', 'ongoing')
                           AND start_date <= %s
                           AND end_date >= %s
-                        LIMIT 1
                     """, (t_vid, booking_id, b['end_date'], b['start_date']))
-                    conflict = cur.fetchone()
+                    trans_candidates = cur.fetchall()
+                    conflict = None
+                    for tc in trans_candidates:
+                        if check_booking_collision(
+                            tc['start_date'], tc.get('start_time'), tc['end_date'], tc.get('end_time'),
+                            b['start_date'], b.get('start_time'), b['end_date'], b.get('end_time')
+                        ):
+                            conflict = tc
+                            break
                     if conflict:
                         conf_cname = conflict.get('customer_name') or 'another booking'
                         v_name = f"{target_veh.get('brand','')} {target_veh.get('model','')} ({target_veh.get('plate_number','')})".strip()

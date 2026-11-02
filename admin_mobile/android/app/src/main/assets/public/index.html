@@ -10970,9 +10970,9 @@ input:checked + .ctrl-slider:before {
                         <div style="grid-column:1 / -1;">
                             <label style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:600; color:var(--text-primary, #ffffff); margin-bottom:5px;">
                                 <span>Area / Branch Location <span style="color:#ef4444;">*</span></span>
-                                <span style="font-size:0.72rem; color:var(--text-muted); font-weight:500;">Select existing or type new area</span>
+                                <span id="vLocationCount" style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Max 45 chars</span>
                             </label>
-                            <input list="vLocationList" id="vLocation" required placeholder="e.g. Tanauan/Sto. Tomas, Batangas" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input list="vLocationList" id="vLocation" required maxlength="45" oninput="if(this.value.length > 45) this.value = this.value.slice(0, 45); const cnt = document.getElementById('vLocationCount'); if(cnt) cnt.textContent = `${this.value.length}/45 chars`;" placeholder="e.g. Tanauan/Sto. Tomas, Batangas" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                             <datalist id="vLocationList">
                                 <option value="Tanauan/Sto. Tomas, Batangas">Tanauan Branch</option>
                                 <option value="San Pablo City, Laguna">San Pablo City (SPC) Branch</option>
@@ -16008,6 +16008,8 @@ input:checked + .ctrl-slider:before {
 
         openModal(id = null) {
             document.getElementById('editId').value = id || '';
+            const locCntEl = document.getElementById('vLocationCount');
+            if (typeof this.syncLocationDatalist === 'function') this.syncLocationDatalist();
             document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
             document.getElementById('submitBtnText').textContent = id ? 'Update Vehicle' : 'Add Vehicle';
 
@@ -16026,7 +16028,8 @@ input:checked + .ctrl-slider:before {
                 document.getElementById('vTrans').value = v.transmission || 'Automatic';
                 document.getElementById('vFuel').value = v.fuel_type || 'Gasoline';
                 document.getElementById('vSeats').value = v.seats || 5;
-                document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
+                document.getElementById('vLocation').value = (v.location || 'Tanauan/Sto. Tomas, Batangas').slice(0, 45);
+                if (locCntEl) locCntEl.textContent = `${document.getElementById('vLocation').value.length}/45 chars`;
                 if (document.getElementById('vStatus')) document.getElementById('vStatus').value = v.status || 'Available';
                 document.getElementById('vRate').value = v.daily_rate;
                 document.getElementById('vYear').value = v.year_model || v.year || '';
@@ -16046,6 +16049,8 @@ input:checked + .ctrl-slider:before {
             } else {
                 document.getElementById('vehicleForm').reset();
                 this.updateModels();
+                document.getElementById('vLocation').value = 'Tanauan/Sto. Tomas, Batangas';
+                if (locCntEl) locCntEl.textContent = `${document.getElementById('vLocation').value.length}/45 chars`;
                 document.getElementById('vYear').value = '';
                 document.getElementById('vMileageType').value = 'limited';
                 document.getElementById('vMileageKm').value = 250;
@@ -16447,7 +16452,7 @@ input:checked + .ctrl-slider:before {
             const seatsRaw = document.getElementById('vSeats').value;
             formData.append('seats', parseInt(seatsRaw) || 5);
 
-            formData.append('location', document.getElementById('vLocation').value);
+            formData.append('location', (document.getElementById('vLocation').value || '').trim().slice(0, 45));
 
             if (document.getElementById('vStatus')) { formData.append('status', document.getElementById('vStatus').value); }
             const rateRaw = document.getElementById('vRate').value;
@@ -18214,7 +18219,7 @@ async edit(id) { this.openModal(id); },
 
             const totalSlots = allDays.length * 2;
             const slotWidth = 32; // Exact locked width in px per AM/PM slot (64px per day)
-            const branchColWidth = 34; // Area / Branch vertical strip width in px
+            const branchColWidth = 36; // Area / Branch vertical strip width in px
             const vehColWidth = 180; // Vehicle column width in px
             const totalTableWidth = branchColWidth + vehColWidth + (totalSlots * slotWidth);
 
@@ -18250,7 +18255,9 @@ async edit(id) { this.openModal(id); },
             // Branch and Vehicle cells span 3 rows (or 2 if 1 month)
             const headerRowSpan = isTwoMonths ? 3 : 2;
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.65rem; vertical-align: middle; box-sizing: border-box; letter-spacing: 0.5px;">AREA</th>
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
+                <span style="display: block; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap; text-align: center; text-transform: uppercase; line-height: 1;">AREA</span>
+            </th>
             <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
@@ -37961,6 +37968,52 @@ function toggleNewsletterModal(show = true) {
             }
         },
 
+        parseTimeToMinutes(timeStr, isEnd = false) {
+            if (!timeStr) return isEnd ? 1439 : 0;
+            const s = String(timeStr).trim().toLowerCase();
+            const m = s.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+            if (!m) {
+                if (s.includes('noon')) return 12 * 60;
+                if (s.includes('afternoon')) return isEnd ? 17 * 60 : 13 * 60;
+                if (s.includes('evening') || s.includes('night')) return isEnd ? 21 * 60 : 18 * 60;
+                if (s.includes('morning')) return isEnd ? 12 * 60 : 8 * 60;
+                return isEnd ? 1439 : 0;
+            }
+            let hr = parseInt(m[1], 10);
+            let mn = parseInt(m[2] || '0', 10);
+            const mer = m[3];
+            if (mer === 'pm') {
+                if (hr < 12) hr += 12;
+            } else if (mer === 'am') {
+                if (hr === 12) hr = 0;
+            } else {
+                if (hr < 12 && (s.includes('pm') || s.includes('night') || s.includes('evening') || s.includes('afternoon') || s.includes('hapon') || s.includes('gabi'))) {
+                    hr += 12;
+                } else if (hr > 23) {
+                    hr = 23;
+                    mn = 59;
+                }
+            }
+            mn = Math.min(59, Math.max(0, mn));
+            hr = Math.min(23, Math.max(0, hr));
+            return hr * 60 + mn;
+        },
+
+        getBookingDateTimeMs(dateStr, timeStr, isEnd = false) {
+            const dStr = String(dateStr).split('T')[0];
+            const mins = this.parseTimeToMinutes(timeStr, isEnd);
+            const d = new Date(dStr + 'T00:00:00');
+            return d.getTime() + (mins * 60000);
+        },
+
+        isCollision(bStartD, bStartT, bEndD, bEndT, reqStartD, reqStartT, reqEndD, reqEndT) {
+            const bStart = this.getBookingDateTimeMs(bStartD, bStartT, false);
+            const bEnd = this.getBookingDateTimeMs(bEndD, bEndT, true);
+            const rStart = this.getBookingDateTimeMs(reqStartD, reqStartT, false);
+            const rEnd = this.getBookingDateTimeMs(reqEndD, reqEndT, true);
+            return (bStart < rEnd) && (bEnd > rStart);
+        },
+
         checkCollision() {
             const warnEl = document.getElementById('walkinVehicleConflictWarning');
             const warnText = document.getElementById('walkinVehicleConflictText');
@@ -37969,7 +38022,9 @@ function toggleNewsletterModal(show = true) {
 
             const vehicleId = vSel?.value;
             const startD = document.getElementById('walkinStartDate')?.value;
+            const startT = document.getElementById('walkinStartTime')?.value || '08:00';
             const endD = document.getElementById('walkinEndDate')?.value;
+            const endT = document.getElementById('walkinEndTime')?.value || '08:00';
 
             if (!vehicleId || !startD || !endD) {
                 warnEl.style.display = 'none';
@@ -37992,8 +38047,8 @@ function toggleNewsletterModal(show = true) {
                 const bEnd = (b.end_date || '').split('T')[0];
                 if (!bStart || !bEnd) return false;
 
-                // Overlap: existing booking start <= new booking end AND existing booking end >= new booking start
-                return (bStart <= endD && bEnd >= startD);
+                // Minute-level precision overlap check: allows same-day morning return & afternoon pickup
+                return this.isCollision(bStart, b.start_time, bEnd, b.end_time, startD, startT, endD, endT);
             });
 
             if (conflict) {
@@ -38001,7 +38056,9 @@ function toggleNewsletterModal(show = true) {
                 const cStatus = conflict.status || 'Active';
                 const cStart = (conflict.start_date || '').split('T')[0];
                 const cEnd = (conflict.end_date || '').split('T')[0];
-                warnText.innerHTML = `Unit is already booked from <strong>${cStart}</strong> to <strong>${cEnd}</strong> (${cName} - ${cStatus}). Rental dates will collide!`;
+                const cStartTime = conflict.start_time ? ` (${conflict.start_time})` : '';
+                const cEndTime = conflict.end_time ? ` (${conflict.end_time})` : '';
+                warnText.innerHTML = `Unit is already booked from <strong>${cStart}${cStartTime}</strong> to <strong>${cEnd}${cEndTime}</strong> (${cName} - ${cStatus}). Rental schedule will collide!`;
                 warnEl.style.display = 'flex';
                 return conflict;
             } else {
