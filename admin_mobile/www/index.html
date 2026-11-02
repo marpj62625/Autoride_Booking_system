@@ -19407,6 +19407,61 @@ async edit(id) { this.openModal(id); },
             }
         },
 
+        executeMerge() {
+            if (!this._mergeData) return;
+            const primary = this._mergeData.primary;
+            const secondary = this._mergeData.secondary;
+            const nameInput = document.getElementById('mergeUnifiedCustName');
+            const unifiedName = nameInput ? nameInput.value.trim() : primary.customer_name;
+
+            const btn = document.getElementById('btnConfirmExecuteMerge');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Merging...';
+            }
+
+            const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            fetch(`${API_BASE}/admin/bookings/merge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    primary_id: primary.id,
+                    secondary_id: secondary.id,
+                    unified_customer_name: unifiedName,
+                    admin_id: adminUser ? adminUser.id : 1,
+                    admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Confirm & Merge Bookings';
+                }
+                if (data.error) {
+                    if (typeof showToast === 'function') showToast(data.error, 'error');
+                } else {
+                    if (typeof showToast === 'function') showToast(data.message || 'Bookings merged successfully.', 'success');
+                    FleetCalendar._returnToBookingIdOnMergeCancel = null;
+                    FleetCalendar.closeMergeModal();
+                    FleetCalendar.closeQuickModal();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                        FleetCalendar.refresh();
+                    }
+                    if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                        Bookings.refresh();
+                    }
+                }
+            })
+            .catch(err => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Confirm & Merge Bookings';
+                }
+                if (typeof showToast === 'function') showToast('Merge failed: ' + err.message, 'error');
+            });
+        },
+
         openUnmergeModal() {
             const bId = this.activeBookingId;
             if (!bId) return;
