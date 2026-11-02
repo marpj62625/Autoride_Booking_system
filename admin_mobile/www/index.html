@@ -18110,6 +18110,20 @@ async edit(id) { this.openModal(id); },
             return defaultHalf;
         },
 
+        formatShortTime(timeStr, defaultHalf = 'PM') {
+            if (!timeStr) return defaultHalf;
+            let s = String(timeStr).trim();
+            const m = s.match(/(\d{1,2}):(\d{2})/);
+            if (m) {
+                return `${m[1]}:${m[2]}`;
+            }
+            const m2 = s.match(/(\d{1,2})\s*(am|pm)/i);
+            if (m2) {
+                return `${m2[1]}${m2[2].toUpperCase()}`;
+            }
+            return defaultHalf;
+        },
+
         setViewMonths(num) {
             this.viewMonths = (num === 1) ? 1 : 2;
             this.refresh();
@@ -18584,6 +18598,16 @@ async edit(id) { this.openModal(id); },
 
                 vBookings.sort((a, b) => a.startSlot - b.startSlot);
 
+                // Pre-compute turnaround slots where outgoing booking ends and incoming booking starts in the exact same half-day slot
+                const turnaroundMap = {};
+                for (let i = 0; i < vBookings.length - 1; i++) {
+                    const curB = vBookings[i];
+                    const nxtB = vBookings[i + 1];
+                    if (curB.endSlot === nxtB.startSlot && String(curB.booking.id) !== String(nxtB.booking.id)) {
+                        turnaroundMap[curB.endSlot] = { outgoing: curB, incoming: nxtB };
+                    }
+                }
+
                 // Calculate blackout slot ranges
                 const vBlackouts = (this.blackouts || []).filter(bo => {
                     const isAff = !bo.affected_vehicles || bo.affected_vehicles === 'all' || 
@@ -18621,44 +18645,106 @@ async edit(id) { this.openModal(id); },
                     const dayObj = allDays[dayIdx];
                     const isWeekend = dayObj ? dayObj.isWeekend : false;
 
-                    // 1. Check booking covering slot s
-                    const bkItem = vBookings.find(item => item.startSlot <= s && s <= item.endSlot);
-                    if (bkItem) {
-                        const bk = bkItem.booking;
-                        const spanSlots = Math.min(bkItem.endSlot - s + 1, totalSlots - s);
-                        const spanWidth = spanSlots * slotWidth;
-                        const color = this.getBookingColor(bk);
-                        const custName = (bk.customer_name || 'Customer').toUpperCase();
-                        const rate = parseFloat(bk.total_price || 0);
-                        const paid = parseFloat(bk.amount_paid || 0);
-                        const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
+                    // 1. Check if slot s is a shared turnaround handover slot (same-slot return & pickup)
+                    if (turnaroundMap[s]) {
+                        const t = turnaroundMap[s];
+                        const bkA = t.outgoing.booking;
+                        const bkB = t.incoming.booking;
+                        const colorA = this.getBookingColor(bkA);
+                        const colorB = this.getBookingColor(bkB);
+                        const custNameA = (bkA.customer_name || 'Customer').toUpperCase();
+                        const custNameB = (bkB.customer_name || 'Customer').toUpperCase();
+                        const timeA = this.formatShortTime(bkA.end_time, half);
+                        const timeB = this.formatShortTime(bkB.start_time, half);
+                        const hasMonthDivider = (s === lastSlotOfMonth1);
 
-                        const cellEndSlot = s + spanSlots - 1;
-                        const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
-
-                        rowHtml += `<td colspan="${spanSlots}"
-                            onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
-                            onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
-                            onmouseleave="FleetCalendar.hideTooltip()"
-                            style="padding: 2px 3px; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px; width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; overflow: hidden;">
-                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 3px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
-                                 onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
-                                 onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
-                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0;">
-                                    <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
+                        rowHtml += `<td style="padding: 2px 1px; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} width: ${slotWidth}px; min-width: ${slotWidth}px; max-width: ${slotWidth}px; box-sizing: border-box; height: 54px; overflow: hidden; vertical-align: middle;">
+                            <div style="display: flex; width: 100%; height: calc(100% - 2px); box-sizing: border-box; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                <div onclick="FleetCalendar.openBookingQuickModal(${bkA.id})"
+                                     onmouseenter="FleetCalendar.showBookingTooltip(event, ${bkA.id})"
+                                     onmouseleave="FleetCalendar.hideTooltip()"
+                                     title="${custNameA} (Return: ${bkA.end_time || half})"
+                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorA.bg}; color: ${colorA.text}; border: 1.5px solid ${colorA.border}; border-right: 1px dashed rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
+                                     onmouseover="this.style.filter='brightness(0.95)'"
+                                     onmouseout="this.style.filter='none'">
+                                    <span style="font-size: 0.50rem; font-weight: 900; line-height: 1;">◀</span>
+                                    <span style="font-size: 0.44rem; font-weight: 800; line-height: 1; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: clip;">${timeA}</span>
                                 </div>
-                                <div style="font-size: 0.60rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
-                                    <span>₱${Math.round(rate).toLocaleString()}</span>
-                                    ${spanSlots > 1 ? (bal > 0 
-                                        ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
-                                        : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) : ''
-                                    }
+                                <div onclick="FleetCalendar.openBookingQuickModal(${bkB.id})"
+                                     onmouseenter="FleetCalendar.showBookingTooltip(event, ${bkB.id})"
+                                     onmouseleave="FleetCalendar.hideTooltip()"
+                                     title="${custNameB} (Pickup: ${bkB.start_time || half})"
+                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorB.bg}; color: ${colorB.text}; border: 1.5px solid ${colorB.border}; border-left: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
+                                     onmouseover="this.style.filter='brightness(0.95)'"
+                                     onmouseout="this.style.filter='none'">
+                                    <span style="font-size: 0.50rem; font-weight: 900; line-height: 1;">▶</span>
+                                    <span style="font-size: 0.44rem; font-weight: 800; line-height: 1; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: clip;">${timeB}</span>
                                 </div>
                             </div>
                         </td>`;
 
-                        s += spanSlots;
+                        s++;
                         continue;
+                    }
+
+                    // 2. Check booking covering slot s
+                    const bkItem = vBookings.find(item => item.startSlot <= s && s <= item.endSlot);
+                    if (bkItem) {
+                        let targetEnd = bkItem.endSlot;
+                        if (turnaroundMap[bkItem.endSlot]) {
+                            targetEnd = bkItem.endSlot - 1;
+                        }
+
+                        if (targetEnd >= s) {
+                            const bk = bkItem.booking;
+                            const spanSlots = Math.min(targetEnd - s + 1, totalSlots - s);
+                            const spanWidth = spanSlots * slotWidth;
+                            const color = this.getBookingColor(bk);
+                            const custName = (bk.customer_name || 'Customer').toUpperCase();
+                            const rate = parseFloat(bk.total_price || 0);
+                            const paid = parseFloat(bk.amount_paid || 0);
+                            const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
+
+                            const cellEndSlot = s + spanSlots - 1;
+                            const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
+                            const connectsRightToTurnaround = (cellEndSlot === bkItem.endSlot - 1 && turnaroundMap[bkItem.endSlot]);
+                            const connectsLeftFromTurnaround = (s === bkItem.startSlot + 1 && turnaroundMap[bkItem.startSlot]);
+
+                            const radiusStyle = (connectsRightToTurnaround && connectsLeftFromTurnaround)
+                                ? 'border-radius: 0; border-left: none; border-right: none;'
+                                : connectsRightToTurnaround
+                                    ? 'border-radius: 8px 0 0 8px; border-right: none;'
+                                    : connectsLeftFromTurnaround
+                                        ? 'border-radius: 0 8px 8px 0; border-left: none;'
+                                        : 'border-radius: 8px;';
+
+                            rowHtml += `<td colspan="${spanSlots}"
+                                onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
+                                onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
+                                onmouseleave="FleetCalendar.hideTooltip()"
+                                style="padding: 2px 3px; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px; width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; overflow: hidden;">
+                                <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; ${radiusStyle} padding: 3px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                                     onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
+                                     onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
+                                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0;">
+                                        <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
+                                    </div>
+                                    <div style="font-size: 0.60rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
+                                        <span>₱${Math.round(rate).toLocaleString()}</span>
+                                        ${spanSlots > 1 ? (bal > 0 
+                                            ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
+                                            : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) : ''
+                                        }
+                                    </div>
+                                </div>
+                            </td>`;
+
+                            s += spanSlots;
+                            continue;
+                        } else {
+                            s++;
+                            continue;
+                        }
                     }
 
                     // 2. Check blackout covering slot s
