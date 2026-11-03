@@ -1,4 +1,9 @@
-with open('admin_app/index.html', 'r', encoding='utf-8') as f:
-    for i, line in enumerate(f):
-        if 'id="chat"' in line or 'ac-input-bar' in line or 'acInputBar' in line or 'id="adminChatContent"' in line or 'adminChatContent' in line:
-            print(f'{i+1}: {line.strip()[:100]}')
+with open('AutorideSystem/backend/app.py', 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+for i, l in enumerate(lines):
+    if '/chat' in l or 'def chat' in l or ('messages' in l and 'route' in l):
+        print(f"Line {i+1}: {l.strip()}")
+        for j in range(i, min(len(lines), i+15)):
+            print(f"  {j+1}: {lines[j].strip()}")
+        print('-'*30)

@@ -2060,8 +2060,12 @@ function openForgotPasswordPage(e) {
   var btnText = document.getElementById('forgotPwBtnText');
   
   if (errEl) errEl.textContent = '';
-  if (btn) btn.disabled = false;
-  if (btnText) btnText.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Send Reset Code</span>';
+  if (btn) {
+    btn.disabled = false;
+    var btnIcon = btn.querySelector('i');
+    if (btnIcon) btnIcon.className = 'fas fa-paper-plane';
+  }
+  if (btnText) btnText.textContent = 'Send Reset Code';
 
   // Pre-fill email if user is logged in or if email was in login field
   var loginEmailEl = document.getElementById('loginEmail');
@@ -2111,8 +2115,12 @@ function doSendForgotPasswordOtp() {
     return;
   }
 
-  if (btn) btn.disabled = true;
-  if (btnText) btnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending Code...';
+  if (btn) {
+    btn.disabled = true;
+    var btnIcon = btn.querySelector('i');
+    if (btnIcon) btnIcon.className = 'fas fa-spinner fa-spin';
+  }
+  if (btnText) btnText.textContent = 'Sending Code...';
 
   apiCall('/user/forgot-password', {
     method: 'POST',
@@ -2165,8 +2173,12 @@ function doSendForgotPasswordOtp() {
     if (errEl) errEl.textContent = err.message || 'Failed to send verification code. Please try again.';
   })
   .finally(function() {
-    if (btn) btn.disabled = false;
-    if (btnText) btnText.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reset Code';
+    if (btn) {
+      btn.disabled = false;
+      var btnIcon = btn.querySelector('i');
+      if (btnIcon) btnIcon.className = 'fas fa-paper-plane';
+    }
+    if (btnText) btnText.textContent = 'Send Reset Code';
   });
 }
 
