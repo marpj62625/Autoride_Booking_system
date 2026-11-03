@@ -62,6 +62,24 @@ def is_allowed_image(file_storage, allow_pdf=False):
     allowed_mimes = ALLOWED_IMAGE_MIMES.union(ALLOWED_PDF_MIMES) if allow_pdf else ALLOWED_IMAGE_MIMES
     if mime and mime not in allowed_mimes and mime != 'application/octet-stream':
         return False
+    # Validate magic numbers (file signature) to prevent disguised executable attacks
+    try:
+        header = file_storage.read(32)
+        file_storage.seek(0)
+        if header:
+            is_valid_magic = (
+                header.startswith(b'\xff\xd8\xff') or # JPEG
+                header.startswith(b'\x89PNG\r\n\x1a\n') or # PNG
+                header.startswith(b'GIF87a') or header.startswith(b'GIF89a') or # GIF
+                (header.startswith(b'RIFF') and len(header) >= 12 and header[8:12] == b'WEBP') or # WebP
+                header.startswith(b'BM') or # BMP
+                (len(header) >= 12 and header[4:8] == b'ftyp' and any(b in header[8:12].lower() for b in [b'heic', b'heix', b'hevc', b'hevx', b'mif1', b'msf1'])) or # HEIC
+                (allow_pdf and header.startswith(b'%PDF-')) # PDF
+            )
+            if not is_valid_magic:
+                return False
+    except Exception:
+        pass
     return True
 
 def reject_non_image(file_storage, field_name='file', max_mb=15, allow_pdf=False):

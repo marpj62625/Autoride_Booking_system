@@ -275,7 +275,7 @@
         .page {
   display:none;
   min-height:100vh;
-  padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px) + 24px) !important;
+  padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px));
 }
@@ -1404,7 +1404,7 @@
         .vehicles-page-container {
           width: 100%;
           box-sizing: border-box;
-          padding: 0 0 80px;
+          padding: 0 0 16px;
         }
 
         .vehicles-header-banner {
@@ -1494,7 +1494,7 @@
         .bookings-page-container {
           width: 100%;
           box-sizing: border-box;
-          padding: 16px 16px 80px;
+          padding: 16px 16px 16px;
         }
         .bookings-header-wrap {
           display: flex;
@@ -1640,6 +1640,94 @@
           background: var(--primary) !important;
           color: #fff !important;
           box-shadow: 0 2px 8px rgba(0, 177, 79, 0.25);
+        }
+
+
+        /* ========================================================
+           EXECUTIVE ACTIVE RENTAL HERO CARD FOR SINGLE BOOKING
+           ======================================================== */
+        .bk-active-hero-card {
+          grid-column: 1 / -1;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border);
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.05);
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+          position: relative;
+        }
+        .bk-active-hero-card:hover {
+          border-color: rgba(0, 177, 79, 0.45);
+          box-shadow: 0 16px 45px rgba(0, 177, 79, 0.12);
+        }
+        .bk-active-hero-inner {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 900px) {
+          .bk-active-hero-inner {
+            grid-template-columns: 460px 1fr;
+            min-height: 400px;
+          }
+        }
+        @media (min-width: 1200px) {
+          .bk-active-hero-inner {
+            grid-template-columns: 520px 1fr;
+            min-height: 420px;
+          }
+        }
+        .bk-active-hero-visual {
+          position: relative;
+          background: linear-gradient(145deg, #0f172a 0%, #1e293b 60%, #0f231c 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 24px 28px;
+          overflow: hidden;
+        }
+        .bk-active-hero-visual::before {
+          content: '';
+          position: absolute;
+          width: 320px;
+          height: 320px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(0, 177, 79, 0.22) 0%, transparent 70%);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+        }
+        .bk-active-hero-car-img {
+          width: 100%;
+          max-height: 250px;
+          object-fit: contain;
+          margin: 16px 0;
+          position: relative;
+          z-index: 2;
+          filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.65));
+          transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bk-active-hero-card:hover .bk-active-hero-car-img {
+          transform: scale(1.04) translateY(-4px);
+        }
+        .bk-active-hero-body {
+          padding: 28px 32px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          background: var(--bg-card);
+          box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+          .bk-active-hero-visual {
+            padding: 20px;
+          }
+          .bk-active-hero-car-img {
+            max-height: 180px;
+          }
+          .bk-active-hero-body {
+            padding: 20px 18px;
+          }
         }
 
         .bookings-list-grid {
@@ -1931,7 +2019,7 @@
           @media (max-width: 639px) {
             #page-vehicle-detail .scroll-content,
             #vehicleDetailContent .scroll-content {
-              padding: 14px 14px 90px !important;
+              padding: 14px 14px 24px !important;
             }
             #vd-booking-card {
               padding: 18px 16px !important;
@@ -2267,8 +2355,8 @@
             width: calc(100% - var(--customer-sidebar-width));
             max-width: calc(100% - var(--customer-sidebar-width));
             box-sizing: border-box !important;
-            min-height: 100vh;
-            padding-bottom: 40px;
+            min-height: auto;
+            padding-bottom: 24px !important;
             overflow-y: auto;
             overflow-x: hidden !important;
             transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2323,7 +2411,7 @@
           #page-vehicles .vehicles-page-container {
             max-width: 1360px;
             margin: 0 auto;
-            padding: 24px 32px 80px;
+            padding: 24px 32px 24px;
           }
           #page-vehicles .vehicles-header-banner {
             background: linear-gradient(135deg, #00873a 0%, #00b14f 55%, #10b981 100%);
@@ -2424,7 +2512,7 @@
           #page-home .home-page-container {
             max-width: 1240px;
             margin: 0 auto;
-            padding: 24px 32px 80px;
+            padding: 24px 32px 24px;
           }
           #page-home #homeBanner {
             border-radius: 24px;
@@ -2694,7 +2782,7 @@
 
             /* Home Page: Flexible Tablet/Medium Layout (568px - 823px Content Width) */
             #page-home .home-page-container {
-              padding: 16px 20px 70px !important;
+              padding: 16px 20px 20px !important;
               max-width: 100% !important;
               box-sizing: border-box !important;
             }
@@ -2761,7 +2849,7 @@
 
             /* Bookings Page: Flexible Tablet/Medium Layout */
             #page-bookings .bookings-page-container {
-              padding: 20px 20px 80px !important;
+              padding: 20px 20px 20px !important;
               max-width: 100% !important;
               box-sizing: border-box !important;
             }
@@ -2865,7 +2953,7 @@
           #page-more .more-page-container {
             max-width: 1240px;
             margin: 0 auto;
-            padding: 24px 32px 80px;
+            padding: 24px 32px 24px;
           }
           #page-more .more-header-banner {
             background: linear-gradient(135deg, #00873a 0%, #00b14f 55%, #10b981 100%);
@@ -3108,7 +3196,7 @@
           #page-bookings .bookings-page-container {
             max-width: 1240px;
             margin: 0 auto;
-            padding: 28px 36px 80px;
+            padding: 28px 36px 24px;
           }
           #page-bookings .bookings-back-btn {
             display: none !important;
@@ -3216,7 +3304,7 @@
           }
           #page-bookings .bookings-page-container {
             max-width: 1280px;
-            padding: 30px 40px 80px;
+            padding: 30px 40px 24px;
           }
         }
 
@@ -3233,7 +3321,7 @@
           }
           #page-bookings .bookings-page-container {
             max-width: 1380px;
-            padding: 32px 42px 90px;
+            padding: 32px 42px 24px;
           }
           #page-bookings #bookingsList.bookings-list-grid {
             grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)) !important;
@@ -3245,7 +3333,7 @@
         .more-page-container {
           width: 100%;
           box-sizing: border-box;
-          padding: 0 0 80px;
+          padding: 0 0 16px;
         }
         .more-header-banner {
           background: linear-gradient(135deg, #00873a 0%, #00b14f 60%, #10b981 100%);
@@ -3500,7 +3588,7 @@
         .home-page-container {
           width: 100%;
           box-sizing: border-box;
-          padding: 0 0 80px;
+          padding: 0 0 16px;
         }
         #homeBanner {
           background: linear-gradient(135deg, #00873a 0%, #00b14f 60%, #10b981 100%);
@@ -4033,7 +4121,7 @@
             box-sizing: border-box !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            padding: 24px 32px 64px !important;
+            padding: 24px 32px 24px !important;
           }
           .veh-detail-desktop {
             display: grid !important;
@@ -4077,7 +4165,7 @@
           #page-vehicle-detail .scroll-content,
           #vehicleDetailContent .scroll-content {
             max-width: 1320px !important;
-            padding: 28px 36px 72px !important;
+            padding: 28px 36px 24px !important;
           }
           .veh-detail-desktop {
             gap: 32px !important;
@@ -4088,7 +4176,7 @@
           #page-vehicle-detail .scroll-content,
           #vehicleDetailContent .scroll-content {
             max-width: 1440px !important;
-            padding: 32px 40px 80px !important;
+            padding: 32px 40px 24px !important;
           }
           .veh-detail-desktop {
             grid-template-columns: 1.18fr 0.82fr !important;
@@ -4141,11 +4229,11 @@
           margin: 0 auto !important;
           width: 100% !important;
           box-sizing: border-box !important;
-          padding: 24px 20px 80px !important;
+          padding: 24px 20px 24px !important;
         }
         @media (min-width: 768px) {
           #page-booking-detail .scroll-content {
-            padding: 32px 28px 90px !important;
+            padding: 32px 28px 24px !important;
           }
         }
 
@@ -8043,6 +8131,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20261020_v26_schedule_popup_cal"></script>
+<script src="js/app.js?v=20261020_v32_bookings_active_hero_view"></script>
 </body>
 </html>

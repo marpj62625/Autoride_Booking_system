@@ -1,6 +1,6 @@
 {
   "name": "autoride-customer",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Autoride Customer Mobile App",
   "main": "index.js",
   "scripts": {
