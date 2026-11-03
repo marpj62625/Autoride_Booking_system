@@ -7594,16 +7594,11 @@ def modify_booking():
 
         is_ongoing = bk['status'] in ['Picked Up', 'Ongoing']
 
-        # Determine start date & time
-        if is_ongoing:
-            # For ongoing bookings, pickup has already occurred; start date and time cannot be modified
+        # Determine start date & time (editable for all bookings including ongoing)
+        if not new_start:
             new_start = str(bk['old_start']).split(' ')[0]
+        if not new_start_time:
             new_start_time = str(bk.get('old_start_time') or '06:00').strip()[:5]
-        else:
-            if not new_start:
-                new_start = str(bk['old_start']).split(' ')[0]
-            if not new_start_time:
-                new_start_time = str(bk.get('old_start_time') or '06:00').strip()[:5]
 
         # Determine end date & time
         if not new_end:
@@ -7622,11 +7617,7 @@ def modify_booking():
         if e_dt <= s_dt:
             return jsonify({"error": "Return date and time must be after pickup date and time."}), 400
 
-        # If ongoing extension, ensure new return is not before old return
-        if is_ongoing:
-            old_e_dt = _dt.strptime(f"{str(bk['old_end']).split(' ')[0]} {str(bk.get('old_end_time') or '06:00')[:5]}", '%Y-%m-%d %H:%M')
-            if e_dt < old_e_dt:
-                return jsonify({"error": f"Extended return ({new_end} {new_end_time}) cannot be earlier than current scheduled return ({bk['old_end']} {str(bk.get('old_end_time') or '06:00')[:5]})."}), 400
+        # Allow flexible extension or schedule reduction (cut rental) as long as return is after pickup
 
         # Duration in days calculation
         diff_seconds = (e_dt - s_dt).total_seconds()

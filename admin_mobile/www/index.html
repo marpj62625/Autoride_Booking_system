@@ -24740,7 +24740,7 @@ function toggleNewsletterModal(show = true) {
             if (st === 'picked up' || st === 'ongoing') {
                 actionBtns += `<button onclick="Bookings.complete(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,177,79,0.35);"><i class="fas fa-undo-alt"></i>Return Key</button>`;
                 actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
-                actionBtns += `<button onclick="Bookings.openExtendModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#0284c7;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-calendar-plus"></i>Extend Booking</button>`;
+                actionBtns += `<button onclick="Bookings.openEditScheduleModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#4f46e5;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-edit"></i>Edit Schedule</button>`;
             }
             if (isSuperAdmin) {
                 actionBtns += `<button onclick="Bookings.openSuperAdminEditModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-edit"></i>Edit Details</button>`;
@@ -24905,10 +24905,8 @@ function toggleNewsletterModal(show = true) {
                 <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;">
                         <span style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px;"><i class="fas fa-clock" style="color:#6366f1;"></i>Schedule &amp; Dates</span>
-                        ${(st === 'picked up' || st === 'ongoing') ? 
-                            `<button type="button" onclick="Bookings.openExtendModal(${b.id})" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fas fa-calendar-plus"></i>Extend</button>` :
-                          (st === 'confirmed' || st === 'approved' || st === 'pending') ?
-                            `<button type="button" onclick="Bookings.openEditScheduleModal(${b.id})" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fas fa-edit"></i>Edit</button>` : ''
+                        ${(st === 'picked up' || st === 'ongoing' || st === 'confirmed' || st === 'approved' || st === 'pending') ? 
+                            `<button type="button" onclick="Bookings.openEditScheduleModal(${b.id})" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;"><i class="fas fa-edit"></i>Edit</button>` : ''
                         }
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:${b.pickup_location ? '10px' : '0'};">
