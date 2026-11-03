@@ -19286,10 +19286,7 @@ def download_fleet_calendar_template():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
-@app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
-
-def is_consignor_request(data=None):
+def is_consignor_request(data=None, *args, **kwargs):
     """Checks if the current session or request is from a Consignor account."""
     try:
         from flask import session, request
@@ -19309,6 +19306,9 @@ def is_consignor_request(data=None):
     except Exception:
         return False
 
+
+@app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 def update_booking_quick_pricing(booking_id):
     """Allows admin to update pricing, amount paid, payment status, and calendar color directly from Fleet Calendar."""
     data = request.json or {}
