@@ -17554,8 +17554,10 @@ def users_search():
     try:
         cur = get_cursor()
         cur.execute("""
-            SELECT id, full_name, email FROM users
-            WHERE full_name ILIKE %s OR email ILIKE %s
+            SELECT id, full_name, email, auth_provider FROM users
+            WHERE (full_name ILIKE %s OR email ILIKE %s)
+              AND COALESCE(auth_provider, '') != 'admin_walkin'
+              AND (email NOT LIKE '%@autoride.internal' OR email IS NULL)
             ORDER BY full_name ASC
             LIMIT %s
         """, (f'%{q}%', f'%{q}%', limit))
