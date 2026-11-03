@@ -7871,6 +7871,9 @@
 
             </div>
 
+<!-- Schedule & Dates Card (Moved from Full Details with Edit button) -->
+            <div id="quickModalScheduleCard" style="background:#f8fafc;border-radius:12px;padding:10px 12px;border:1px solid #e2e8f0;margin-bottom:10px;font-size:0.78rem;line-height:1.5;"></div>
+
             <!-- Color Selection (User Select Colors for Flexibility) -->
             <div style="margin-bottom: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px;">
                 <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; margin-bottom: 8px;">
@@ -19688,22 +19691,52 @@ async edit(id) { this.openModal(id); },
             const customPicker = document.getElementById('quickCustomColorPicker');
             if (customPicker) customPicker.value = this.selectedColor;
 
-            // Summary Card with Edit Rent Period Button
+            // Summary Card (1-Column Streamlined Layout)
             const summaryCard = document.getElementById('quickModalSummaryCard');
             if (summaryCard) {
                 const sDate = b.start_date ? new Date(b.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
                 const eDate = b.end_date ? new Date(b.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
                 summaryCard.innerHTML = `
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                        <div><strong style="color:#475569;">Schedule:</strong> ${sDate} ${b.start_time || '06:00'} &rarr; ${eDate} ${b.end_time || '06:00'}</div>
-                        <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
                         <div><strong style="color:#475569;">Booking Status:</strong> <span style="font-weight:800; color:#0284c7; text-transform:uppercase;">${b.status || 'Active'}</span></div>
+                        <div><strong style="color:#475569;">Schedule:</strong> ${sDate} ${b.start_time || '06:00'} &rarr; ${eDate} ${b.end_time || '06:00'}</div>
                         <div><strong style="color:#475569;">Destination:</strong> ${b.destination || 'N/A'}</div>
+                        <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
                     </div>
-                    <div style="display:flex; justify-content:flex-end; border-top: 1px dashed #e2e8f0; padding-top: 6px;">
-                        <button type="button" onclick="FleetCalendar.openEditScheduleForBooking()" style="padding: 4px 10px; font-size: 0.72rem; font-weight: 700; color: #4338ca; background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
-                            <i class="fas fa-calendar-alt"></i> Edit Date / Rent Period
+                `;
+            }
+
+            // Dedicated Schedule & Dates Card with Edit Button (Mirrored from Full Details)
+            const schedCard = document.getElementById('quickModalScheduleCard');
+            if (schedCard) {
+                const sDate = b.start_date ? new Date(b.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+                const eDate = b.end_date ? new Date(b.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+                schedCard.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:0.68rem;color:#6366f1;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:5px;">
+                            <i class="fas fa-clock" style="color:#6366f1;"></i> Schedule &amp; Dates
+                        </span>
+                        <button type="button" onclick="FleetCalendar.openEditScheduleForBooking()" style="background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 10px;border-radius:6px;font-size:0.72rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                            <i class="fas fa-edit"></i> Edit
                         </button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+                        <div>
+                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+                                <i class="fas fa-calendar-check" style="color:#00B14F;"></i> Pickup
+                            </div>
+                            <div style="font-weight:700;font-size:0.85rem;color:#0f172a;">${sDate} ${b.start_time || '06:00'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+                                <i class="fas fa-calendar-times" style="color:#ef4444;"></i> Return
+                            </div>
+                            <div style="font-weight:700;font-size:0.85rem;color:#0f172a;">${eDate} ${b.end_time || '06:00'}</div>
+                        </div>
+                    </div>
+                    <div style="padding-top:8px;border-top:1px solid #e2e8f0;display:flex;align-items:flex-start;gap:6px;">
+                        <i class="fas fa-map-marker-alt" style="color:#ef4444;margin-top:2px;font-size:0.75rem;"></i>
+                        <div style="font-size:0.78rem;color:#374151;font-weight:600;">${b.pickup_location || 'Tanauan/Sto. Tomas, Batangas'}</div>
                     </div>
                 `;
             }
