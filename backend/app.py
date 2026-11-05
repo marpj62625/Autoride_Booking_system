@@ -8239,10 +8239,10 @@ def create_walkin_booking():
 
         cur = get_cursor()
 
-        customer_name = (data.get('customer_name') or '').strip()[:100]
+        customer_name = (data.get('customer_name') or '').strip().upper()[:100]
         customer_phone = (data.get('customer_phone') or '').strip()[:20]
-        customer_address = (data.get('customer_address') or '').strip()[:250]
-        emergency_name = (data.get('emergency_name') or '').strip()[:100]
+        customer_address = (data.get('customer_address') or '').strip().upper()[:250]
+        emergency_name = (data.get('emergency_name') or '').strip().upper()[:100]
         emergency_phone = (data.get('emergency_phone') or '').strip()[:20]
         emergency_rel = (data.get('emergency_rel') or '').strip()[:50]
 
@@ -8304,8 +8304,8 @@ def create_walkin_booking():
                     user_id = matched_user['id']
                 else:
                     name_parts = customer_name.strip().split()
-                    f_name = name_parts[0] if name_parts else customer_name
-                    l_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+                    f_name = (name_parts[0] if name_parts else customer_name).upper()
+                    l_name = (" ".join(name_parts[1:]) if len(name_parts) > 1 else "").upper()
 
                     clean_digits = _re.sub(r'[^0-9]', '', customer_phone or '')
                     if not clean_digits:
