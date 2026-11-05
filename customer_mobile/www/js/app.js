@@ -5315,15 +5315,15 @@ function openBookingForm(vehicleId) {
     '<select id="bfReturnLocation">' + locationOptions + '</select></div>' +
     '</div>' +
 
-    // Delivery address with map link
+    // Delivery address with map link (Province -> Municipality -> Barangay -> Detailed Address)
     '<div id="deliverySection" style="display:none;margin-top:14px;">' +
     '<div class="form-group"><label>Delivery Zone / Serviced Area</label>' +
     '<select id="bfDeliveryZone" onchange="onDeliveryZoneChange()">' + deliveryZoneOptions + '</select></div>' +
+    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="50" placeholder="Province" oninput="cleanAddressInput(this)"></div>' +
+    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="50" placeholder="Municipality or City" oninput="cleanAddressInput(this)"></div>' +
+    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="50" placeholder="Barangay" oninput="cleanAddressInput(this)"></div>' +
     '<div class="form-group"><label>Detailed Delivery Address (Street, House No., landmark)</label>' +
-    '<input type="text" id="bfDeliveryAddress" maxlength="100" placeholder="Enter specific delivery address"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="40" placeholder="Barangay"></div>' +
-    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="40" placeholder="Municipality or City"></div>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="40" placeholder="Province"></div>' +
+    '<input type="text" id="bfDeliveryAddress" maxlength="100" placeholder="Enter specific delivery address (Street, House No., landmark)" oninput="cleanAddressInput(this)"></div>' +
     '<a href="#" onclick="openDeliveryMapPicker(); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map-marker-alt"></i> Pin delivery location on map</a>' +
     '</div></div>' +
 
@@ -5406,6 +5406,12 @@ function setServiceType(type) {
   document.getElementById('deliverySection').style.display = type === 'delivery' ? 'block' : 'none';
   updateBookingPrice();
 }
+
+function cleanAddressInput(el) {
+  if (!el || typeof el.value !== 'string') return;
+  el.value = el.value.replace(/[^A-Za-z0-9\u00C0-\u00FF\s.,'#\/-]/g, '').replace(/([A-Za-z0-9\u00C0-\u00FF])\1\1+/gi, '$1$1');
+}
+window.cleanAddressInput = cleanAddressInput;
 
 function onDeliveryZoneChange() {
   var zoneEl = document.getElementById('bfDeliveryZone');
@@ -5759,10 +5765,14 @@ function submitBooking() {
     pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
     returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
   } else {
-    pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
-    pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
-    pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
-    pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
+    var dAddress = sanitizeInput(document.getElementById('bfDeliveryAddress') ? document.getElementById('bfDeliveryAddress').value : '');
+    var dBrgy = sanitizeInput(document.getElementById('bfDeliveryBarangay') ? document.getElementById('bfDeliveryBarangay').value : '');
+    var dMuni = sanitizeInput(document.getElementById('bfDeliveryMunicipality') ? document.getElementById('bfDeliveryMunicipality').value : '');
+    var dProv = sanitizeInput(document.getElementById('bfDeliveryProvince') ? document.getElementById('bfDeliveryProvince').value : '');
+    pickupLocation = [dAddress, dBrgy, dMuni, dProv].filter(Boolean).join(', ');
+    pickupProvince = dProv;
+    pickupMunicipality = dMuni;
+    pickupBarangay = dBrgy;
     returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
   }
 
