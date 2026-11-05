@@ -17943,28 +17943,22 @@ def chat_messages():
         cur = get_cursor()
         cur.execute("SET search_path = public")
         
-        # Log the query parameters for debugging
-        print(f"[CHAT_MESSAGES] user_id={user_id}, admin_id={admin_id}, limit={limit}")
-        
         cur.execute("""
             SELECT id, sender_type, sender_id, receiver_type, receiver_id,
                    message, is_read, created_at
             FROM chat_messages
-            WHERE (sender_type='user'  AND sender_id=%s   AND receiver_type='admin' AND receiver_id=%s)
-               OR (sender_type='admin' AND sender_id=%s   AND receiver_type='user'  AND receiver_id=%s)
+            WHERE (sender_type='user'  AND sender_id=%s AND receiver_type='admin')
+               OR (sender_type='admin' AND receiver_type='user' AND receiver_id=%s)
             ORDER BY created_at ASC
             LIMIT %s
-        """, (int(user_id), int(admin_id), int(admin_id), int(user_id), limit))
+        """, (int(user_id), int(user_id), limit))
         rows = cur.fetchall()
-        
-        print(f"[CHAT_MESSAGES] Found {len(rows)} messages")
         
         result = []
         for r in rows:
             d = dict(r)
             if d.get('created_at'): d['created_at'] = d['created_at'].isoformat()
             result.append(d)
-            print(f"[CHAT_MESSAGES] Message: {d['sender_type']}({d['sender_id']}) -> {d['receiver_type']}({d['receiver_id']}): {d['message'][:30]}")
         
         return jsonify(result), 200
     except Exception as e:
@@ -18074,14 +18068,14 @@ def chat_inbox():
     try:
         cur = get_cursor()
         if viewer_type == 'admin':
-            # Get all unique users this admin has chatted with, with latest message
+            # Get all unique users who have chatted with support team, with latest message
             cur.execute("""
                 SELECT
                     other_id,
                     last_message,
                     last_at,
                     (SELECT COUNT(*) FROM chat_messages
-                     WHERE receiver_type='admin' AND receiver_id=%s
+                     WHERE receiver_type='admin'
                        AND sender_type='user' AND sender_id=sub.other_id
                        AND is_read=FALSE) AS unread_count
                 FROM (
@@ -18093,17 +18087,11 @@ def chat_inbox():
                         message AS last_message,
                         created_at AS last_at
                     FROM chat_messages
-                    WHERE (sender_type='admin' AND sender_id=%s)
-                       OR (receiver_type='admin' AND receiver_id=%s)
-                    ORDER BY other_id,
-                        CASE
-                            WHEN sender_type='user' THEN sender_id
-                            ELSE receiver_id
-                        END,
-                        created_at DESC
+                    WHERE sender_type='admin' OR receiver_type='admin'
+                    ORDER BY other_id, created_at DESC
                 ) sub
                 ORDER BY last_at DESC
-            """, (int(viewer_id), int(viewer_id), int(viewer_id)))
+            """)
             rows = cur.fetchall()
             result = []
             for r in rows:
@@ -18184,12 +18172,27 @@ def chat_mark_read():
         return jsonify({'error': 'Invalid user ID format'}), 400
     try:
         cur = get_cursor()
-        cur.execute("""
-            UPDATE chat_messages SET is_read=TRUE
-            WHERE receiver_type=%s AND receiver_id=%s
-              AND sender_type=%s   AND sender_id=%s
-              AND is_read=FALSE
-        """, (receiver_type, int(receiver_id), sender_type, int(sender_id)))
+        if receiver_type == 'admin' and sender_type == 'user':
+            cur.execute("""
+                UPDATE chat_messages SET is_read=TRUE
+                WHERE receiver_type='admin'
+                  AND sender_type='user' AND sender_id=%s
+                  AND is_read=FALSE
+            """, (int(sender_id),))
+        elif receiver_type == 'user' and sender_type == 'admin':
+            cur.execute("""
+                UPDATE chat_messages SET is_read=TRUE
+                WHERE receiver_type='user' AND receiver_id=%s
+                  AND sender_type='admin'
+                  AND is_read=FALSE
+            """, (int(receiver_id),))
+        else:
+            cur.execute("""
+                UPDATE chat_messages SET is_read=TRUE
+                WHERE receiver_type=%s AND receiver_id=%s
+                  AND sender_type=%s   AND sender_id=%s
+                  AND is_read=FALSE
+            """, (receiver_type, int(receiver_id), sender_type, int(sender_id)))
         commit_db()
         return jsonify({'message': 'Marked as read'}), 200
     except Exception as e:
