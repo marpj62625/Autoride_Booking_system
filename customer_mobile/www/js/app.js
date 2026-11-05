@@ -5315,6 +5315,19 @@ function openBookingForm(vehicleId) {
     '<option value="Special Event / Wedding / Birthday">Special Event / Wedding / Birthday</option>' +
     '<option value="Other">Other</option>' +
     '</select></div>' +
+    '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border-color);">' +
+    '<label style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:0.9rem;"><i class="fab fa-facebook" style="color:#1877f2;"></i> Social Media Account <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);">(Optional)</span></label>' +
+    '<div style="display:grid;grid-template-columns:130px 1fr;gap:8px;">' +
+    '<select id="bfSocialPlatform" style="padding:10px 12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.9rem;color:var(--text-primary);outline:none;">' +
+    '<option value="Facebook">Facebook</option>' +
+    '<option value="Instagram">Instagram</option>' +
+    '<option value="TikTok">TikTok</option>' +
+    '<option value="Telegram">Telegram</option>' +
+    '<option value="Viber">Viber</option>' +
+    '<option value="Other">Other</option>' +
+    '</select>' +
+    '<input type="text" id="bfSocialAccount" maxlength="100" placeholder="e.g. Profile Name or Link" style="padding:10px 12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.9rem;color:var(--text-primary);outline:none;">' +
+    '</div></div>' +
     '</div>' +
 
     // Pickup or Delivery
@@ -6022,6 +6035,8 @@ function submitBooking() {
     payment_type: payType,
     destination: destination,
     rental_purpose: rentalPurpose,
+    social_media_platform: (document.getElementById('bfSocialPlatform') || {}).value || 'Facebook',
+    social_media_account: ((document.getElementById('bfSocialAccount') || {}).value || '').trim(),
     applied_coupon_id: null,
     discount_amount: result.longTermDiscount,
     points_redeemed: pts,

@@ -1609,6 +1609,10 @@ def migrate_archive_columns():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archive_reason VARCHAR(255) DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS merged_into_id INTEGER DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pre_merge_snapshot JSONB DEFAULT NULL")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_platform VARCHAR(100) DEFAULT ''")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_account VARCHAR(255) DEFAULT ''")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_platform VARCHAR(100) DEFAULT ''")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_account VARCHAR(255) DEFAULT ''")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_is_archived ON bookings (is_archived, status)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_merged_into ON bookings (merged_into_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs (created_at)")
@@ -6604,6 +6608,20 @@ def book():
                   driver_fee, gps_tracking_consent, insurance_type, insurance_price, discount_amount))
 
             booking_id = cur.fetchone()['id']
+        social_media_platform = (data.get('social_media_platform') or '').strip()
+        social_media_account = (data.get('social_media_account') or '').strip()
+        if social_media_platform or social_media_account:
+            cur.execute("""
+                UPDATE bookings 
+                SET social_media_platform = %s, social_media_account = %s 
+                WHERE id = %s
+            """, (social_media_platform, social_media_account, booking_id))
+            if user_id:
+                cur.execute("""
+                    UPDATE users 
+                    SET social_media_platform = %s, social_media_account = %s 
+                    WHERE id = %s
+                """, (social_media_platform, social_media_account, user_id))
 
             # Deduct loyalty points immediately
             if points_redeemed > 0:
@@ -18973,6 +18991,8 @@ def get_fleet_bookings():
                 COALESCE(b.driver_fee, 0.00) AS driver_fee,
                 COALESCE(b.calendar_color, '') AS calendar_color,
                 COALESCE(b.destination, '') AS destination,
+        COALESCE(NULLIF(TRIM(b.social_media_platform), ''), NULLIF(TRIM(u.social_media_platform), ''), '') AS social_media_platform,
+        COALESCE(NULLIF(TRIM(b.social_media_account), ''), NULLIF(TRIM(u.social_media_account), ''), '') AS social_media_account,
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
                 b.merged_into_id,
                 b.pre_merge_snapshot,
@@ -19993,6 +20013,66 @@ def get_booking_penalties(booking_id):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/bookings/<int:booking_id>/social-media', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/social-media', methods=['POST'])
+def update_booking_social_media(booking_id):
+    """Allows admin to update customer social media platform and account name."""
+    data = request.json or {}
+    if is_consignor_request(data):
+        return jsonify({"error": "Consignors have read-only monitoring access.", "code": "FORBIDDEN"}), 403
+
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    platform = (data.get('platform') or '').strip()
+    account = (data.get('account') or '').strip()
+    admin_id = data.get('admin_id') or 1
+    admin_name = data.get('admin_name') or 'Admin'
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, user_id FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{booking_id} not found."}), 404
+
+        cur.execute("""
+            UPDATE bookings
+            SET social_media_platform = %s, social_media_account = %s
+            WHERE id = %s
+        """, (platform, account, booking_id))
+
+        if b.get('user_id'):
+            cur.execute("""
+                UPDATE users
+                SET social_media_platform = %s, social_media_account = %s
+                WHERE id = %s
+            """, (platform, account, b['user_id']))
+
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=admin_name,
+            action='BOOKING_SOCIAL_MEDIA_UPDATED',
+            target_type='BOOKING',
+            target_id=booking_id,
+            details=f"Social media updated to: {platform} - {account}"
+        )
+
+        return jsonify({
+            "message": "Social media updated successfully.",
+            "platform": platform,
+            "account": account
+        })
+    except Exception as e:
+        rollback_db()
+        return jsonify({"error": f"Failed to update social media: {str(e)}"}), 500
     finally:
         if 'cur' in locals(): cur.close()
 

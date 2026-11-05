@@ -7811,22 +7811,35 @@ window.formatPhoneInput = formatPhoneInput;
             </div>
         </div>
     </div>
-    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;" onclick="if(event.target === this) { if(event.stopPropagation) event.stopPropagation(); if(event.stopImmediatePropagation) event.stopImmediatePropagation(); FleetCalendar.requestCloseQuickModal(); }">
-        <div class="modal-content" style="background: white; color: #0f172a; padding: 16px 20px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span id="quickModalColorBadge" style="width: 22px; height: 22px; border-radius: 6px; background: #fde047; display: inline-block; border: 1.5px solid rgba(0,0,0,0.2);"></span>
-                    <div>
-                        <h3 id="quickModalTitle" style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Booking Dispatch & Pricing <button type="button" class="btn-quick-rename" onclick="FleetCalendar.promptRenameCustomer()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #4f46e5; font-size: 0.65rem; font-weight: 700; cursor: pointer; padding: 2px 6px; border-radius: 5px; vertical-align: middle; margin-left: 4px;" title="Correct Typo in Customer Name"><i class="fas fa-pencil-alt"></i> Edit Typo</button></h3>
-                        <span id="quickModalSubtitle" style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Booking #0 &bull; Customer</span>
-                    </div>
-                </div>
-                <button onclick="FleetCalendar.requestCloseQuickModal()" style="background: rgba(0,0,0,0.06); border: none; color: #475569; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;" title="Close modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
+    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 16px 20px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
+            <!-- Header (Frozen / Sticky on scroll) -->
+            <div id="quickModalStickyHeader" style="position: sticky; top: -16px; margin: -16px -20px 12px -20px; padding: 14px 20px 10px 20px; background: #ffffff; z-index: 50; border-top-left-radius: 18px; border-top-right-radius: 18px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display:flex; align-items:flex-start; gap:8px; min-width: 0; flex: 1;">
+                    <span id="quickModalColorBadge" style="width: 22px; height: 22px; border-radius: 6px; background: #fde047; display: inline-block; border: 1.5px solid rgba(0,0,0,0.2); flex-shrink: 0; margin-top: 2px;"></span>
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <h3 id="quickModalTitle" style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.25;">Booking Dispatch &amp; Pricing</h3>
+                            <button type="button" class="btn-quick-rename" onclick="FleetCalendar.promptRenameCustomer()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #4f46e5; font-size: 0.65rem; font-weight: 700; cursor: pointer; padding: 2px 6px; border-radius: 5px; vertical-align: middle;" title="Correct Typo in Customer Name">
+                                <i class="fas fa-pencil-alt"></i> Edit Typo
+                            </button>
+                        </div>
+                        <!-- Social Media Area -->
+                        <div id="quickModalSocialRow" style="font-size: 0.72rem; font-weight: 700; color: #dc2626; margin-top: 3px; display: flex; align-items: center; gap: 6px; text-transform: uppercase;">
+                            <span id="quickModalSocialText">SOC. MED.: NOT SET</span>
+                            <button type="button" onclick="FleetCalendar.promptEditSocialMedia()" style="background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.25); color: #dc2626; font-size: 0.62rem; font-weight: 700; cursor: pointer; padding: 1px 6px; border-radius: 4px; text-transform: none;" title="Edit Social Media Details">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                        <span id="quickModalSubtitle" style="font-size: 0.72rem; color: #64748b; font-weight: 600; display: block; margin-top: 2px;">Booking #0 &bull; Customer</span>
+                    </div>
+                </div>
+                <!-- Close Button: Rounded-Rectangle (NOT circular) -->
+                <button type="button" onclick="FleetCalendar.requestCloseQuickModal()" style="background: rgba(0,0,0,0.06); border: none; color: #475569; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer; flex-shrink: 0; margin-left: 8px; transition: background 0.2s, color 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.color='#ef4444';" onmouseout="this.style.background='rgba(0,0,0,0.06)'; this.style.color='#475569';" title="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
             <!-- Booking Summary Card -->
             <div id="quickModalSummaryCard" style="background: #f8fafc; border-radius: 12px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; font-size: 0.78rem; line-height: 1.5;">
                 <!-- Injected via JS -->
@@ -12893,11 +12906,9 @@ input:checked + .ctrl-slider:before {
             }
             return;
         }
-        if (e.target && e.target.id === 'fleetBookingModal') {
-            if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) {
-                FleetCalendar.requestCloseQuickModal();
-            }
-            return;
+        if (e.target && e.target.id === 'fleetBookingModal') {
+            // Backdrop click dismiss disabled to prevent accidental closure
+            return;
         }
         if (e.target && e.target.id === 'fleetQuickUnsavedModal') {
             if (typeof FleetCalendar !== 'undefined' && FleetCalendar.cancelQuickUnsavedPrompt) {
@@ -19339,7 +19350,63 @@ async edit(id) { this.openModal(id); },
 
         // Open the Working Pricing & Dispatch Modal directly on click
         
-        promptRenameCustomer() {
+            async promptEditSocialMedia() {
+        const bId = this.activeBookingId;
+        if (!bId) return;
+        if (typeof isConsignor === 'function' && isConsignor()) {
+            if (typeof showToast === 'function') showToast('Consignors have read-only monitoring access.', 'error');
+            return;
+        }
+        const b = (this.bookings || []).find(x => x.id == bId);
+        const currPlat = b ? (b.social_media_platform || 'Facebook') : 'Facebook';
+        const currAcc = b ? (b.social_media_account || '') : '';
+
+        const newPlat = prompt('Enter Social Media Platform (e.g. Facebook, Instagram, TikTok):', currPlat);
+        if (newPlat === null) return;
+        const newAcc = prompt('Enter Social Media Account / Name:', currAcc);
+        if (newAcc === null) return;
+
+        const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+        try {
+            const res = await fetch(`${API_BASE}/admin/bookings/${bId}/social-media`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    platform: newPlat.trim(),
+                    account: newAcc.trim(),
+                    admin_id: adminUser ? adminUser.id : 1,
+                    admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            if (b) {
+                b.social_media_platform = newPlat.trim();
+                b.social_media_account = newAcc.trim();
+            }
+            const socialEl = document.getElementById('quickModalSocialText');
+            if (socialEl) {
+                if (newPlat.trim() && newAcc.trim()) {
+                    socialEl.textContent = `SOC. MED.: ${newPlat.trim().toUpperCase()}: ${newAcc.trim()}`;
+                    socialEl.style.color = '#dc2626';
+                } else if (newAcc.trim()) {
+                    socialEl.textContent = `SOC. MED.: ${newAcc.trim()}`;
+                    socialEl.style.color = '#dc2626';
+                } else {
+                    socialEl.textContent = `SOC. MED.: NOT SET`;
+                    socialEl.style.color = '#94a3b8';
+                }
+            }
+            if (typeof showToast === 'function') showToast('Social media details updated.', 'success');
+            if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
+            if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
+        } catch (err) {
+            if (typeof showToast === 'function') showToast('Failed to update social media: ' + err.message, 'error');
+        }
+    },
+
+    promptRenameCustomer() {
             const bId = this.activeBookingId;
             if (!bId) return;
             if (typeof isConsignor === 'function' && isConsignor()) {
@@ -19660,9 +19727,24 @@ async edit(id) { this.openModal(id); },
 
             this.activeBookingId = bId;
 
-            // Header titles
-            const titleEl = document.getElementById('quickModalTitle');
-            if (titleEl) titleEl.textContent = `${b.customer_name || 'Customer'}`;
+            // Header titles
+            const titleEl = document.getElementById('quickModalTitle');
+            if (titleEl) titleEl.textContent = `${b.customer_name || 'Customer'}`;
+            const socialEl = document.getElementById('quickModalSocialText');
+            if (socialEl) {
+                const plat = (b.social_media_platform || '').toUpperCase();
+                const acc = b.social_media_account || '';
+                if (plat && acc) {
+                    socialEl.textContent = `SOC. MED.: ${plat}: ${acc}`;
+                    socialEl.style.color = '#dc2626';
+                } else if (acc) {
+                    socialEl.textContent = `SOC. MED.: ${acc}`;
+                    socialEl.style.color = '#dc2626';
+                } else {
+                    socialEl.textContent = `SOC. MED.: NOT SET`;
+                    socialEl.style.color = '#94a3b8';
+                }
+            }
             const subEl = document.getElementById('quickModalSubtitle');
             if (subEl) subEl.textContent = `Booking #${b.id} • ${b.brand || ''} ${b.model || ''} (${b.plate_number || 'No Plate'})`;
 
