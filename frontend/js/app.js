@@ -15171,6 +15171,19 @@ function _webCalPickDate(dateStr) {
 var deliveryPickerMap = null;
 var deliveryPickerMarker = null;
 
+// Philippine Territorial Bounding Box (4.5° N to 21.5° N, 116.0° E to 127.0° E)
+var PHILIPPINES_BOUNDS = null;
+
+function getPhilippinesBounds() {
+  if (!PHILIPPINES_BOUNDS && typeof L !== 'undefined') {
+    PHILIPPINES_BOUNDS = L.latLngBounds(
+      L.latLng(4.5, 116.0),  // South-West (Tawi-Tawi, Sulu Sea, Palawan)
+      L.latLng(21.5, 127.0)  // North-East (Batanes, Northern Luzon, Philippine Sea)
+    );
+  }
+  return PHILIPPINES_BOUNDS;
+}
+
 function openDeliveryMapPicker() {
   showOverlay('page-delivery-picker');
   
@@ -15187,30 +15200,49 @@ function openDeliveryMapPicker() {
 
   setTimeout(function() {
     if (typeof L !== 'undefined') {
+      var phBounds = getPhilippinesBounds();
+
       if (deliveryPickerMap) {
         deliveryPickerMap.remove();
         deliveryPickerMap = null;
         deliveryPickerMarker = null;
       }
       
-      deliveryPickerMap = L.map('deliveryPickerMap').setView([defaultLat, defaultLng], 14);
+      // Initialize map locked strictly within Philippine boundaries
+      deliveryPickerMap = L.map('deliveryPickerMap', {
+        maxBounds: phBounds,
+        maxBoundsViscosity: 1.0, // 100% resistance: prevents panning/dragging outside Philippines
+        minZoom: 5,              // Prevents zooming out to entire globe
+        maxZoom: 19
+      }).setView([defaultLat, defaultLng], 14);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap contributors',
+        bounds: phBounds
       }).addTo(deliveryPickerMap);
       
       // Draggable pin marker
       deliveryPickerMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(deliveryPickerMap);
       
-      // Update coordinates on dragend
+      // Update coordinates on dragend with boundary clamping
       deliveryPickerMarker.on('dragend', function(event) {
         var marker = event.target;
         var position = marker.getLatLng();
-        console.log('Marker dragged to:', position.lat, position.lng);
+        if (phBounds && !phBounds.contains(position)) {
+          var clampedLat = Math.max(4.5, Math.min(21.5, position.lat));
+          var clampedLng = Math.max(116.0, Math.min(127.0, position.lng));
+          marker.setLatLng([clampedLat, clampedLng]);
+          showToast('Delivery pin must be inside the Philippines. Repositioned inside boundaries.', 'warning');
+        }
       });
       
-      // Click map to reposition marker
+      // Click map to reposition marker only if inside Philippine boundaries
       deliveryPickerMap.on('click', function(e) {
         if (deliveryPickerMarker) {
+          if (phBounds && !phBounds.contains(e.latlng)) {
+            showToast('Please select a location within the Philippines.', 'warning');
+            return;
+          }
           deliveryPickerMarker.setLatLng(e.latlng);
         }
       });
@@ -15231,11 +15263,17 @@ function confirmDeliveryPinLocation() {
   }
   
   var latlng = deliveryPickerMarker.getLatLng();
+  var phBounds = getPhilippinesBounds();
+  if (phBounds && !phBounds.contains(latlng)) {
+    showToast('Please pin a delivery location within the Philippines.', 'warning');
+    return;
+  }
+
   var confirmBtn = document.querySelector('#page-delivery-picker button.btn-primary');
   var restoreBtn = setButtonLoading(confirmBtn, 'Fetching Address...');
   
-  // Reverse Geocoding via OSM Nominatim API (Free, no keys required)
-  var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latlng.lat + '&lon=' + latlng.lng + '&addressdetails=1';
+  // Reverse Geocoding via OSM Nominatim API restricted strictly to Philippines (countrycodes=ph)
+  var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latlng.lat + '&lon=' + latlng.lng + '&addressdetails=1&countrycodes=ph';
   
   fetch(url, { headers: { 'Accept-Language': 'en' } })
     .then(function(r) { return r.json(); })
