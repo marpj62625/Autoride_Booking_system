@@ -7811,6 +7811,54 @@ window.formatPhoneInput = formatPhoneInput;
             </div>
         </div>
     </div>
+    <!-- Social Media Edit Modal -->
+    <div id="fleetSocialMediaModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000030; background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);" onclick="if(event.target === this) FleetCalendar.closeSocialMediaModal();">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 22px 24px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); max-width: 440px; width: 92%; border: 1px solid #e2e8f0;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(220,38,38,0.1); color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+                        <i class="fab fa-facebook"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">Social Media Details</h3>
+                        <p style="margin: 0; font-size: 0.72rem; color: #64748b; font-weight: 600;">Customer platform and profile name</p>
+                    </div>
+                </div>
+                <button type="button" onclick="FleetCalendar.closeSocialMediaModal()" style="background: rgba(0,0,0,0.05); border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.12)'; this.style.color='#ef4444';" onmouseout="this.style.background='rgba(0,0,0,0.05)'; this.style.color='#64748b';">&times;</button>
+            </div>
+
+            <!-- Form Body -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 6px;">Social Media Platform</label>
+                    <select id="quickModalSocialPlatformInput" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #0f172a; background: #f8fafc; outline: none; transition: border-color 0.2s;">
+                        <option value="Facebook">Facebook</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="Telegram">Telegram</option>
+                        <option value="Viber">Viber</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Twitter/X">Twitter / X</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 6px;">Account Name / Profile Link</label>
+                    <input type="text" id="quickModalSocialAccountInput" placeholder="e.g. John Jaymars or fb.com/johnjaymars" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; transition: border-color 0.2s;">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+                <button type="button" onclick="FleetCalendar.closeSocialMediaModal()" style="padding: 9px 18px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 9px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">Cancel</button>
+                <button type="button" id="btnSaveSocialMedia" onclick="FleetCalendar.saveSocialMediaModal()" style="padding: 9px 20px; background: #2563eb; color: white; border: none; border-radius: 9px; font-weight: 800; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(37,99,235,0.3);">
+                    <i class="fas fa-check"></i> Save Details
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none; z-index: 999999;">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 16px 20px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid #e2e8f0; max-height: 90vh; overflow-y: auto;">
             <!-- Header (Frozen / Sticky on scroll) -->
@@ -7827,7 +7875,7 @@ window.formatPhoneInput = formatPhoneInput;
                         <!-- Social Media Area -->
                         <div id="quickModalSocialRow" style="font-size: 0.72rem; font-weight: 700; color: #dc2626; margin-top: 3px; display: flex; align-items: center; gap: 6px; text-transform: uppercase;">
                             <span id="quickModalSocialText">SOC. MED.: NOT SET</span>
-                            <button type="button" onclick="FleetCalendar.promptEditSocialMedia()" style="background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.25); color: #dc2626; font-size: 0.62rem; font-weight: 700; cursor: pointer; padding: 1px 6px; border-radius: 4px; text-transform: none;" title="Edit Social Media Details">
+                            <button type="button" onclick="FleetCalendar.openSocialMediaModal()" style="background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.25); color: #dc2626; font-size: 0.62rem; font-weight: 700; cursor: pointer; padding: 1px 6px; border-radius: 4px; text-transform: none;" title="Edit Social Media Details">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                         </div>
@@ -13010,7 +13058,11 @@ input:checked + .ctrl-slider:before {
                     if (typeof FleetCalendar !== 'undefined' && FleetCalendar.closeMergeModal) FleetCalendar.closeMergeModal();
                     return;
                 }
-                if (topModal.id === 'fleetBookingModal') {
+                if (topModal.id === 'fleetSocialMediaModal') {
+            if (typeof FleetCalendar !== 'undefined' && FleetCalendar.closeSocialMediaModal) FleetCalendar.closeSocialMediaModal();
+            return true;
+        }
+        if (topModal.id === 'fleetBookingModal') {
                     if (typeof FleetCalendar !== 'undefined' && FleetCalendar.requestCloseQuickModal) FleetCalendar.requestCloseQuickModal();
                     return;
                 }
@@ -19350,7 +19402,7 @@ async edit(id) { this.openModal(id); },
 
         // Open the Working Pricing & Dispatch Modal directly on click
         
-            async promptEditSocialMedia() {
+                openSocialMediaModal() {
         const bId = this.activeBookingId;
         if (!bId) return;
         if (typeof isConsignor === 'function' && isConsignor()) {
@@ -19361,10 +19413,37 @@ async edit(id) { this.openModal(id); },
         const currPlat = b ? (b.social_media_platform || 'Facebook') : 'Facebook';
         const currAcc = b ? (b.social_media_account || '') : '';
 
-        const newPlat = prompt('Enter Social Media Platform (e.g. Facebook, Instagram, TikTok):', currPlat);
-        if (newPlat === null) return;
-        const newAcc = prompt('Enter Social Media Account / Name:', currAcc);
-        if (newAcc === null) return;
+        const platSelect = document.getElementById('quickModalSocialPlatformInput');
+        const accInput = document.getElementById('quickModalSocialAccountInput');
+        if (platSelect) platSelect.value = currPlat || 'Facebook';
+        if (accInput) accInput.value = currAcc || '';
+
+        const modal = document.getElementById('fleetSocialMediaModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => { if (accInput) accInput.focus(); }, 100);
+        }
+    },
+
+    closeSocialMediaModal() {
+        const modal = document.getElementById('fleetSocialMediaModal');
+        if (modal) modal.style.display = 'none';
+    },
+
+    async saveSocialMediaModal() {
+        const bId = this.activeBookingId;
+        if (!bId) return;
+        const platSelect = document.getElementById('quickModalSocialPlatformInput');
+        const accInput = document.getElementById('quickModalSocialAccountInput');
+        const newPlat = (platSelect ? platSelect.value : 'Facebook').trim();
+        const newAcc = (accInput ? accInput.value : '').trim();
+
+        const btn = document.getElementById('btnSaveSocialMedia');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
 
         const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
         try {
@@ -19372,8 +19451,8 @@ async edit(id) { this.openModal(id); },
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    platform: newPlat.trim(),
-                    account: newAcc.trim(),
+                    platform: newPlat,
+                    account: newAcc,
                     admin_id: adminUser ? adminUser.id : 1,
                     admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
                 })
@@ -19381,29 +19460,40 @@ async edit(id) { this.openModal(id); },
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
+            const b = (this.bookings || []).find(x => x.id == bId);
             if (b) {
-                b.social_media_platform = newPlat.trim();
-                b.social_media_account = newAcc.trim();
+                b.social_media_platform = newPlat;
+                b.social_media_account = newAcc;
             }
             const socialEl = document.getElementById('quickModalSocialText');
             if (socialEl) {
-                if (newPlat.trim() && newAcc.trim()) {
-                    socialEl.textContent = `SOC. MED.: ${newPlat.trim().toUpperCase()}: ${newAcc.trim()}`;
+                if (newPlat && newAcc) {
+                    socialEl.textContent = `SOC. MED.: ${newPlat.toUpperCase()}: ${newAcc}`;
                     socialEl.style.color = '#dc2626';
-                } else if (newAcc.trim()) {
-                    socialEl.textContent = `SOC. MED.: ${newAcc.trim()}`;
+                } else if (newAcc) {
+                    socialEl.textContent = `SOC. MED.: ${newAcc}`;
                     socialEl.style.color = '#dc2626';
                 } else {
                     socialEl.textContent = `SOC. MED.: NOT SET`;
                     socialEl.style.color = '#94a3b8';
                 }
             }
+            this.closeSocialMediaModal();
             if (typeof showToast === 'function') showToast('Social media details updated.', 'success');
             if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
             if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
         } catch (err) {
             if (typeof showToast === 'function') showToast('Failed to update social media: ' + err.message, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
         }
+    },
+
+    promptEditSocialMedia() {
+        this.openSocialMediaModal();
     },
 
     promptRenameCustomer() {
