@@ -24723,6 +24723,76 @@ function toggleNewsletterModal(show = true) {
             if (!b.id && b.booking_id) b.id = b.booking_id;
             this.currentBooking = b;
 
+            // Fetch Driver's License Details for this booking/customer if available
+            let licenseData = null;
+            try {
+                const token = localStorage.getItem('token') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.token : null);
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`, { credentials: 'omit', headers });
+                if (licRes.ok) {
+                    const ld = await licRes.json();
+                    if (ld && (ld.license_number || ld.license_front_url || ld.full_name)) {
+                        licenseData = ld;
+                    }
+                }
+            } catch (e) {
+                console.warn('Booking license details fetch error:', e);
+            }
+
+            if (!licenseData && (b.license_number || b.driver_license || b.license_front_url || b.license_image_url)) {
+                licenseData = {
+                    license_number: b.license_number || b.driver_license || '',
+                    expiry_date: b.license_expiry || b.expiry_date || '-',
+                    license_class: b.license_class || '-',
+                    date_of_birth: b.date_of_birth || b.dob || '-',
+                    full_name: b.license_name || b.customer_name || '-',
+                    address: b.license_address || b.customer_address || '-',
+                    emergency_contact_name: b.emergency_contact_name || b.emergency_name || '-',
+                    emergency_contact_phone: b.emergency_contact_phone || b.emergency_phone || '-',
+                    emergency_contact_relationship: b.emergency_contact_relationship || b.emergency_contact_relation || '-',
+                    license_front_url: b.license_front_url || b.license_image_url || null,
+                    license_back_url: b.license_back_url || null
+                };
+            }
+
+            let licenseOverviewHtml = '';
+            if (licenseData && (licenseData.license_number || licenseData.license_front_url)) {
+                const frontUrl = licenseData.license_front_url ? (licenseData.license_front_url.startsWith('http') || licenseData.license_front_url.startsWith('data:') ? licenseData.license_front_url : `${API_BASE}${licenseData.license_front_url.startsWith('/') ? '' : '/'}${licenseData.license_front_url}`) : null;
+                const backUrl = licenseData.license_back_url ? (licenseData.license_back_url.startsWith('http') || licenseData.license_back_url.startsWith('data:') ? licenseData.license_back_url : `${API_BASE}${licenseData.license_back_url.startsWith('/') ? '' : '/'}${licenseData.license_back_url}`) : null;
+
+                licenseOverviewHtml = `
+                <div style="background: #ffffff; padding: 16px; border-radius: 14px; border: 1px solid #e2e8f0; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+                    <h3 style="font-size: 0.92rem; color: #00B14F; font-weight: 800; margin: 0 0 12px 0; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-id-card"></i> Driver's License Details
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">License #:</span> <span style="color:#0f172a; font-weight:700;">${licenseData.license_number || '-'}</span></div>
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">Expiry:</span> <span style="color:#0f172a; font-weight:700;">${licenseData.expiry_date || '-'}</span></div>
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">Class:</span> <span style="color:#0f172a; font-weight:700;">${licenseData.license_class || '-'}</span></div>
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">Date of Birth:</span> <span style="color:#0f172a; font-weight:700;">${licenseData.date_of_birth || '-'}</span></div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.82rem; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">Full Name:</span> <span style="color:#0f172a; font-weight:700;">${licenseData.full_name || '-'}</span></div>
+                        <div><span style="color:#64748b; font-size:0.72rem; font-weight:600; display:block; margin-bottom:2px;">Complete Residential Address:</span> <span style="color:#0f172a; font-weight:700; line-height:1.4; word-break:break-word;">${licenseData.address || licenseData.issuing_country_state || '-'}</span></div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.82rem; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+                        <p style="color:#0f172a; font-weight:800; font-size:0.8rem; margin:0 0 6px 0; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-phone-alt" style="color:#3b82f6;"></i> Emergency Contact
+                        </p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <div><span style="color:#64748b; font-size:0.7rem; display:block;">Name:</span> <span style="color:#0f172a; font-weight:700; font-size:0.8rem;">${licenseData.emergency_contact_name || '-'}</span></div>
+                            <div><span style="color:#64748b; font-size:0.7rem; display:block;">Phone:</span> <span style="color:#0f172a; font-weight:700; font-size:0.8rem;">${licenseData.emergency_contact_phone || '-'}</span></div>
+                            <div><span style="color:#64748b; font-size:0.7rem; display:block;">Rel:</span> <span style="color:#0f172a; font-weight:700; font-size:0.8rem;">${licenseData.emergency_contact_relationship || licenseData.emergency_contact_relation || '-'}</span></div>
+                        </div>
+                    </div>
+                    ${(frontUrl || backUrl) ? `
+                    <div style="display:flex; gap:10px; margin-top: 12px;">
+                        ${frontUrl ? `<button type="button" onclick="viewLicenseImage('${frontUrl}')" class="btn-outline" style="flex:1; font-size:0.75rem; padding:8px 12px; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; background:#fff; border:1px solid #cbd5e1; color:#334155;"><i class="fas fa-image"></i> Front Image</button>` : ''}
+                        ${backUrl ? `<button type="button" onclick="viewLicenseImage('${backUrl}')" class="btn-outline" style="flex:1; font-size:0.75rem; padding:8px 12px; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; background:#fff; border:1px solid #cbd5e1; color:#334155;"><i class="fas fa-image"></i> Back Image</button>` : ''}
+                    </div>` : ''}
+                </div>`;
+            }
+
             // Normalize vehicle/car string
             if (!b.car) {
                 b.car = (b.brand || b.model) ? `${b.brand || ''} ${b.model || ''} (${b.plate_number || 'N/A'})`.trim() : (b.vehicle || 'N/A');
@@ -24934,6 +25004,9 @@ function toggleNewsletterModal(show = true) {
                         </div>
                     </div>
                 </div>
+
+                ${licenseOverviewHtml}
+
                 <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;">
                         <span style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px;"><i class="fas fa-clock" style="color:#6366f1;"></i>Schedule &amp; Dates</span>
@@ -44149,6 +44222,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            modal.style.zIndex = '11000';
             modal.style.display = 'flex';
 
 
