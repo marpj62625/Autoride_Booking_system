@@ -3523,8 +3523,8 @@ function _buildDatetime(dateStr, timeStr) {
                   parseInt(tp[0]) || 0, parseInt(tp[1]) || 0, 0);
 }
 
-// Pickup countdown: counts to exact pickup time; switches to 1-hr grace after
-function _startPickupCountdown(startDateStr, startTimeStr) {
+// Pickup countdown: counts to exact pickup or delivery time; switches to 1-hr grace after
+function _startPickupCountdown(startDateStr, startTimeStr, isDelivery) {
   if (_activeBookingTimer) clearInterval(_activeBookingTimer);
   var pickupDt = _buildDatetime(startDateStr, startTimeStr);
   var graceEndDt = new Date(pickupDt.getTime() + 60 * 60 * 1000); // +1 hour
@@ -3535,14 +3535,14 @@ function _startPickupCountdown(startDateStr, startTimeStr) {
     if (!el) { clearInterval(_activeBookingTimer); return; }
     var now = new Date();
     if (now < pickupDt) {
-      // --- Phase 1: Before pickup time → countdown to pickup ---
+      // --- Phase 1: Before pickup/delivery time → countdown ---
       var msLeft = pickupDt - now;
       var result = _formatCountdown(msLeft);
       el.textContent = result.text;
       el.style.color = '#3b82f6'; // blue
-      if (labelEl) labelEl.textContent = 'Time Until Pickup';
+      if (labelEl) labelEl.textContent = isDelivery ? 'Time Until Delivery' : 'Time Until Pickup';
     } else if (now < graceEndDt) {
-      // --- Phase 2: Grace period (1 hour after pickup time) ---
+      // --- Phase 2: Grace period (1 hour after pickup/delivery time) ---
       var msLeft = graceEndDt - now;
       var result = _formatCountdown(msLeft);
       el.textContent = result.text;
@@ -3550,8 +3550,9 @@ function _startPickupCountdown(startDateStr, startTimeStr) {
       if (labelEl) labelEl.textContent = '⚠️ Grace Period';
       if (!_graceNotified) {
         _graceNotified = true;
-        showToast('It\'s your pickup time! You have 1 hour before No Show.', 'error');
-        NotifStore.add('Your pickup time has arrived. 1-hour grace period is now running.');
+        var graceMsg = isDelivery ? 'It\'s your delivery time! 1-hour grace period active.' : 'It\'s your pickup time! You have 1 hour before No Show.';
+        showToast(graceMsg, 'error');
+        NotifStore.add(isDelivery ? 'Your delivery time has arrived. 1-hour grace period is now running.' : 'Your pickup time has arrived. 1-hour grace period is now running.');
       }
     } else {
       // --- Phase 3: Grace expired ---
@@ -3823,11 +3824,14 @@ function refreshActiveBookingMonitor() {
         ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" class="active-rental-car-img" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\';">'
         : '<div class="active-rental-no-img"><i class="fas fa-car"></i></div>';
 
+      var isDelivery = (active.service_type === 'delivery') ||
+                       (parseFloat(active.delivery_fee || 0) > 0) ||
+                       (active.pickup_location && !['San Pablo City, Laguna', 'Tanauan/Sto. Tomas, Batangas', 'Branch Depot Pick-up'].includes(String(active.pickup_location).trim()));
       var statusLabel = isPickedUp ? (active.status === 'Picked Up' ? 'Picked Up' : 'Active') : active.status;
       var statusBg = isPickedUp ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
       var statusColor = isPickedUp ? 'var(--primary)' : '#3b82f6';
       var statusBorder = isPickedUp ? 'rgba(16,185,129,0.25)' : 'rgba(59,130,246,0.25)';
-      var returnLabel = isPickedUp ? 'Return by' : 'Pickup at';
+      var returnLabel = isPickedUp ? 'Return by' : (isDelivery ? 'Delivery at' : 'Pickup at');
       var subText = [active.color, active.plate_number].filter(Boolean).join(' • ') || active.plate_number || '';
 
       // Determine what time to show next to the date
@@ -3836,7 +3840,7 @@ function refreshActiveBookingMonitor() {
       var returnDateDisplay = isPickedUp
         ? (_fmtDate(endNorm) + ' ' + endTimeStr)
         : (_fmtDate(startNorm) + ' ' + startTimeStr);
-      var initialTimerLabel = isPickedUp ? 'Time Remaining' : 'Time Until Pickup';
+      var initialTimerLabel = isPickedUp ? 'Time Remaining' : (isDelivery ? 'Time Until Delivery' : 'Time Until Pickup');
 
       card.innerHTML =
         '<div class="active-rental-img">' +
@@ -3902,7 +3906,7 @@ function refreshActiveBookingMonitor() {
       if (isPickedUp) {
         _startReturnCountdown(endNorm, endTimeStr);
       } else {
-        _startPickupCountdown(startNorm, startTimeStr);
+        _startPickupCountdown(startNorm, startTimeStr, isDelivery);
       }
     } else {
       if (monitor) monitor.style.display = 'none';
@@ -7784,7 +7788,7 @@ function _renderSingleBookingHeroHtml(b, sConf, payBg, payColor, payBorder, payI
           '<div style="background:var(--bg-card2, #f8fafc);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:18px;">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:5px;"></i> Pick-up Handover</div>' +
+                '<div style="font-size:0.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:5px;"></i> ' + (((b.service_type === 'delivery') || parseFloat(b.delivery_fee || 0) > 0 || (b.pickup_location && !['San Pablo City, Laguna', 'Tanauan/Sto. Tomas, Batangas', 'Branch Depot Pick-up'].includes(String(b.pickup_location).trim()))) ? 'Doorstep Delivery' : 'Pick-up Handover') + '</div>' +
                 '<div style="font-size:0.95rem;font-weight:900;color:var(--text-primary);">' + startFmt + '</div>' +
                 '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="fas fa-clock" style="font-size:0.7rem;margin-right:4px;"></i>' + (b.start_time ? String(b.start_time).substring(0,5) : '06:00') + '</div>' +
               '</div>' +
@@ -7800,7 +7804,7 @@ function _renderSingleBookingHeroHtml(b, sConf, payBg, payColor, payBorder, payI
             '</div>' +
             (b.pickup_location ?
               '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
-                '<i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> Pickup: <strong style="color:var(--text-primary);">' + escapeHtml(b.pickup_location) + '</strong>' +
+                '<i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> ' + (((b.service_type === 'delivery') || parseFloat(b.delivery_fee || 0) > 0 || (b.pickup_location && !['San Pablo City, Laguna', 'Tanauan/Sto. Tomas, Batangas', 'Branch Depot Pick-up'].includes(String(b.pickup_location).trim()))) ? 'Delivery: ' : 'Pickup: ') + '<strong style="color:var(--text-primary);">' + escapeHtml(b.pickup_location) + '</strong>' +
               '</div>' : '') +
             (b.destination ?
               '<div style="margin-top:6px;font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
@@ -7957,7 +7961,7 @@ function renderBookingsList(data) {
       '<div style="background:var(--bg-card2, #f8fafc);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
-            '<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:2px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:4px;"></i> Pick-up</div>' +
+            '<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:2px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:4px;"></i> ' + (((b.service_type === 'delivery') || parseFloat(b.delivery_fee || 0) > 0 || (b.pickup_location && !['San Pablo City, Laguna', 'Tanauan/Sto. Tomas, Batangas', 'Branch Depot Pick-up'].includes(String(b.pickup_location).trim()))) ? 'Delivery' : 'Pick-up') + '</div>' +
             '<div style="font-size:0.86rem;font-weight:800;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + startFmt + '</div>' +
             (b.start_time ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:1px;">' + b.start_time + '</div>' : '') +
           '</div>' +
@@ -8538,7 +8542,7 @@ function renderBookingDetail(b) {
               '<i class="fas fa-key"></i>' +
             '</div>' +
             '<div>' +
-              '<div class="bkd-node-kicker" style="color:#0ea5e9;">PICK-UP HANDOVER</div>' +
+              '<div class="bkd-node-kicker" style="color:#0ea5e9;">' + (((b.service_type === 'delivery') || parseFloat(b.delivery_fee || 0) > 0 || (b.pickup_location && !['San Pablo City, Laguna', 'Tanauan/Sto. Tomas, Batangas', 'Branch Depot Pick-up'].includes(String(b.pickup_location).trim()))) ? 'DOORSTEP DELIVERY' : 'PICK-UP HANDOVER') + '</div>' +
               '<div class="bkd-node-date">' + formatBookingDate(b.start_date) + ' • ' + (b.start_time ? String(b.start_time).substring(0,5) : '06:00') + '</div>' +
               '<div class="bkd-node-sub"><i class="fas fa-map-marker-alt" style="color:#0ea5e9;"></i> ' + escapeHtml(b.pickup_location || 'Branch Depot Pick-up') + '</div>' +
             '</div>' +

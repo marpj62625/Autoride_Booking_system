@@ -6886,6 +6886,7 @@ def user_bookings():
         query = """
             SELECT b.id, b.user_id, b.vehicle_id, b.start_date, b.end_date,
                    b.start_time, b.end_time,
+                   b.service_type, b.delivery_fee,
                    b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
                    b.driver_fee, b.driver_ot_hours, b.driver_ot_rate, b.driver_ot_amount,
                    b.driver_ot_collection_method, b.driver_ot_notes,
