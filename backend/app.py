@@ -17582,10 +17582,10 @@ def users_search():
             SELECT id, full_name, email, auth_provider FROM users
             WHERE (full_name ILIKE %s OR email ILIKE %s)
               AND COALESCE(auth_provider, '') != 'admin_walkin'
-              AND (email NOT LIKE '%@autoride.internal' OR email IS NULL)
+              AND (email NOT LIKE %s OR email IS NULL)
             ORDER BY full_name ASC
             LIMIT %s
-        """, (f'%{q}%', f'%{q}%', limit))
+        """, (f'%{q}%', f'%{q}%', '%@autoride.internal', limit))
         rows = cur.fetchall()
         return jsonify([dict(r) for r in rows]), 200
     except Exception as e:
