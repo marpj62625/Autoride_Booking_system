@@ -6415,7 +6415,7 @@
         <label>Phone Number</label>
 
 
-        <input type="tel" id="editPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="20" inputmode="tel" oninput="this.value=this.value.replace(/[^0-9+\-()\s.]/g,'').slice(0,20)">
+        <input type="tel" id="editPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="13" inputmode="tel" oninput="formatPhoneInput(this); validateEditProfilePhoneLive(this);" onblur="validateEditProfilePhoneBlur(this);">
 
 
         <span class="field-error" id="editPhoneErr"></span>
@@ -6826,7 +6826,7 @@
             <label>Phone Number</label>
 
 
-            <input type="tel" id="editLicenseEmPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="20" inputmode="tel" oninput="this.value=this.value.replace(/[^0-9+\-()\s.]/g,'').slice(0,20)">
+            <input type="tel" id="editLicenseEmPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="13" inputmode="tel" oninput="formatPhoneInput(this);">
 
 
           </div>

@@ -4810,6 +4810,27 @@
         background: rgba(15, 23, 42, 0.95);
     }
     </style>
+<script>function formatPhoneInput(input) {
+    if (!input) return;
+    var val = (input.value || '').trim();
+    if (val.charAt(0) === '+') {
+        var rawDigits = val.slice(1).replace(/\D/g, '');
+        var maxDigits = rawDigits.indexOf('639') === 0 ? 12 : (rawDigits.indexOf('63') === 0 ? 11 : 12);
+        input.value = '+' + rawDigits.slice(0, maxDigits);
+        return;
+    }
+    var digits = val.replace(/\D/g, '');
+    if (digits.indexOf('09') === 0) {
+        digits = digits.slice(0, 11);
+    } else if (digits.indexOf('0') === 0) {
+        digits = digits.slice(0, 10);
+    } else {
+        digits = digits.slice(0, 8);
+    }
+    input.value = digits;
+}
+window.formatPhoneInput = formatPhoneInput;
+</script>
 </head>
 
 
@@ -8130,7 +8151,7 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.74rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">(Optional)</span></label>
-                            <input type="tel" id="walkinCustPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="20" inputmode="tel" oninput="this.value=this.value.replace(/[^0-9+\-()\s.]/g,'').slice(0,20); WalkinBooking.validateEmergencyPhone();"
+                            <input type="tel" id="walkinCustPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="13" inputmode="tel" oninput="if(typeof formatPhoneInput==='function')formatPhoneInput(this); WalkinBooking.validateEmergencyPhone();"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -8148,7 +8169,7 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Phone</label>
-                            <input type="tel" id="walkinEmergPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="20" inputmode="tel" oninput="this.value=this.value.replace(/[^0-9+\-()\s.]/g,'').slice(0,20); WalkinBooking.validateEmergencyPhone();"
+                            <input type="tel" id="walkinEmergPhone" placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="13" inputmode="tel" oninput="if(typeof formatPhoneInput==='function')formatPhoneInput(this); WalkinBooking.validateEmergencyPhone();"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             <div id="walkinEmergPhoneErr" style="display:none; color:#ef4444; font-size:0.68rem; font-weight:700; margin-top:2px;">Cannot be the same as customer phone</div>
                         </div>

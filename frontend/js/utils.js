@@ -339,6 +339,75 @@ function validatePersonName(value, fieldLabel, options) {
  * @param {string} [fieldLabel]
  * @returns {{ valid: boolean, error?: string, cleaned?: string }}
  */
+/**
+ * Formats and restricts Philippine phone and telephone numbers in real-time.
+ * - Mobile starting with 09: strictly capped at 11 digits (e.g. 09171234567)
+ * - Metro Manila & Provincial Landline with area code (02, 049, etc.): strictly capped at 10 digits
+ * - Local Landline without area code: strictly capped at 8 digits
+ * - International prefix (+63): strictly capped at 12-13 characters (+639XXXXXXXXX or +632XXXXXXXX)
+ * @param {HTMLInputElement} input
+ */
+function formatPhoneInput(input) {
+  if (!input) return;
+  var val = (input.value || '').trim();
+  if (val.charAt(0) === '+') {
+    var rawDigits = val.slice(1).replace(/\D/g, '');
+    var maxDigits = rawDigits.indexOf('639') === 0 ? 12 : (rawDigits.indexOf('63') === 0 ? 11 : 12);
+    input.value = '+' + rawDigits.slice(0, maxDigits);
+    return;
+  }
+  var digits = val.replace(/\D/g, '');
+  if (digits.indexOf('09') === 0) {
+    digits = digits.slice(0, 11);
+  } else if (digits.indexOf('0') === 0) {
+    digits = digits.slice(0, 10);
+  } else {
+    digits = digits.slice(0, 8);
+  }
+  input.value = digits;
+}
+
+function validateEditProfilePhoneLive(input) {
+  if (!input) return;
+  var errEl = document.getElementById('editPhoneErr');
+  var val = (input.value || '').trim();
+  if (!val) {
+    if (errEl) errEl.textContent = '';
+    return;
+  }
+  var minLen = val.charAt(0) === '+' ? 12 : (val.indexOf('09') === 0 ? 11 : (val.indexOf('0') === 0 ? 10 : 7));
+  if (val.length < minLen) {
+    if (errEl) errEl.textContent = '';
+    return;
+  }
+  var res = validatePhonePH(val, 'Phone number');
+  if (!res.valid) {
+    if (errEl) errEl.textContent = res.error;
+  } else {
+    if (errEl) errEl.textContent = '';
+  }
+}
+
+function validateEditProfilePhoneBlur(input) {
+  if (!input) return;
+  var errEl = document.getElementById('editPhoneErr');
+  var val = (input.value || '').trim();
+  if (!val) {
+    if (errEl) errEl.textContent = 'Phone number is required.';
+    return;
+  }
+  var res = validatePhonePH(val, 'Phone number');
+  if (!res.valid) {
+    if (errEl) errEl.textContent = res.error;
+  } else {
+    if (errEl) errEl.textContent = '';
+  }
+}
+
+window.formatPhoneInput = formatPhoneInput;
+window.validateEditProfilePhoneLive = validateEditProfilePhoneLive;
+window.validateEditProfilePhoneBlur = validateEditProfilePhoneBlur;
+
 function validatePhonePH(phone, fieldLabel) {
   var label = fieldLabel || 'Phone number';
   var raw = (phone || '').trim();
