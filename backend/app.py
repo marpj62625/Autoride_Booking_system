@@ -2844,7 +2844,7 @@ def _validate_person_name_py(val, label="Name", required=True, is_middle=False, 
             return False, f"{label} is required.", ""
         return True, None, ""
     min_len = 1 if is_middle else (5 if require_full else 2)
-    max_len = 70 if require_full else 40
+    max_len = 70 if require_full else 50
     if len(trimmed) < min_len:
         return False, f"{label} must be at least {min_len} characters.", trimmed
     if len(trimmed) > max_len:
@@ -2881,18 +2881,26 @@ def _validate_phone_ph_py(val, label="Phone number"):
     raw = (val or '').strip()
     if not raw:
         return False, f"{label} is required.", ""
-    cleaned = re.sub(r"[\s\-]", "", raw)
-    if cleaned.startswith('+639') and len(cleaned) == 13:
+    cleaned = re.sub(r"[\s\-\(\)\.]", "", raw)
+    if cleaned.startswith('+63'):
         cleaned = '0' + cleaned[3:]
-    elif cleaned.startswith('639') and len(cleaned) == 12:
+    elif cleaned.startswith('63') and len(cleaned) in (10, 11, 12):
         cleaned = '0' + cleaned[2:]
-    if not re.match(r"^09\d{9}$", cleaned):
-        return False, f"{label} must be a valid 11-digit Philippine mobile number starting with 09.", cleaned
+
+    is_mobile = bool(re.match(r"^09\d{9}$", cleaned))
+    is_landline_area = bool(re.match(r"^0[2-8]\d{7,8}$", cleaned))
+    is_landline_local = bool(re.match(r"^[2-8]\d{6,7}$", cleaned))
+
+    if not (is_mobile or is_landline_area or is_landline_local):
+        return False, f"{label} must be a valid 11-digit mobile number (e.g., 09171234567) or Philippine landline/telephone number (e.g., (02) 8XXX-XXXX or 049-XXX-XXXX).", cleaned
+
     if re.search(r"(\d)\1{4,}", cleaned):
         return False, f"Invalid {label.lower()}. Repeating or dummy numbers (like {cleaned}) are not allowed.", cleaned
-    sub = cleaned[2:]
-    if sub in ('123456789', '987654321', '012345678') or re.search(r"(..)\1{3,}", sub) or re.search(r"(\d{3})\1{2}", sub):
-        return False, f"Invalid {label.lower()}. Please enter an active, real mobile number.", cleaned
+
+    sub = cleaned[2:] if cleaned.startswith('0') else cleaned
+    if sub in ('123456789', '987654321', '012345678', '12345678', '87654321', '1234567', '7654321') or re.search(r"(..)\1{3,}", sub) or re.search(r"(\d{3})\1{2}", sub):
+        return False, f"Invalid {label.lower()}. Please enter an active, real phone or telephone number.", cleaned
+
     return True, None, cleaned
 
 
@@ -3575,7 +3583,7 @@ def upload_license():
 
     if not p_name:
         missing_fields.append('Full Name')
-    if not p_phone or len(p_phone) < 10:
+    if not p_phone or len(p_phone) < 7:
         missing_fields.append('Phone Number')
     if req_selfie and (not p_pic or p_pic in ('null', 'undefined')):
         missing_fields.append('Profile Picture')
@@ -9043,12 +9051,10 @@ def edit_booking_details_super_admin(booking_id=None):
     if len(customer_name) > 120:
         return jsonify({"error": "Customer name cannot exceed 120 characters."}), 400
 
-    # Sanitize and validate Philippine mobile phone number strictly
-    clean_phone = re.sub(r'[\s\-\(\)]', '', customer_phone)
-    if not re.match(r'^(\+639\d{9}|09\d{9})$', clean_phone):
-        return jsonify({
-            "error": "Invalid phone number format. Must be an 11-digit Philippine mobile number starting with 09 (e.g., 09171234567) or +639XXXXXXXXX."
-        }), 400
+    # Sanitize and validate Philippine mobile or telephone number strictly
+    ok_ph, err_ph, clean_phone = _validate_phone_ph_py(customer_phone, "Customer phone")
+    if not ok_ph:
+        return jsonify({"error": err_ph}), 400
     customer_phone = clean_phone
 
     if len(destination) > 150:
@@ -16481,7 +16487,7 @@ def save_license_details():
 
         if not p_name:
             missing_fields.append('Full Name')
-        if not p_phone or len(p_phone) < 10:
+        if not p_phone or len(p_phone) < 7:
             missing_fields.append('Phone Number')
         if req_selfie and (not p_pic or p_pic in ('null', 'undefined')):
             missing_fields.append('Profile Picture')

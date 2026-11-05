@@ -268,7 +268,7 @@ function validatePersonName(value, fieldLabel, options) {
   var isMiddle = Boolean(options.isMiddleName);
   var requireFull = Boolean(options.requireFullName);
   var minLen = options.minLen || (isMiddle ? 1 : (requireFull ? 5 : 2));
-  var maxLen = options.maxLen || (requireFull ? 70 : 40);
+  var maxLen = options.maxLen || (requireFull ? 70 : 50);
 
   var trimmed = (value || '').trim().replace(/\s+/g, ' ');
   if (!trimmed) {
@@ -345,26 +345,39 @@ function validatePhonePH(phone, fieldLabel) {
   if (!raw) {
     return { valid: false, error: label + ' is required.' };
   }
-  var cleaned = raw.replace(/\s|-/g, '');
-  if (cleaned.indexOf('+639') === 0 && cleaned.length === 13) {
+  var cleaned = raw.replace(/[\s\-\(\)\.]/g, '');
+  if (cleaned.indexOf('+63') === 0) {
     cleaned = '0' + cleaned.slice(3);
-  } else if (cleaned.indexOf('639') === 0 && cleaned.length === 12) {
+  } else if (cleaned.indexOf('63') === 0 && (cleaned.length === 10 || cleaned.length === 11 || cleaned.length === 12)) {
     cleaned = '0' + cleaned.slice(2);
   }
 
-  if (!/^09\d{9}$/.test(cleaned)) {
-    return { valid: false, error: label + ' must be an 11-digit Philippine mobile number starting with 09 (e.g., 09171234567).' };
+  // 1) 11-digit mobile starting with 09
+  // 2) 10-digit landline with area code (02 + 8 digits, or 03x-08x + 7 digits)
+  // 3) 7-8 digit local landline without area code
+  var isMobile = /^09\d{9}$/.test(cleaned);
+  var isLandlineArea = /^0[2-8]\d{7,8}$/.test(cleaned);
+  var isLandlineLocal = /^[2-8]\d{6,7}$/.test(cleaned);
+
+  if (!isMobile && !isLandlineArea && !isLandlineLocal) {
+    return {
+      valid: false,
+      error: label + ' must be an 11-digit mobile number (e.g., 09171234567) or Philippine landline/telephone number (e.g., (02) 8XXX-XXXX or 049-XXX-XXXX).'
+    };
   }
 
-  // Reject 5+ identical consecutive digits (e.g., 09999999999, 09111111111, 09170000000)
+  // Reject 5+ identical consecutive digits (e.g., 09999999999, 1111111)
   if (/(\d)\1{4,}/.test(cleaned)) {
     return { valid: false, error: 'Invalid ' + label.toLowerCase() + '. Repeating or dummy numbers (like ' + cleaned + ') are not allowed.' };
   }
 
   // Reject sequential dummy digits
-  var sub = cleaned.slice(2);
-  if (sub === '123456789' || sub === '987654321' || sub === '012345678' || /(..)\1{3,}/.test(sub) || /(\d{3})\1{2}/.test(sub)) {
-    return { valid: false, error: 'Invalid ' + label.toLowerCase() + '. Please enter an active, real mobile number.' };
+  var sub = cleaned.charAt(0) === '0' ? cleaned.slice(2) : cleaned;
+  if (sub === '123456789' || sub === '987654321' || sub === '012345678' ||
+      sub === '12345678' || sub === '87654321' ||
+      sub === '1234567' || sub === '7654321' ||
+      /(..)\1{3,}/.test(sub) || /(\d{3})\1{2}/.test(sub)) {
+    return { valid: false, error: 'Invalid ' + label.toLowerCase() + '. Please enter an active, real phone or telephone number.' };
   }
 
   return { valid: true, cleaned: cleaned };

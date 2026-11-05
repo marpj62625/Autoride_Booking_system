@@ -2592,9 +2592,9 @@ function syncLicenseFullNameInput() {
   var mnEl = document.getElementById('editLicenseMiddleName');
   var fullEl = document.getElementById('editLicenseName');
 
-  var ln = lnEl ? lnEl.value.trim().slice(0, 30) : '';
-  var fn = fnEl ? fnEl.value.trim().slice(0, 30) : '';
-  var mn = mnEl ? mnEl.value.trim().slice(0, 30) : '';
+  var ln = lnEl ? lnEl.value.trim().slice(0, 50) : '';
+  var fn = fnEl ? fnEl.value.trim().slice(0, 50) : '';
+  var mn = mnEl ? mnEl.value.trim().slice(0, 50) : '';
 
   var combined = '';
   if (ln && fn) {
@@ -3248,15 +3248,15 @@ function doRegister() {
   if (confirmPasswordEl) clearInlineError(confirmPasswordEl);
   
   var hasErr = false;
-  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 40 });
+  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 50 });
   if (!fnCheck.valid) { showInlineError(firstNameEl, fnCheck.error); hasErr = true; } else { firstName = fnCheck.cleaned; }
 
   if (middleName) {
-    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 40 });
+    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 50 });
     if (!mnCheck.valid) { showInlineError(middleNameEl, mnCheck.error); hasErr = true; } else { middleName = mnCheck.cleaned; }
   }
 
-  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 40 });
+  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 50 });
   if (!lnCheck.valid) { showInlineError(lastNameEl, lnCheck.error); hasErr = true; } else { lastName = lnCheck.cleaned; }
 
   if (fnCheck.valid && lnCheck.valid && firstName.toLowerCase() === lastName.toLowerCase()) {
@@ -11060,7 +11060,7 @@ function getMissingProfileFields(profile) {
   if (!name || name === '₱' || name.split(/\s+/).filter(Boolean).length < 2) {
     missing.push('First & Last Name');
   }
-  if (!phone || phone.replace(/\D/g, '').length < 10) {
+  if (!phone || phone.replace(/\D/g, '').length < 7) {
     missing.push('Phone Number');
   }
   var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
@@ -12712,7 +12712,7 @@ function doUpdateProfile() {
   if (phoneErrEl) phoneErrEl.textContent = '';
   if (emailErrEl) emailErrEl.textContent = '';
 
-  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 40 });
+  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 50 });
   if (!fnCheck.valid) {
     showInlineError(firstEl, fnCheck.error); return;
   }
@@ -12720,7 +12720,7 @@ function doUpdateProfile() {
   firstEl.value = firstName;
 
   if (middleName) {
-    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 40 });
+    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 50 });
     if (!mnCheck.valid) {
       showInlineError(middleEl, mnCheck.error); return;
     }
@@ -12728,7 +12728,7 @@ function doUpdateProfile() {
     middleEl.value = middleName;
   }
 
-  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 40 });
+  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 50 });
   if (!lnCheck.valid) {
     showInlineError(lastEl, lnCheck.error); return;
   }
