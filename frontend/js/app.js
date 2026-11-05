@@ -5202,6 +5202,19 @@ function openBookingForm(vehicleId) {
     return '<option value="' + loc.name + '">' + loc.name + ' (Delivery: ' + feeText + ')</option>';
   }).join('');
 
+  var primaryProvinces = ['Laguna', 'Batangas', 'Cavite', 'Rizal', 'Quezon', 'Metro Manila'];
+  var allProvKeys = Object.keys(PH_LOCATIONS_DATA).sort();
+  var otherProvKeys = allProvKeys.filter(function(p) { return primaryProvinces.indexOf(p) === -1; });
+  
+  var provinceDropdownOptions = '<option value="">-- Select Province --</option>' +
+    '<optgroup label="Popular / Serviced Areas">' +
+    primaryProvinces.map(function(p) { return '<option value="' + p + '">' + p + '</option>'; }).join('') +
+    '</optgroup>' +
+    '<optgroup label="All Philippine Provinces">' +
+    otherProvKeys.map(function(p) { return '<option value="' + p + '">' + p + '</option>'; }).join('') +
+    '</optgroup>' +
+    '<option value="__other__">[ Other / Enter Manually ]</option>';
+
   var insuranceHtml = (Array.isArray(INSURANCE_OPTIONS) && INSURANCE_OPTIONS.length > 0) ? INSURANCE_OPTIONS.map(function(ins, i) {
     var priceLabel = ins.pricePerDay === 0 ? 'Included (₱0)' : '₱' + ins.pricePerDay.toLocaleString() + '/day';
     return '<div class="option-card' + (i === 0 ? ' selected' : '') + '" onclick="selectInsuranceOpt(' + i + ',this)">' +
@@ -5315,15 +5328,24 @@ function openBookingForm(vehicleId) {
     '<select id="bfReturnLocation">' + locationOptions + '</select></div>' +
     '</div>' +
 
-    // Delivery address with map link (Province -> Municipality -> Barangay -> Detailed Address)
+    // Delivery address with cascading dropdowns (Province -> Municipality -> Barangay -> Detailed Address)
     '<div id="deliverySection" style="display:none;margin-top:14px;">' +
     '<div class="form-group"><label>Delivery Zone / Serviced Area</label>' +
     '<select id="bfDeliveryZone" onchange="onDeliveryZoneChange()">' + deliveryZoneOptions + '</select></div>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="50" placeholder="Province" oninput="cleanAddressInput(this)"></div>' +
-    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="50" placeholder="Municipality or City" oninput="cleanAddressInput(this)"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="50" placeholder="Barangay" oninput="cleanAddressInput(this)"></div>' +
+    '<div class="form-group"><label>Province <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<select id="bfDeliveryProvince" onchange="onDeliveryProvinceChange()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' + provinceDropdownOptions + '</select>' +
+    '<input type="text" id="bfDeliveryProvinceCustom" placeholder="Enter custom province" style="display:none;margin-top:8px;width:100%;padding:10px 12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.9rem;color:var(--text-primary);" maxlength="50" oninput="cleanAddressInput(this)">' +
+    '</div>' +
+    '<div class="form-group"><label>Municipality / City <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<select id="bfDeliveryMunicipality" onchange="onDeliveryMunicipalityChange()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;"><option value="">-- Select Municipality / City --</option></select>' +
+    '<input type="text" id="bfDeliveryMunicipalityCustom" placeholder="Enter custom municipality / city" style="display:none;margin-top:8px;width:100%;padding:10px 12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.9rem;color:var(--text-primary);" maxlength="50" oninput="cleanAddressInput(this)">' +
+    '</div>' +
+    '<div class="form-group"><label>Barangay <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<select id="bfDeliveryBarangay" onchange="onDeliveryBarangayChange()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;"><option value="">-- Select Barangay --</option></select>' +
+    '<input type="text" id="bfDeliveryBarangayCustom" placeholder="Enter custom barangay" style="display:none;margin-top:8px;width:100%;padding:10px 12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.9rem;color:var(--text-primary);" maxlength="50" oninput="cleanAddressInput(this)">' +
+    '</div>' +
     '<div class="form-group"><label>Detailed Delivery Address (Street, House No., landmark)</label>' +
-    '<input type="text" id="bfDeliveryAddress" maxlength="100" placeholder="Enter specific delivery address (Street, House No., landmark)" oninput="cleanAddressInput(this)"></div>' +
+    '<input type="text" id="bfDeliveryAddress" maxlength="100" placeholder="Enter specific delivery address (Street, House No., landmark)" oninput="cleanAddressInput(this)" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;"></div>' +
     '<a href="#" onclick="openDeliveryMapPicker(); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map-marker-alt"></i> Pin delivery location on map</a>' +
     '</div></div>' +
 
@@ -5396,6 +5418,7 @@ function openBookingForm(vehicleId) {
   showOverlay('page-booking-form');
   // Auto-set return location to match pickup
   onPickupLocationChange();
+  onDeliveryZoneChange();
 }
 
 function setServiceType(type) {
@@ -5406,6 +5429,189 @@ function setServiceType(type) {
   document.getElementById('deliverySection').style.display = type === 'delivery' ? 'block' : 'none';
   updateBookingPrice();
 }
+
+var PH_LOCATIONS_DATA = {"Laguna": {"San Pablo City": ["Atisan", "Bautista", "Concepcion", "Del Remedio", "Dolores", "San Antonio 1", "San Antonio 2", "San Bartolome", "San Buenaventura", "San Crispin", "San Cristobal", "San Diego", "San Francisco", "San Gabriel", "San Gregorio", "San Ignacio", "San Isidro", "San Joaquin", "San Jose", "San Juan", "San Lucas 1", "San Lucas 2", "San Marcos", "San Mateo", "San Miguel", "San Nicolas", "San Pedro", "San Rafael", "San Roque", "San Vicente", "Santa Ana", "Santa Catalina", "Santa Cruz", "Santa Elena", "Santa Felomina", "Santa Isabel", "Santa Maria", "Santa Maria Magdalena", "Santa Monica", "Santa Veronica", "Santiago 1", "Santiago 2", "Santisimo Rosario", "Santo Angel", "Santo Cristo", "Santo Nino", "Soledad", "Barangay I-A", "Barangay I-B", "Barangay II-A", "Barangay II-B", "Barangay II-C", "Barangay II-D", "Barangay II-E", "Barangay II-F", "Barangay III-A", "Barangay III-B", "Barangay III-C", "Barangay III-D", "Barangay III-E", "Barangay IV-A", "Barangay IV-B", "Barangay IV-C", "Barangay V-A", "Barangay V-B", "Barangay V-C", "Barangay V-D", "Barangay VI-A", "Barangay VI-B", "Barangay VI-C", "Barangay VI-D", "Barangay VI-E", "Barangay VII-A", "Barangay VII-B", "Barangay VII-C", "Barangay VII-D", "Barangay VII-E"], "Calamba City": ["Bagong Kalsada", "Banlic", "Barandal", "Batino", "Bubuyan", "Bucal", "Bunggo", "Burol", "Camaligan", "Camp Vicente Lim", "Canlubang", "Halang", "Hornalan", "Kay-Anlog", "La Mesa", "Laguerta", "Lawa", "Lecheria", "Lingga", "Looc", "Mabuhay", "Majada Labas", "Makiling", "Mapagong", "Masili", "Matagbak", "Mayapa", "Milagrosa", "Paciano Rizal", "Palingon", "Palo-Alto", "Pansol", "Parian", "Prinza", "Punta", "Puting Lupa", "Real", "Saimsim", "Sampiruhan", "San Cristobal", "San Jose", "San Juan", "Sirang Lupa", "Sucol", "Turbina", "Ulango", "Uwisan"], "Santa Rosa City": ["Aplaya", "Balibago", "Caingin", "Dila", "Dita", "Don Jose", "Ibaba", "Kanluran", "Labas", "Macabling", "Malitlit", "Market Area", "Pooc", "Pulong Santa Cruz", "San Lorenzo", "Sinalhan", "Santo Domingo", "Tagapo"], "Biñan City": ["Biñan (Poblacion)", "Bungahan", "Canlalay", "Casile", "De La Paz", "Ganado", "Langkiwa", "Loma", "Malaban", "Mamplasan", "Platero", "Poblacion", "San Antonio", "San Francisco", "San Jose", "San Vicente", "Santo Domingo", "Santo Nino", "Santo Tomas", "Sorrento", "Timbao", "Tubigan", "Zapote"], "Cabuyao City": ["Baclaran", "Banaybanay", "Banlic", "Bigaa", "Buting", "Casile", "Diezmo", "Gulod", "Mamatid", "Marinig", "Niugan", "Pittland", "Poblacion I", "Poblacion II", "Poblacion III", "Pulo", "Sala", "San Isidro"], "San Pedro City": ["Bagong Silang", "Calendola", "Chrysanthemum", "Cuyab", "Estrella", "Fatima", "G.S.I.S.", "Landayan", "Langgam", "Laram", "Magsaysay", "Maharlika", "Narra", "Nueva", "Pacita 1", "Pacita 2", "Poblacion", "Riverside", "Rosario", "San Antonio", "San Roque", "San Vicente", "Sampaguita Village", "Santo Nino", "United Bayanihan", "United Better Living", "Vicente Reventar"], "Los Baños": ["Anos", "Bagong Silang", "Bambang", "Batong Malake", "Baybayin", "Bayog", "Lalakay", "Maahas", "Malinta", "Mayondon", "Poblacion", "Putho-Tuntungin", "San Antonio", "Tadlac", "Timugan"], "Alaminos": ["Barangay I (Poblacion)", "Barangay II (Poblacion)", "Barangay III (Poblacion)", "Barangay IV (Poblacion)", "Del Carmen", "Palma", "San Agustin", "San Andres", "San Benito", "San Gregorio", "San Ildefonso", "San Joaquin", "San Jose", "San Juan", "San Miguel", "San Pedro", "San Roque"], "Bay": ["Bitin", "Calo", "Dila", "Global", "Maitim", "Masaya", "Paciano Rizal", "Puypuy", "San Agustin", "San Antonio", "San Isidro", "San Nicolas", "Santa Cruz", "Santo Domingo", "Tagumpay"], "Calauan": ["Balayhangin", "Bangyas", "Dayap", "Hanggan", "Imok", "Lamot 1", "Lamot 2", "Limao", "Mabacan", "Masiit", "Paliparan", "Perez", "Kanluran (Poblacion)", "Silangan (Poblacion)", "Prinza", "San Isidro"], "Cavinti": ["Anglas", "Banghian", "Bukal", "Bulajo", "Cansuso", "Duhat", "Inao-Awan", "Kanluran Talaongan", "Labayo", "Layasin", "Layug", "Mahipon", "Paowin", "Poblacion", "Silangan Talaongan", "Sisilmin", "Sumucab", "Tibatib", "Udia"], "Famy": ["Asana", "Bacong-Sigsigan", "Bagong Pag-Asa", "Balitoc", "Banaba", "Batuhan", "Bulihan", "Caballero", "Calumpang", "Kapatalan", "Kataypuanan", "Liyang", "Maate", "Magdalo", "Minayutan", "Salangbato", "San Pablo", "Tunhac"], "Kalayaan": ["Longos", "San Antonio", "San Juan (Poblacion)"], "Liliw": ["Bongkol", "Bubukal", "Cabuyew", "Calumpang", "Dagatan", "Daniw", "Ibaban Palina", "Ilayang Palina", "Kanlurang Bukal", "Luquin", "Malinao", "Masikap", "Maslun", "Mojon", "Novaliches", "Oples", "Pag-asa", "Palayan", "Rizal", "San Roque", "Silangang Bukal", "Tuy-Baanan"], "Luisiana": ["De La Paz", "Barangay Zone I", "Barangay Zone II", "Barangay Zone III", "Barangay Zone IV", "Barangay Zone V", "Barangay Zone VI", "Barangay Zone VII", "Barangay Zone VIII", "San Antonio", "San Buenaventura", "San Diego", "San Isidro", "San Jose", "San Juan", "San Luis", "San Pablo", "San Pedro", "San Rafa", "San Roque", "San Salvador", "Santo Domingo", "Santo Tomas"], "Lumban": ["Bagong Silang", "Balimbingan", "Balubad", "Caliraya", "Concepcion", "Lewin", "Maracta", "Maytalang I", "Maytalang II", "Poblacion", "Primera Parang", "Primera Pulo", "Salac", "Segunda Parang", "Segunda Pulo", "Santo Nino", "Wawa"], "Mabitac": ["Amuyong", "Bayanihan", "Lambac", "Lucong", "Maligaya", "Masani", "Nanguma", "Numero", "Paagahan", "Pag-asa", "San Antonio", "San Miguel", "Santa Maria", "Sinagtala"], "Magdalena": ["Alipit", "Baanan", "Balanac", "Bucal", "Buenavista", "Bungkol", "Buo", "Burlungan", "Cigaras", "Halayhayin", "Ibabang Atingay", "Ibabang Butnong", "Ilayang Atingay", "Ilayang Butnong", "Ilog", "Malaking Ambling", "Malinao", "Maravilla", "Poblacion", "Salasad", "Tanawan", "Tipunan", "Munting Ambling"], "Majayjay": ["Amonoy", "Bakia", "Balanac", "Balayhangin", "Banilad", "Binitagan", "Bongkol", "Buho", "Bukal", "Burgos", "Coralao", "Gagalot", "Ibabang Banga", "Ibabang Bayucain", "Ilayang Banga", "Ilayang Bayucain", "Isabang", "Malinao", "May-It", "Munting Kawayan", "Olla", "Oobi", "Origuel", "Panalaban", "Pangil", "Panglan", "Piit", "Poblacion", "Pook", "Rizal", "San Francisco", "San Isidro", "San Miguel", "San Roque", "Santa Catalina", "Suba", "Talortor", "Tanawan", "Taytay", "Villa Nogales"], "Nagcarlan": ["Abo", "Alibungbungan", "Alumbrado", "Balayhangin", "Balimbing", "Balinacon", "Bambang", "Banago", "Banca-banca", "Bangcuro", "Banuatan", "Briz", "Buenavista", "Buhanginan", "Bukal", "Bunga", "Cabuyew", "Calumpang", "Kanluran Kabubuhayan", "Silangan Kabubuhayan", "Labuin", "Malaya", "Malinao", "Manaol", "Maravilla", "Nag-aba", "Oples", "Palayan", "Palina", "Poblacion I", "Poblacion II", "Poblacion III", "Sabang", "San Francisco", "Santa Lucia", "Sibulan", "Silangan Ilaya", "Silangan Napapatid", "Sinipian", "Sulsugin", "Talahib", "Talangan", "Taytay", "Tipacan", "Wakat", "Yukos"], "Paete": ["Bagumbayan", "Bangkuroy", "Ibaba del Sur", "Ibaba del Norte", "Ilaya del Sur", "Ilaya del Norte", "Maytoong", "Quinale", "San Jose"], "Pagsanjan": ["Anibong", "Biñan", "Buboy", "Cabanbanan", "Calusiche", "Dingin", "Lambac", "Layugan", "Magdapio", "Maulawin", "Pinagsanjan", "Poblacion I", "Poblacion II", "Sabang", "Sampaloc", "San Isidro"], "Pakil": ["Baño", "Banilan", "Burgos", "Casa Real", "Casinsin", "Dorado", "Gonzales", "Matikiw", "Rizal", "Saray", "Taft", "Tavera"], "Pangil": ["Balian", "Dambo", "Galalan", "Isla", "Mabato-Asufre", "Natividad", "San Jose", "Sulib"], "Pila": ["Aplaya", "Bagong Pook", "Bukal", "Bulilan Norte", "Bulilan Sur", "Concepcion", "Labuin", "Linga", "Masico", "Mojon", "Pansol", "Pinagbayanan", "Poblacion", "San Antonio", "San Miguel", "Santa Clara", "Tubuan"], "Rizal": ["Antipolo", "Entablado", "Laguan", "Pauli 1", "Pauli 2", "East Poblacion", "West Poblacion", "Pook", "Tala", "Tuy"], "Santa Cruz": ["Alipit", "Bagumbayan", "Bubukal", "Calios", "Duhat", "Gatid", "Javalera", "Labuin", "Malinao", "Oogong", "Pagsawitan", "Palasan", "Patimbao", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Poblacion V", "San Angel", "San Jose", "San Juan", "Santisteban", "Santo Angel Central", "Santo Angel Norte", "Santo Angel Sur", "Santisimo Rosario"], "Santa Maria": ["Adia", "Bagong Pook", "Bagumbayan", "Bubucal", "Cabooan", "Calangay", "Cambuja", "Coralan", "Cueba", "Inayapan", "Jose P. Laurel Sr.", "Jose P. Rizal", "Juan Santiago", "Kayhacat", "Macasipac", "Masinao", "Matingain", "Pao-o", "Parang Ng Buho", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Talangka", "Tungkod"], "Siniloan": ["Acevida", "Bagong Pag-Asa", "Bagumbaranggay", "Buhay", "General Luna", "Halayhayin", "Kapatalan", "Laguio", "Liyang", "Llavac", "Macatad", "Magsaysay", "Pandeño", "Salubungan", "San Felipe", "San Jose", "San Juan", "San Ramon", "Santa Cruz", "Valderrama"], "Victoria": ["Banca-banca", "Daniw", "Masapang", "Nanhaya (Poblacion)", "Pag-asa", "San Benito", "San Felix", "San Francisco", "San Roque"]}, "Batangas": {"Tanauan City": ["Bagbag", "Bagumbayan", "Balele", "Banjo East", "Banjo West", "Bilog-bilog", "Boot", "Cale", "Darasa", "Hidalgo", "Janopol", "Janopol Oriental", "Laurel", "Luyos", "Malaking Pulo", "Maria Paz", "Maugat", "Montaña", "Natatas", "Pagaspas", "Pantay Bata", "Pantay Matanda", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Poblacion 5", "Poblacion 6", "Poblacion 7", "Sala", "Sambat", "San Jose", "Santor", "Sulpoc", "Suplang", "Talaga", "Tinurik", "Trapiche", "Ulango", "Wawa"], "Santo Tomas": ["Barangay I (Poblacion)", "Barangay II (Poblacion)", "Barangay III (Poblacion)", "Barangay IV (Poblacion)", "San Agustin", "San Antonio", "San Bartolome", "San Felix", "San Fernando", "San Francisco", "San Isidro Norte", "San Isidro Sur", "San Joaquin", "San Jose", "San Juan", "San Luis", "San Miguel", "San Pablo", "San Pedro", "San Rafael", "San Roque", "San Vicente", "Santa Ana", "Santa Clara", "Santa Cruz", "Santa Elena", "Santa Maria", "Santa Teresita", "Santiago"], "Batangas City": ["Alangilan", "Balagtas", "Balete", "Banaba Center", "Banaba East", "Banaba West", "Bolbok", "Calicanto", "Cuta", "Gulod Itaas", "Gulod Labac", "Kumintang Ibaba", "Kumintang Ilaya", "Libjo", "Malitam", "Pallocan Kanluran", "Pallocan Silangan", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "San Isidro", "Santa Clara", "Santa Rita Aplaya", "Santa Rita Karsada", "Sorosoro Ibaba", "Sorosoro Ilaya", "Tabangao Aplaya", "Wawa"], "Lipa City": ["Antipolo del Norte", "Antipolo del Sur", "Bagong Pook", "Balintawak", "Banaybanay", "Bolbok", "Bugtong na Pulo", "Dagatan", "Halang", "Inosluban", "Lodlod", "Mabini", "Marawoy", "Mataas na Lupa", "Pangao", "Pinagkawitan", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Poblacion 5", "Poblacion 6", "Poblacion 7", "Poblacion 8", "Poblacion 9", "Poblacion 10", "Poblacion 11", "Poblacion 12", "Sabang", "Sampaguita", "San Carlos", "San Celestino", "San Jose", "San Lucas", "San Salvador", "San Sebastian", "Santo Nino", "Santo Toribio", "Tambo", "Tangway", "Tibig"], "Malvar": ["Bagong Pook", "Bilucao", "Bulihan", "San Andres", "San Fernando", "San Gregorio", "San Isidro", "San Juan", "San Pedro", "Poblacion"], "Alitagtag": ["Balagbag", "Concepcion", "Dalipit East", "Dalipit West", "Dominador", "Munlawin", "Ping-As", "Poblacion East", "Poblacion West", "San Jose", "Santa Cruz", "Tadlac"], "Balayan": ["Caloocan", "District 1", "District 2", "District 3", "District 4", "District 5", "District 6", "District 7", "District 8", "District 9", "District 10", "District 11", "District 12", "Lanatan", "Navotas", "Sampaga"], "Bauan": ["Aplaya", "As-Is", "Bagong Silang", "Bolo", "Cupang", "Gulibay", "Manghinao Proper", "Manghinao Una", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "San Andres", "San Roque"], "Calaca": ["Baclas", "Bagong Silang", "Balimbic", "Bambang", "Calumpang", "Camastilisan", "Dacanlao", "Lumbang Calzada", "Madalunot", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Salong", "Taklang Anak"], "Lemery": ["Anak-Dagat", "Bagong Sikat", "District I", "District II", "District III", "District IV", "Malinis", "Niogan", "Palanas", "Rizal", "Sambal", "Tubigan"], "Nasugbu": ["Barangay 1", "Barangay 2", "Barangay 3", "Barangay 4", "Barangay 5", "Barangay 6", "Barangay 7", "Barangay 8", "Barangay 9", "Barangay 10", "Barangay 11", "Barangay 12", "Bucana", "Kaylaway", "Lumbangan", "Pantalan", "Wawa"], "Rosario": ["Bagong Pook", "Colongan", "Itlugan", "Lumbangan", "Maalas-as", "Malaya", "Marilag", "Namunga", "Poblacion A", "Poblacion B", "Poblacion C", "Poblacion D", "Poblacion E", "San Carlos", "San Ignacio", "San Jose", "San Roque"], "San Jose": ["Aguila", "Anilao", "Balagtasin I", "Balagtasin II", "Don Luis", "Galamay-Amo", "Lalayat", "Mojon-Tampoy", "Natunuan", "Palanca", "Pinagtung-Ulan", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Salaban", "Tugtug"], "San Juan": ["Abung", "Baritan", "Bataan", "Calicanto", "Calubcub I", "Calubcub II", "Escribano", "Laiyya-Aplaya", "Laiya-Ibabao", "Lipahan", "Maraykit", "Muzon", "Poblacion", "Poctol", "Putingbuhangin", "Quipot", "Sico 1", "Sico 2", "Tipas"], "Taal": ["Balisong", "Bihis", "Bolbok", "Buli", "Butong", "Cawit", "Cubamba", "Cultihan", "Gahol", "Halang", "Iba", "Ilog", "Imamawo", "Laguile", "Latag", "Mahabang Lodlod", "Niogan", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Poblacion 5", "Poblacion 6", "Poblacion 7", "Poblacion 8", "Poblacion 9", "Poblacion 10", "Poblacion 11", "Poblacion 12", "Poblacion 13", "Poblacion 14", "San Jose", "Tatlong Maria", "Tierra Alta", "Tulo"]}, "Cavite": {"Bacoor City": ["Alima", "Aniban I", "Aniban II", "Aniban III", "Aniban IV", "Aniban V", "Bayanan", "Habay I", "Habay II", "Mambog I", "Mambog II", "Mambog III", "Mambog IV", "Mambog V", "Molino I", "Molino II", "Molino III", "Molino IV", "Molino V", "Molino VI", "Molino VII", "Niog I", "Niog II", "Niog III", "Panapaan I", "Panapaan II", "Panapaan III", "Panapaan IV", "Panapaan V", "Panapaan VI", "Panapaan VII", "Panapaan VIII", "Poblacion", "Queens Row Central", "Queens Row East", "Queens Row West", "Real I", "Real II", "Salinas I", "Salinas II", "Salinas III", "Salinas IV", "San Nicolas I", "San Nicolas II", "San Nicolas III", "Talaba I", "Talaba II", "Talaba III", "Talaba IV", "Talaba V", "Talaba VI", "Talaba VII", "Zapote I", "Zapote II", "Zapote III", "Zapote IV", "Zapote V"], "Imus City": ["Alapan I-A", "Alapan I-B", "Alapan I-C", "Alapan II-A", "Alapan II-B", "Anabu I-A", "Anabu I-B", "Anabu I-C", "Anabu I-D", "Anabu I-E", "Anabu I-F", "Anabu I-G", "Anabu II-A", "Anabu II-B", "Anabu II-C", "Anabu II-D", "Anabu II-E", "Anabu II-F", "Bayan Luma I", "Bayan Luma II", "Bayan Luma III", "Bayan Luma IV", "Bayan Luma V", "Bayan Luma VI", "Bayan Luma VII", "Bayan Luma VIII", "Bayan Luma IX", "Bucandala I", "Bucandala II", "Bucandala III", "Bucandala IV", "Bucandala V", "Carsadang Bago I", "Carsadang Bago II", "Malagasang I-A", "Malagasang I-B", "Malagasang I-C", "Malagasang I-D", "Malagasang I-E", "Malagasang I-F", "Malagasang I-G", "Malagasang II-A", "Malagasang II-B", "Malagasang II-C", "Malagasang II-D", "Malagasang II-E", "Malagasang II-F", "Malagasang II-G", "Medicion I-A", "Medicion I-B", "Medicion II-A", "Medicion II-B", "Pag-asa I", "Pag-asa II", "Pag-asa III", "Palico I", "Palico II", "Palico III", "Palico IV", "Poblacion I-A", "Poblacion I-B", "Poblacion I-C", "Poblacion II-A", "Poblacion II-B", "Poblacion III-A", "Poblacion III-B", "Poblacion IV-A", "Poblacion IV-B", "Poblacion IV-C", "Poblacion IV-D", "Tanzang Luma I", "Tanzang Luma II", "Tanzang Luma III", "Tanzang Luma IV", "Tanzang Luma V", "Tanzang Luma VI", "Toclong I-A", "Toclong I-B", "Toclong I-C", "Toclong II-A", "Toclong II-B"], "Dasmariñas City": ["Burol I", "Burol II", "Burol III", "Datu Esmael", "Fatima I", "Fatima II", "Fatima III", "Langkaan I", "Langkaan II", "Paliparan I", "Paliparan II", "Paliparan III", "Salawag", "Salitran I", "Salitran II", "Salitran III", "Salitran IV", "Sampaloc I", "Sampaloc II", "Sampaloc III", "Sampaloc IV", "Sampaloc V", "San Agustin I", "San Agustin II", "San Agustin III", "San Andres I", "San Andres II", "San Antonio", "San Jose", "San Luis I", "San Luis II", "San Manuel I", "San Manuel II", "San Nicolas I", "San Nicolas II", "San Roque", "Santa Cristina I", "Santa Cristina II", "Santa Fe", "Santa Lucia", "Zone I (Poblacion)", "Zone I-B", "Zone II", "Zone III", "Zone IV"], "General Trias City": ["Arnaldo Poblacion", "Bacao I", "Bacao II", "Bagumbayan Poblacion", "Biclatan", "Buenavista I", "Buenavista II", "Buenavista III", "Corregidor Poblacion", "Dulong Bayan Poblacion", "Gov. Ferrers Poblacion", "Javalera", "Manggahan", "Navarro", "Ninety Sixth Poblacion", "Panungyanan", "Pasong Camachile I", "Pasong Camachile II", "Pasong Kawayan I", "Pasong Kawayan II", "Pinagtipunan", "Prinza Poblacion", "Sampaloc Poblacion", "San Francisco", "San Gabriel Poblacion", "San Juan I", "San Juan II", "Santa Clara", "Santiago", "Tapia", "Tejero", "Vibora Poblacion"], "Tagaytay City": ["Asisan", "Bagong Tubig", "Calabuso", "Dapdap East", "Dapdap West", "Francisco", "Guinhawa North", "Guinhawa South", "Iruhin East", "Iruhin South", "Iruhin West", "Kaybagal North", "Kaybagal South", "Kaybagal Central", "Mag-Asawang Ilat", "Maharlika East", "Maharlika West", "Mendez Crossing East", "Mendez Crossing West", "Neogan", "Patutong Malaki North", "Patutong Malaki South", "Sambong", "San Jose", "Silang Junction North", "Silang Junction South", "Sungay East", "Sungay West", "Tolentino East", "Tolentino West"], "Trece Martires City": ["Aguado", "Cabezas", "Cabuco", "Conchu", "De Ocampo", "Gregorio", "Inocencio", "Lallana", "Lapidario", "Luciano", "Osorio", "Perez", "San Agustin"], "Silang": ["Acacia", "Adlas", "Balite I", "Balite II", "Biga I", "Biga II", "Biluso", "Bucal", "Bulihan", "Hoyo", "Iba", "Kaong", "Kalubkob", "Lucsuhin", "Malabag", "Narra I", "Narra II", "Narra III", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Poblacion V", "Pooc I", "Pooc II", "Pulong Bunga", "Pulong Saging", "Puting Kahoy", "Sabutan", "San Miguel I", "San Miguel II", "San Vicente I", "San Vicente II", "Tartaria", "Tibig", "Tubuan I", "Tubuan II", "Tubuan III"], "Carmona": ["Bancal", "Barangay 1 (Poblacion)", "Barangay 2 (Poblacion)", "Barangay 3 (Poblacion)", "Barangay 4 (Poblacion)", "Barangay 5 (Poblacion)", "Barangay 6 (Poblacion)", "Barangay 7 (Poblacion)", "Barangay 8 (Poblacion)", "Cabilang Baybay", "Lantic", "Mabuhay", "Maduya", "Milagrosa"], "Kawit": ["Binakayan-Aplaya", "Binakayan-Kanluran", "Congbalay-Legaspi", "Gahak", "Kaingen", "Magdalo", "Manggahan-Lawin", "Marulas", "Medicion", "Panamitan", "Poblacion", "Pulvorista", "San Sebastian", "Santa Isabel", "Tabon 1", "Tabon 2", "Tabon 3", "Toclong", "Wakas 1", "Wakas 2"], "Tanza": ["Amaya 1", "Amaya 2", "Amaya 3", "Amaya 4", "Amaya 5", "Amaya 6", "Amaya 7", "Bagtas", "Biga", "Biwas", "Bucal", "Bungahan", "Calibuyo", "Capipisa", "Daang Amaya 1", "Daang Amaya 2", "Daang Amaya 3", "Halayhay", "Julugan 1", "Julugan 2", "Julugan 3", "Julugan 4", "Julugan 5", "Julugan 6", "Julugan 7", "Julugan 8", "Mulawin", "Paradahan 1", "Paradahan 2", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Punta 1", "Punta 2", "Sahud-Ulan", "Sanja Mayor", "Santol", "Tanauan", "Tres Cruses"]}, "Rizal": {"Antipolo City": ["Bagong Nayon", "Beverly Hills", "Calawis", "Cupang", "Dalig", "Dela Paz (Poblacion)", "Inarawan", "Mambugan", "Mayamot", "Muntindilaw", "San Isidro (Poblacion)", "San Jose (Poblacion)", "San Juan", "San Luis", "San Roque (Poblacion)", "Santa Cruz"], "Cainta": ["San Andres (Poblacion)", "San Isidro", "San Juan", "San Roque", "Santa Rosa", "Santo Domingo", "Santo Niño"], "Taytay": ["Dolores (Poblacion)", "Muzon", "San Isidro", "San Juan", "Santa Ana"], "Angono": ["Bagumbayan", "Kalayaan", "Mahabang Parang", "Poblacion Ibaba", "Poblacion Itaas", "San Isidro", "San Pedro", "San Roque", "San Vicente", "Santo Niño"], "Binangonan": ["Bilibiran", "Binitagan", "Bombongan", "Batingan", "Calumpang", "Darangan", "Ithan", "Layunan (Poblacion)", "Libid (Poblacion)", "Libis (Poblacion)", "Lunsad", "Macamot", "Mahabang Parang", "Mambog", "Pag-asa", "Palangoy", "Pantok", "Pila Pila", "San Carlos", "Tagpos", "Tatala"], "San Mateo": ["Ampid I", "Ampid II", "Banaba", "Dulong Bayan 1", "Dulong Bayan 2", "Guinayang", "Guitnang Bayan 1", "Guitnang Bayan 2", "Gulod Malaya", "Malanday", "Maly", "Pintong Bukawe", "Santa Ana", "Silangan"], "Rodriguez (Montalban)": ["Balite", "Burgos", "Geromino", "Macabud", "Manggahan", "Mascap", "Puray", "Rosario", "San Isidro", "San Jose", "San Rafael"]}, "Quezon": {"Lucena City": ["Barangay 1 (Poblacion)", "Barangay 2 (Poblacion)", "Barangay 3 (Poblacion)", "Barangay 4 (Poblacion)", "Barangay 5 (Poblacion)", "Barangay 6 (Poblacion)", "Barangay 7 (Poblacion)", "Barangay 8 (Poblacion)", "Barangay 9 (Poblacion)", "Barangay 10 (Poblacion)", "Barangay 11 (Poblacion)", "Baras", "Bocohan", "Cotta", "Dalahican", "Domoit", "Gulang-Gulang", "Ibabang Dupay", "Ibabang Iyam", "Ibabang Talim", "Ilayang Dupay", "Ilayang Iyam", "Ilayang Talim", "Isabang", "Market View", "Mayao Castillo", "Mayao Crossing", "Mayao Kanluran", "Mayao Parada", "Mayao Silangan", "Ransohan", "Salinas", "Talao-Talao"], "Tayabas City": ["Alitao", "Alsam Ibaba", "Alsam Ilaya", "Angeles", "Baguio", "Banilad", "Camposanto", "Ibabang Bukal", "Ibabang Palale", "Ilayang Bukal", "Ilayang Palale", "Isabang", "Kanlurang Calumpang", "Kanlurang Domoit", "Mateuna", "Opias", "Poblacion", "Potol", "San Diego", "San Isidro", "San Roque", "Silangang Calumpang", "Silangang Domoit"], "Candelaria": ["Bukal Norte", "Bukal Sur", "Buenavista East", "Buenavista West", "Kinatihan I", "Kinatihan II", "Malabanban Norte", "Malabanban Sur", "Mangilag Norte", "Mangilag Sur", "Masalukot I", "Masalukot II", "Masalukot III", "Masalukot IV", "Masalukot V", "Masin Norte", "Masin Sur", "Mayabobo", "Pahinga Norte", "Pahinga Sur", "Poblacion", "San Andres", "San Isidro", "Santa Catalina Norte", "Santa Catalina Sur"], "Sariaya": ["Antipolo", "Balubal", "Bignay 1", "Bignay 2", "Bucal", "Canda", "Castañas", "Concepcion Banahaw", "Concepcion I", "Concepcion Palasan", "Concepcion Pinagbakuran", "Gibanga", "Guis-Guis San Roque", "Guis-Guis Talon", "Janagdong 1", "Janagdong 2", "Lutucan 1", "Lutucan Bata", "Lutucan Malabag", "Mamala 1", "Mamala 2", "Manggalang 1", "Manggalang Tulo-tulo", "Montecillo", "Morong", "Poblacion 1", "Poblacion 2", "Poblacion 3", "Poblacion 4", "Poblacion 5", "Poblacion 6", "Sampaloc 1", "Sampaloc 2", "Sampaloc Bogon", "Talaan Aplaya", "Talaan Pantoc", "Tumbaga 1", "Tumbaga 2"], "Tiaong": ["Anastacia", "Aquino", "Ayusan I", "Ayusan II", "Behia", "Bukal", "Bula", "Bulakin", "Cabatan", "Cabay", "Del Rosario", "Lagalag", "Lalig", "Lumingon", "Lusacan", "Paiisa", "Palagaran", "Quirino", "San Agustin", "San Isidro", "San Jose", "San Juan", "San Pedro", "Tagbakin", "Talisay", "Tamisian"], "Lucban": ["Abang", "Aliliw", "Atano", "Ayuti", "Ibabang Nawa", "Ilayang Nawa", "Kalangay", "Kulapi", "Mahabang Parang", "Malupak", "Manasa", "May-It", "Nagsinamo", "Nalunao", "Palola", "Piis", "Poblacion", "Samil", "Tiawe", "Tinabunan"], "Dolores": ["Antonino (Poblacion)", "Bagong Anyo (Poblacion)", "Bulakin 1", "Bulakin 2", "Bungoy", "Cabatang", "Dagatan", "Kinabuhayan", "Maligaya (Poblacion)", "Manggahan", "Pinagdanlayan", "Putol", "San Mateo", "Santa Lucia", "Silangang Malicboy", "Silangang Palale", "Talolong"]}, "Metro Manila": {"Manila": ["Binondo", "Ermita", "Intramuros", "Malate", "Paco", "Pandacan", "Port Area", "Quiapo", "Sampaloc", "San Andres Bukid", "San Miguel", "San Nicolas", "Santa Ana", "Santa Cruz", "Santa Mesa", "Tondo 1", "Tondo 2"], "Quezon City": ["Alicia", "Amihan", "Apolonio Samson", "Baesa", "Bagbag", "Bagong Lipunan ng Crame", "Bagong Pag-asa", "Bagong Silangan", "Bagumbayan", "Bahay Toro", "Balingasa", "Balumbato", "Batasan Hills", "Bayanihan", "Blue Ridge A", "Blue Ridge B", "Camp Aguinaldo", "Central", "Claro", "Commonwealth", "Culiat", "Damar", "Damayan", "Damayang Lagi", "Del Monte", "Diliman", "Doña Imelda", "Doña Josefa", "Duyan-duyan", "E. Rodriguez", "East Kamias", "Escopa I", "Escopa II", "Escopa III", "Escopa IV", "Fairview", "Greater Lagro", "Gulod", "Holy Spirit", "Horseshoe", "Immaculate Conception", "Kaligayahan", "Kamuning", "Katipunan", "Kaunlaran", "Kristong Hari", "Krus na Ligas", "Laging Handa", "Loyola Heights", "Malaya", "Mariana", "Mariblo", "Masagana", "Matandang Balara", "Milagrosa", "Nagkaisang Nayon", "Nayong Kanluran", "New Era", "North Fairview", "Novaliches Proper", "N.S. Amoranto", "Obrero", "Old Balara", "Paligsahan", "Paltok", "Pansol", "Paraiso", "Pasong Putik Proper", "Pasong Tamo", "Payatas", "Phil-Am", "Pinagkaisahan", "Pinyahan", "Project 6", "Quirino 2-A", "Quirino 2-B", "Quirino 2-C", "Quirino 3-A", "Ramon Magsaysay", "Sacred Heart", "Saint Ignatius", "Saint Peter", "Salvacion", "San Agustin", "San Antonio", "San Bartolome", "San Isidro", "San Jose", "San Martin de Porres", "San Roque", "San Vicente", "Santa Cruz", "Santa Lucia", "Santa Monica", "Santa Teresita", "Santo Cristo", "Santo Domingo", "Santo Niño", "Santol", "Sauyo", "Sienna", "Sikatuna Village", "Silangan", "Socorro (Cubao)", "South Triangle", "Tagumpay", "Talayan", "Talipapa", "Tandang Sora", "Tatalon", "Teachers Village East", "Teachers Village West", "Ugong Norte", "Unang Sigaw", "Valencia", "Veterans Village", "Villa Maria Clara", "West Kamias", "West Triangle", "White Plains"], "Makati City": ["Bangkal", "Bel-Air", "Carmona", "Cembo", "Comembo", "Dasmariñas Village", "East Rembo", "Forbes Park", "Guadalupe Nuevo", "Guadalupe Viejo", "Kasilawan", "La Paz", "Magallanes", "Olympia", "Palanan", "Pembo", "Pinagkaisahan", "Pio del Pilar", "Pitogo", "Poblacion", "Post Proper Northside", "Post Proper Southside", "Rizal", "San Antonio", "San Isidro", "San Lorenzo", "Santa Cruz", "Singkamas", "South Cembo", "Tejeros", "Urdaneta", "Valenzuela", "West Rembo"], "Taguig City": ["Bagumbayan", "Bambang", "Calzada", "Central Bicutan", "Central Signal Village", "Fort Bonifacio (BGC)", "Hagonoy", "Ibayo-Tipas", "Katuparan", "Ligid-Tipas", "Lower Bicutan", "Maharlika Village", "Napindan", "New Lower Bicutan", "North Daang Hari", "North Signal Village", "Palingon", "Pinagsama", "San Miguel", "Santa Ana", "South Daang Hari", "South Signal Village", "Tanyag", "Tuktukan", "Upper Bicutan", "Ususan", "Wawa", "Western Bicutan"], "Pasig City": ["Bagong Ilog", "Bagong Katipunan", "Bambang", "Buting", "Caniogan", "Dela Paz", "Kalawaan", "Kapasigan", "Kapitolyo", "Malinao", "Manggahan", "Maybunga", "Oranbo", "Palatiw", "Pinagbuhatan", "Pineda", "Rosario", "Sagad", "San Antonio (Ortigas)", "San Joaquin", "San Jose", "San Nicolas", "Santa Cruz", "Santa Lucia", "Santa Rosa", "Santolan", "Sumilang", "Ugong"], "Muntinlupa City": ["Alabang", "Bayanan", "Buli", "Cupang", "Poblacion", "Putatan", "Sucat", "Tunasan", "Ayala Alabang"], "Parañaque City": ["Baclaran", "BF Homes", "Don Bosco", "Don Galo", "La Huerta", "Marcelo Green", "Merville", "Moonwalk", "San Antonio", "San Dionisio", "San Isidro", "San Martin de Porres", "Santo Niño", "Sun Valley", "Tambo", "Vitalez"], "Las Piñas City": ["Almanza Uno", "Almanza Dos", "CAA-BF International", "Daniel Fajardo", "Elias Aldana", "Ilaya", "Manuyo Uno", "Manuyo Dos", "Pamplona Uno", "Pamplona Dos", "Pamplona Tres", "Pilar", "Pulang Lupa Uno", "Pulang Lupa Dos", "Talon Uno", "Talon Dos", "Talon Tres", "Talon Cuatro", "Talon Singko", "Zapote"], "Pasay City": ["Barangay 1 to 201 (Poblacion)", "Baclaran", "Cartimar", "Domestic Airport Area", "Malibay", "Maricaban", "NAIA Complex", "Newport City", "San Jose", "San Rafael", "San Roque", "Santa Clara", "Sun Valley", "Villamor Airbase"], "Mandaluyong City": ["Addition Hills", "Bagong Silang", "Barangka Drive", "Barangka Ilaya", "Barangka Itaas", "Barangka Ibaba", "Buayang Bato", "Burol", "Daang Bakal", "Hagdang Bato Itaas", "Hagdang Bato Libis", "Harapin Ang Bukas", "Highway Hills", "Hulo", "Mabini-J. Rizal", "Malamig", "Namayan", "New Zañiga", "Old Zañiga", "Pag-asa", "Plainview", "Pleasant Hills", "Poblacion", "San Jose", "Vergara", "Wack-Wack Greenhills"], "Marikina City": ["Barangka", "Calumpang", "Concepcion Uno", "Concepcion Dos", "Fortune", "Industrial Valley Complex (IVC)", "Jesus Dela Peña", "Malanday", "Marikina Heights", "Nangka", "Parang", "San Roque", "Santa Elena", "Santo Niño", "Tanong", "Tumana"]}, "Bulacan": {"Malolos City": ["Anilao", "Atlag", "Babatnin", "Bagna", "Balayong", "Balite", "Bangkal", "Barihan", "Bulihan", "Caingin", "Calero", "Caliligawan", "Canalate", "Caniogan", "Catmon", "Cofradia", "Dakila", "Guinhawa", "Ligas", "Liyang", "Longos", "Lugam", "Mabolo", "Mambog", "Masile", "Matimbo", "Mojon", "Namayan", "Niugan", "Pamarawan", "Panasahan", "Pinagbakahan", "San Agustin", "San Gabriel", "San Juan", "San Pablo", "San Vicente", "Santa Isabel", "Santor", "Santol", "Santo Cristo", "Santo Niño", "Santo Rosario", "Sumapang Bata", "Sumapang Matanda", "Taal", "Tikay"], "Meycauayan City": ["Bahay Pare", "Bancal", "Banga", "Bayugo", "Caingin", "Calvario", "Camalig", "Hulo", "Iba", "Langka", "Lawa", "Libtong", "Liputan", "Malhacan", "Pajo", "Pandayan", "Pantok", "Perez", "Poblacion", "Saluysoy", "Tugatog", "Ubihan", "Zamora"], "San Jose del Monte City": ["Assumption", "Bagong Buhay I", "Citrus", "Ciudad Real", "Dulong Bayan", "Fatima I", "Francisco Homes", "Gaya-gaya", "Graceville", "Kaybanban", "Kaypian", "Maharlika", "Muzon", "Paradise III", "Poblacion", "San Manuel", "San Martin", "San Pedro", "San Rafael", "Santa Cruz", "Santo Cristo", "Santo Niño", "Sapang Palay", "Tungkong Mangga"]}, "Pampanga": {"Angeles City": ["Agapito del Rosario", "Anunas", "Balibago", "Capaya", "Claro M. Recto", "Cuayan", "Cutcut", "Cutud", "Lourdes North West", "Lourdes Sur", "Lourdes Sur East", "Malabanias", "Margot", "Mining", "Pampang", "Pandan", "Pulung Bulu", "Pulung Cacutud", "Pulung Maragul", "Salapungan", "San Jose", "San Nicolas", "Santa Teresita", "Santa Trinidad", "Santo Cristo", "Santo Domingo", "Santo Rosario", "Sapa Libutad", "Sapangbato", "Tabun", "Virgen Delos Remedios"], "San Fernando City": ["Alasas", "Baliti", "Bulaon", "Calulut", "Del Carmen", "Del Pilar", "Del Rosario", "Dolores", "Juliana", "Lara", "Lourdes", "Magliman", "Maimpis", "Malino", "Malpitic", "Pandaras", "Panipuan", "Poblacion", "Quebiawan", "Saguin", "San Agustin", "San Felipe", "San Isidro", "San Jose", "San Juan", "San Nicolas", "San Pedro", "Santa Lucia", "Santa Teresita", "Santo Nino", "Santo Rosario", "Sindalan", "Telabastagan"], "Mabalacat City": ["Atlu-Bola", "Bical", "Bundagul", "Cacutud", "Calumpang", "Camachiles", "Dapdap", "Dau", "Dolores", "Duquit", "Lakandula", "Mabiga", "Macapagal Village", "Mamatitang", "Mangalit", "Marcos Village", "Pariancillo", "Poblacion", "San Francisco", "San Joaquin", "Santa Ines", "Santa Maria", "Santo Rosario", "Sapang Balen", "Sapang Biabas", "Tabun"]}, "Abra": {}, "Agusan del Norte": {}, "Agusan del Sur": {}, "Aklan": {}, "Albay": {}, "Antique": {}, "Apayao": {}, "Aurora": {}, "Basilan": {}, "Bataan": {}, "Batanes": {}, "Benguet": {}, "Biliran": {}, "Bohol": {}, "Bukidnon": {}, "Cagayan": {}, "Camarines Norte": {}, "Camarines Sur": {}, "Camiguin": {}, "Capiz": {}, "Catanduanes": {}, "Cebu": {}, "Cotabato": {}, "Davao de Oro": {}, "Davao del Norte": {}, "Davao del Sur": {}, "Davao Occidental": {}, "Davao Oriental": {}, "Dinagat Islands": {}, "Eastern Samar": {}, "Guimaras": {}, "Ifugao": {}, "Ilocos Norte": {}, "Ilocos Sur": {}, "Iloilo": {}, "Isabela": {}, "Kalinga": {}, "La Union": {}, "Lanao del Norte": {}, "Lanao del Sur": {}, "Leyte": {}, "Maguindanao del Norte": {}, "Maguindanao del Sur": {}, "Marinduque": {}, "Masbate": {}, "Misamis Occidental": {}, "Misamis Oriental": {}, "Mountain Province": {}, "Negros Occidental": {}, "Negros Oriental": {}, "Northern Samar": {}, "Nueva Ecija": {}, "Nueva Vizcaya": {}, "Occidental Mindoro": {}, "Oriental Mindoro": {}, "Palawan": {}, "Pangasinan": {}, "Quirino": {}, "Romblon": {}, "Samar": {}, "Sarangani": {}, "Siquijor": {}, "Sorsogon": {}, "South Cotabato": {}, "Southern Leyte": {}, "Sultan Kudarat": {}, "Sulu": {}, "Surigao del Norte": {}, "Surigao del Sur": {}, "Tarlac": {}, "Tawi-Tawi": {}, "Zambales": {}, "Zamboanga del Norte": {}, "Zamboanga del Sur": {}, "Zamboanga Sibugay": {}};
+
+function getDeliveryFieldValue(selectId, customId) {
+  var sel = document.getElementById(selectId);
+  var cust = document.getElementById(customId);
+  if (cust && cust.style.display !== 'none' && cust.value && cust.value.trim()) {
+    return cust.value.trim();
+  }
+  if (sel && sel.value && sel.value !== '__other__') {
+    return sel.value.trim();
+  }
+  return (cust && cust.value && cust.value.trim()) || '';
+}
+
+function onDeliveryProvinceChange() {
+  var provEl = document.getElementById('bfDeliveryProvince');
+  var provCust = document.getElementById('bfDeliveryProvinceCustom');
+  var muniEl = document.getElementById('bfDeliveryMunicipality');
+  var muniCust = document.getElementById('bfDeliveryMunicipalityCustom');
+  var brgyEl = document.getElementById('bfDeliveryBarangay');
+  var brgyCust = document.getElementById('bfDeliveryBarangayCustom');
+  if (!provEl || !muniEl) return;
+
+  var provVal = provEl.value;
+  if (provVal === '__other__') {
+    if (provCust) { provCust.style.display = 'block'; provCust.focus(); }
+  } else {
+    if (provCust) { provCust.style.display = 'none'; provCust.value = ''; }
+  }
+
+  // Populate Municipalities
+  muniEl.innerHTML = '<option value="">-- Select Municipality / City --</option>';
+  if (muniCust) { muniCust.style.display = 'none'; muniCust.value = ''; }
+
+  var muniList = [];
+  if (provVal && PH_LOCATIONS_DATA[provVal]) {
+    muniList = Object.keys(PH_LOCATIONS_DATA[provVal]).sort();
+  }
+
+  if (muniList.length > 0) {
+    muniList.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      muniEl.appendChild(opt);
+    });
+  }
+
+  var otherOpt = document.createElement('option');
+  otherOpt.value = '__other__';
+  otherOpt.textContent = '[ Other / Enter Manually ]';
+  muniEl.appendChild(otherOpt);
+
+  // Reset Barangay
+  if (brgyEl) {
+    brgyEl.innerHTML = '<option value="">-- Select Municipality first --</option>';
+  }
+  if (brgyCust) { brgyCust.style.display = 'none'; brgyCust.value = ''; }
+}
+
+function onDeliveryMunicipalityChange() {
+  var provEl = document.getElementById('bfDeliveryProvince');
+  var muniEl = document.getElementById('bfDeliveryMunicipality');
+  var muniCust = document.getElementById('bfDeliveryMunicipalityCustom');
+  var brgyEl = document.getElementById('bfDeliveryBarangay');
+  var brgyCust = document.getElementById('bfDeliveryBarangayCustom');
+  if (!muniEl || !brgyEl) return;
+
+  var provVal = provEl ? provEl.value : '';
+  var muniVal = muniEl.value;
+
+  if (muniVal === '__other__') {
+    if (muniCust) { muniCust.style.display = 'block'; muniCust.focus(); }
+  } else {
+    if (muniCust) { muniCust.style.display = 'none'; muniCust.value = ''; }
+  }
+
+  brgyEl.innerHTML = '<option value="">-- Select Barangay --</option>';
+  if (brgyCust) { brgyCust.style.display = 'none'; brgyCust.value = ''; }
+
+  var brgyList = [];
+  if (provVal && PH_LOCATIONS_DATA[provVal] && PH_LOCATIONS_DATA[provVal][muniVal]) {
+    brgyList = PH_LOCATIONS_DATA[provVal][muniVal];
+  }
+
+  if (brgyList.length > 0) {
+    brgyList.forEach(function(b) {
+      var opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      brgyEl.appendChild(opt);
+    });
+  }
+
+  var otherOpt = document.createElement('option');
+  otherOpt.value = '__other__';
+  otherOpt.textContent = '[ Other / Enter Manually ]';
+  brgyEl.appendChild(otherOpt);
+}
+
+function onDeliveryBarangayChange() {
+  var brgyEl = document.getElementById('bfDeliveryBarangay');
+  var brgyCust = document.getElementById('bfDeliveryBarangayCustom');
+  if (!brgyEl) return;
+  if (brgyEl.value === '__other__') {
+    if (brgyCust) { brgyCust.style.display = 'block'; brgyCust.focus(); }
+  } else {
+    if (brgyCust) { brgyCust.style.display = 'none'; brgyCust.value = ''; }
+  }
+}
+
+function setDeliveryLocationCascading(province, municipality, barangay) {
+  var provEl = document.getElementById('bfDeliveryProvince');
+  var muniEl = document.getElementById('bfDeliveryMunicipality');
+  var brgyEl = document.getElementById('bfDeliveryBarangay');
+  if (!provEl) return;
+
+  // 1. Set Province
+  if (province) {
+    var pMatch = false;
+    for (var i = 0; i < provEl.options.length; i++) {
+      if (provEl.options[i].value && provEl.options[i].value.toLowerCase() === province.toLowerCase()) {
+        provEl.selectedIndex = i;
+        pMatch = true;
+        break;
+      }
+    }
+    if (!pMatch) {
+      var optP = document.createElement('option');
+      optP.value = province;
+      optP.textContent = province;
+      provEl.insertBefore(optP, provEl.lastElementChild);
+      provEl.value = province;
+    }
+  }
+  onDeliveryProvinceChange();
+
+  // 2. Set Municipality
+  if (municipality && muniEl) {
+    var mMatch = false;
+    for (var j = 0; j < muniEl.options.length; j++) {
+      if (muniEl.options[j].value && muniEl.options[j].value.toLowerCase() === municipality.toLowerCase()) {
+        muniEl.selectedIndex = j;
+        mMatch = true;
+        break;
+      }
+    }
+    if (!mMatch) {
+      var optM = document.createElement('option');
+      optM.value = municipality;
+      optM.textContent = municipality;
+      muniEl.insertBefore(optM, muniEl.lastElementChild);
+      muniEl.value = municipality;
+    }
+  }
+  onDeliveryMunicipalityChange();
+
+  // 3. Set Barangay
+  if (barangay && brgyEl) {
+    var bMatch = false;
+    for (var k = 0; k < brgyEl.options.length; k++) {
+      if (brgyEl.options[k].value && brgyEl.options[k].value.toLowerCase() === barangay.toLowerCase()) {
+        brgyEl.selectedIndex = k;
+        bMatch = true;
+        break;
+      }
+    }
+    if (!bMatch) {
+      var optB = document.createElement('option');
+      optB.value = barangay;
+      optB.textContent = barangay;
+      brgyEl.insertBefore(optB, brgyEl.lastElementChild);
+      brgyEl.value = barangay;
+    }
+  }
+  onDeliveryBarangayChange();
+}
+
+window.onDeliveryProvinceChange = onDeliveryProvinceChange;
+window.onDeliveryMunicipalityChange = onDeliveryMunicipalityChange;
+window.onDeliveryBarangayChange = onDeliveryBarangayChange;
+window.setDeliveryLocationCascading = setDeliveryLocationCascading;
 
 function cleanAddressInput(el) {
   if (!el || typeof el.value !== 'string') return;
@@ -5419,18 +5625,14 @@ function onDeliveryZoneChange() {
   var zoneName = zoneEl.value;
   var zone = servicedLocations.find(function(l) { return l.name === zoneName; }) || {};
   
-  var brgyEl = document.getElementById('bfDeliveryBarangay');
-  var muniEl = document.getElementById('bfDeliveryMunicipality');
-  var provEl = document.getElementById('bfDeliveryProvince');
-  
   if (zoneName.indexOf('Others') !== -1) {
-    if (brgyEl) brgyEl.value = '';
-    if (muniEl) muniEl.value = '';
-    if (provEl) provEl.value = '';
+    var provEl = document.getElementById('bfDeliveryProvince');
+    if (provEl) {
+      provEl.selectedIndex = 0;
+      onDeliveryProvinceChange();
+    }
   } else {
-    if (brgyEl && zone.barangay) brgyEl.value = zone.barangay;
-    if (muniEl && zone.municipality) muniEl.value = zone.municipality;
-    if (provEl && zone.province) provEl.value = zone.province;
+    setDeliveryLocationCascading(zone.province || 'Laguna', zone.municipality || 'San Pablo City', zone.barangay || '');
   }
   updateBookingPrice();
 }
@@ -5765,10 +5967,30 @@ function submitBooking() {
     pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
     returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
   } else {
+    var dProv = sanitizeInput(getDeliveryFieldValue('bfDeliveryProvince', 'bfDeliveryProvinceCustom'));
+    var dMuni = sanitizeInput(getDeliveryFieldValue('bfDeliveryMunicipality', 'bfDeliveryMunicipalityCustom'));
+    var dBrgy = sanitizeInput(getDeliveryFieldValue('bfDeliveryBarangay', 'bfDeliveryBarangayCustom'));
     var dAddress = sanitizeInput(document.getElementById('bfDeliveryAddress') ? document.getElementById('bfDeliveryAddress').value : '');
-    var dBrgy = sanitizeInput(document.getElementById('bfDeliveryBarangay') ? document.getElementById('bfDeliveryBarangay').value : '');
-    var dMuni = sanitizeInput(document.getElementById('bfDeliveryMunicipality') ? document.getElementById('bfDeliveryMunicipality').value : '');
-    var dProv = sanitizeInput(document.getElementById('bfDeliveryProvince') ? document.getElementById('bfDeliveryProvince').value : '');
+
+    if (!dProv) {
+      showToast('Please select or specify a delivery Province.', 'warning');
+      var pEl = document.getElementById('bfDeliveryProvince');
+      if (pEl) pEl.focus();
+      return;
+    }
+    if (!dMuni) {
+      showToast('Please select or specify a delivery Municipality / City.', 'warning');
+      var mEl = document.getElementById('bfDeliveryMunicipality');
+      if (mEl) mEl.focus();
+      return;
+    }
+    if (!dBrgy) {
+      showToast('Please select or specify a delivery Barangay.', 'warning');
+      var bEl = document.getElementById('bfDeliveryBarangay');
+      if (bEl) bEl.focus();
+      return;
+    }
+
     pickupLocation = [dAddress, dBrgy, dMuni, dProv].filter(Boolean).join(', ');
     pickupProvince = dProv;
     pickupMunicipality = dMuni;
@@ -15040,19 +15262,10 @@ function confirmDeliveryPinLocation() {
         province = province.replace(/\s*province\s*/gi, '').trim();
 
         // Populate fields
-        var el;
-        el = document.getElementById('bfDeliveryAddress');
+        var el = document.getElementById('bfDeliveryAddress');
         if (el) el.value = detailedAddr;
         
-        el = document.getElementById('bfDeliveryBarangay');
-        if (el) el.value = barangay;
-        
-        el = document.getElementById('bfDeliveryMunicipality');
-        if (el) el.value = city;
-        
-        el = document.getElementById('bfDeliveryProvince');
-        if (el) el.value = province;
-        
+        setDeliveryLocationCascading(province, city, barangay);
         showToast('Delivery location set successfully!', 'success');
       } else {
         showToast('Could not find detailed address. Please fill inputs manually.', 'warning');
