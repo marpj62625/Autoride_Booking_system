@@ -8045,9 +8045,6 @@ window.formatPhoneInput = formatPhoneInput;
         <button type="button" id="btnSaveQuickPricing" onclick="FleetCalendar.saveQuickPricing()" style="flex: 1.5; padding: 11px; background: #00B14F; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(0,177,79,0.3);">
                     <i class="fas fa-save"></i> Save & Update
                 </button>
-                <button type="button" id="btnQuickOpenFullDetails" onclick="FleetCalendar.openFullBookingDetails()" style="flex: 1; padding: 11px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                    <i class="fas fa-external-link-alt"></i> Full Details
-                </button>
                 <button type="button" onclick="FleetCalendar.requestCloseQuickModal()" style="padding: 11px 14px; background: white; color: #64748b; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                     <i class="fas fa-times"></i> Close
                 </button>
@@ -19908,11 +19905,13 @@ async edit(id) { this.openModal(id); },
                 const bStatus = (b.status || '').toLowerCase();
                 let actionsHtml = '';
                 if (bStatus === 'confirmed' || bStatus === 'approved') {
+                    // Row 1 Button 1: Hand Over Key
                     actionsHtml += `
                         <button type="button" onclick="FleetCalendar.quickHandOverKey(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
                             <i class="fas fa-key"></i> Hand Over Key
                         </button>
                     `;
+                    // Row 1 Button 2: Pickup Inspect
                     const inspectAct = (typeof Bookings !== 'undefined' && typeof Bookings.getPickupInspectAction === 'function') ? Bookings.getPickupInspectAction(b) : null;
                     if (inspectAct) {
                         actionsHtml += `
@@ -19920,14 +19919,19 @@ async edit(id) { this.openModal(id); },
                                 <i class="fas fa-search-plus"></i> Pickup Inspect
                             </button>
                         `;
-                    }
-                    if (typeof Bookings !== 'undefined' && typeof Bookings.isPickupPast === 'function' && Bookings.isPickupPast(b)) {
+                    } else {
                         actionsHtml += `
-                            <button type="button" onclick="FleetCalendar.quickNoShow(${b.id})" style="flex: 1; min-width: 105px; padding: 10px 12px; background: #ef4444; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                <i class="fas fa-user-slash"></i> No Show
+                            <button type="button" onclick="FleetCalendar.closeQuickModal(); if (typeof Bookings !== 'undefined' && typeof Bookings.openInspectModal === 'function') Bookings.openInspectModal(${b.id}, 'pickup');" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #f59e0b; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <i class="fas fa-search-plus"></i> Pickup Inspect
                             </button>
                         `;
                     }
+                    // Row 1 Button 3: Full Details (No Show is removed as requested)
+                    actionsHtml += `
+                        <button type="button" id="btnQuickOpenFullDetails" onclick="FleetCalendar.openFullBookingDetails()" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-external-link-alt"></i> Full Details
+                        </button>
+                    `;
                 } else if (bStatus === 'picked up' || bStatus === 'ongoing') {
                     actionsHtml += `
                         <button type="button" onclick="FleetCalendar.quickCompleteBooking(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
@@ -19938,6 +19942,15 @@ async edit(id) { this.openModal(id); },
                         </button>
                         <button type="button" onclick="FleetCalendar.quickExtendBooking(${b.id})" style="flex: 1; min-width: 105px; padding: 10px 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                             <i class="fas fa-calendar-plus"></i> Extend
+                        </button>
+                        <button type="button" id="btnQuickOpenFullDetails" onclick="FleetCalendar.openFullBookingDetails()" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-external-link-alt"></i> Full Details
+                        </button>
+                    `;
+                } else {
+                    actionsHtml += `
+                        <button type="button" id="btnQuickOpenFullDetails" onclick="FleetCalendar.openFullBookingDetails()" style="flex: 1; padding: 10px 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-external-link-alt"></i> Full Details
                         </button>
                     `;
                 }
