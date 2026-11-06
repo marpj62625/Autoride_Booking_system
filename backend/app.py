@@ -1611,8 +1611,10 @@ def migrate_archive_columns():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pre_merge_snapshot JSONB DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_platform VARCHAR(100) DEFAULT ''")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_account VARCHAR(255) DEFAULT ''")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT ''")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_platform VARCHAR(100) DEFAULT ''")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_account VARCHAR(255) DEFAULT ''")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT ''")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_is_archived ON bookings (is_archived, status)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_merged_into ON bookings (merged_into_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs (created_at)")
@@ -6610,18 +6612,19 @@ def book():
             booking_id = cur.fetchone()['id']
         social_media_platform = (data.get('social_media_platform') or '').strip()
         social_media_account = (data.get('social_media_account') or '').strip()
-        if social_media_platform or social_media_account:
+        social_media_link = (data.get('social_media_link') or '').strip()
+        if social_media_platform or social_media_account or social_media_link:
             cur.execute("""
                 UPDATE bookings 
-                SET social_media_platform = %s, social_media_account = %s 
+                SET social_media_platform = %s, social_media_account = %s, social_media_link = %s 
                 WHERE id = %s
-            """, (social_media_platform, social_media_account, booking_id))
+            """, (social_media_platform, social_media_account, social_media_link, booking_id))
             if user_id:
                 cur.execute("""
                     UPDATE users 
-                    SET social_media_platform = %s, social_media_account = %s 
+                    SET social_media_platform = %s, social_media_account = %s, social_media_link = %s 
                     WHERE id = %s
-                """, (social_media_platform, social_media_account, user_id))
+                """, (social_media_platform, social_media_account, social_media_link, user_id))
 
             # Deduct loyalty points immediately
             if points_redeemed > 0:
@@ -18995,6 +18998,7 @@ def get_fleet_bookings():
                 COALESCE(b.destination, '') AS destination,
         COALESCE(NULLIF(TRIM(b.social_media_platform), ''), NULLIF(TRIM(u.social_media_platform), ''), '') AS social_media_platform,
         COALESCE(NULLIF(TRIM(b.social_media_account), ''), NULLIF(TRIM(u.social_media_account), ''), '') AS social_media_account,
+        COALESCE(NULLIF(TRIM(b.social_media_link), ''), NULLIF(TRIM(u.social_media_link), ''), '') AS social_media_link,
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
                 b.merged_into_id,
                 b.pre_merge_snapshot,
@@ -20033,6 +20037,7 @@ def update_booking_social_media(booking_id):
 
     platform = (data.get('platform') or '').strip()
     account = (data.get('account') or '').strip()
+    link = (data.get('link') or '').strip()
     admin_id = data.get('admin_id') or 1
     admin_name = data.get('admin_name') or 'Admin'
 
@@ -20045,16 +20050,16 @@ def update_booking_social_media(booking_id):
 
         cur.execute("""
             UPDATE bookings
-            SET social_media_platform = %s, social_media_account = %s
+            SET social_media_platform = %s, social_media_account = %s, social_media_link = %s
             WHERE id = %s
-        """, (platform, account, booking_id))
+        """, (platform, account, link, booking_id))
 
         if b.get('user_id'):
             cur.execute("""
                 UPDATE users
-                SET social_media_platform = %s, social_media_account = %s
+                SET social_media_platform = %s, social_media_account = %s, social_media_link = %s
                 WHERE id = %s
-            """, (platform, account, b['user_id']))
+            """, (platform, account, link, b['user_id']))
 
         commit_db()
 
@@ -20064,13 +20069,14 @@ def update_booking_social_media(booking_id):
             action='BOOKING_SOCIAL_MEDIA_UPDATED',
             target_type='BOOKING',
             target_id=booking_id,
-            details=f"Social media updated to: {platform} - {account}"
+            details=f"Social media updated to: {platform} - {account} ({link})"
         )
 
         return jsonify({
             "message": "Social media updated successfully.",
             "platform": platform,
-            "account": account
+            "account": account,
+            "link": link
         })
     except Exception as e:
         rollback_db()

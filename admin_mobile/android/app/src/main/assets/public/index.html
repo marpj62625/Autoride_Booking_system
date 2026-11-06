@@ -7844,8 +7844,16 @@ window.formatPhoneInput = formatPhoneInput;
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 6px;">Account Name / Profile Link</label>
-                    <input type="text" id="quickModalSocialAccountInput" placeholder="e.g. John Jaymars or fb.com/johnjaymars" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; transition: border-color 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; text-transform: uppercase; margin: 0;">Account / Display Name</label>
+                        <button type="button" onclick="FleetCalendar.fillCustomerNameToSocialModal()" style="background: none; border: none; color: #2563eb; font-size: 0.70rem; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0;">Use Customer Name</button>
+                    </div>
+                    <input type="text" id="quickModalSocialAccountInput" placeholder="e.g. John Jaymars or Nickname" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; transition: border-color 0.2s;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 6px;">Profile Link / URL</label>
+                    <input type="text" id="quickModalSocialLinkInput" placeholder="e.g. https://facebook.com/johnjaymars or username" style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; transition: border-color 0.2s;">
+                    <p style="margin: 4px 0 0 0; font-size: 0.68rem; color: #64748b; font-weight: 600;">Link opens in a new tab when clicked in the booking modal.</p>
                 </div>
             </div>
 
@@ -19451,7 +19459,93 @@ async edit(id) { this.openModal(id); },
 
         // Open the Working Pricing & Dispatch Modal directly on click
         
-                openSocialMediaModal() {
+                resolveSocialMediaUrl(platform, link, accountName) {
+        let raw = (link || '').trim();
+        if (!raw) {
+            if (accountName && (accountName.startsWith('http://') || accountName.startsWith('https://') || accountName.startsWith('fb.com/') || accountName.startsWith('facebook.com/') || accountName.includes('facebook.com/profile.php'))) {
+                raw = accountName.trim();
+            } else if (accountName && !accountName.includes(' ') && accountName.length > 2) {
+                raw = accountName.trim();
+            } else {
+                return '';
+            }
+        }
+
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+            return raw;
+        }
+        if (raw.startsWith('fb.com/') || raw.startsWith('facebook.com/')) {
+            return 'https://' + raw;
+        }
+        if (raw.startsWith('instagram.com/')) {
+            return 'https://' + raw;
+        }
+        if (raw.startsWith('t.me/')) {
+            return 'https://' + raw;
+        }
+        if (raw.startsWith('tiktok.com/')) {
+            return 'https://' + raw;
+        }
+
+        const plat = (platform || 'facebook').toLowerCase();
+        const clean = raw.replace(/^@/, '');
+        if (plat === 'facebook') return 'https://facebook.com/' + clean;
+        if (plat === 'instagram') return 'https://instagram.com/' + clean;
+        if (plat === 'tiktok') return 'https://tiktok.com/@' + clean;
+        if (plat === 'telegram') return 'https://t.me/' + clean;
+        if (plat === 'whatsapp') return 'https://wa.me/' + clean.replace(/\D/g, '');
+        if (plat === 'viber') return 'viber://chat?number=' + clean.replace(/\D/g, '');
+        if (plat === 'twitter/x' || plat.includes('twitter')) return 'https://x.com/' + clean;
+
+        return 'https://' + raw;
+    },
+
+    renderSocialMediaInHeader(b) {
+        const socialEl = document.getElementById('quickModalSocialText');
+        if (!socialEl) return;
+        if (!b) {
+            socialEl.textContent = 'SOC. MED.: NOT SET';
+            socialEl.style.color = '#94a3b8';
+            return;
+        }
+
+        const plat = (b.social_media_platform || '').toUpperCase();
+        let acc = (b.social_media_account || '').trim();
+        let link = (b.social_media_link || '').trim();
+
+        if (!link && acc && (acc.startsWith('http') || acc.startsWith('fb.com') || acc.startsWith('facebook.com'))) {
+            link = acc;
+            acc = b.customer_name || 'View Profile';
+        }
+
+        const resolvedUrl = this.resolveSocialMediaUrl(plat, link, acc);
+
+        if (acc || resolvedUrl) {
+            const displayName = acc || b.customer_name || 'PROFILE';
+            const platLabel = plat ? `${plat}: ` : '';
+            if (resolvedUrl) {
+                socialEl.innerHTML = `SOC. MED.: ${platLabel}<a href="${encodeURI(resolvedUrl)}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 800; display: inline-flex; align-items: center; gap: 3px;" title="Open profile in new tab" onclick="event.stopPropagation();">${displayName.toUpperCase()} <i class="fas fa-external-link-alt" style="font-size: 0.65rem;"></i></a>`;
+                socialEl.style.color = '#dc2626';
+            } else {
+                socialEl.textContent = `SOC. MED.: ${platLabel}${displayName.toUpperCase()}`;
+                socialEl.style.color = '#dc2626';
+            }
+        } else {
+            socialEl.textContent = 'SOC. MED.: NOT SET';
+            socialEl.style.color = '#94a3b8';
+        }
+    },
+
+    fillCustomerNameToSocialModal() {
+        const bId = this.activeBookingId;
+        const b = (this.bookings || []).find(x => x.id == bId);
+        const accInput = document.getElementById('quickModalSocialAccountInput');
+        if (accInput && b && b.customer_name) {
+            accInput.value = b.customer_name;
+        }
+    },
+
+    openSocialMediaModal() {
         const bId = this.activeBookingId;
         if (!bId) return;
         if (typeof isConsignor === 'function' && isConsignor()) {
@@ -19460,12 +19554,21 @@ async edit(id) { this.openModal(id); },
         }
         const b = (this.bookings || []).find(x => x.id == bId);
         const currPlat = b ? (b.social_media_platform || 'Facebook') : 'Facebook';
-        const currAcc = b ? (b.social_media_account || '') : '';
+        let currAcc = b ? (b.social_media_account || '') : '';
+        let currLink = b ? (b.social_media_link || '') : '';
+
+        if (!currLink && currAcc && (currAcc.startsWith('http') || currAcc.startsWith('fb.com') || currAcc.startsWith('facebook.com'))) {
+            currLink = currAcc;
+            currAcc = (b && b.customer_name) ? b.customer_name : '';
+        }
 
         const platSelect = document.getElementById('quickModalSocialPlatformInput');
         const accInput = document.getElementById('quickModalSocialAccountInput');
+        const linkInput = document.getElementById('quickModalSocialLinkInput');
+
         if (platSelect) platSelect.value = currPlat || 'Facebook';
-        if (accInput) accInput.value = currAcc || '';
+        if (accInput) accInput.value = currAcc || (b && b.customer_name ? b.customer_name : '');
+        if (linkInput) linkInput.value = currLink || '';
 
         const modal = document.getElementById('fleetSocialMediaModal');
         if (modal) {
@@ -19484,8 +19587,16 @@ async edit(id) { this.openModal(id); },
         if (!bId) return;
         const platSelect = document.getElementById('quickModalSocialPlatformInput');
         const accInput = document.getElementById('quickModalSocialAccountInput');
+        const linkInput = document.getElementById('quickModalSocialLinkInput');
+
         const newPlat = (platSelect ? platSelect.value : 'Facebook').trim();
-        const newAcc = (accInput ? accInput.value : '').trim();
+        let newAcc = (accInput ? accInput.value : '').trim();
+        const newLink = (linkInput ? linkInput.value : '').trim();
+
+        const b = (this.bookings || []).find(x => x.id == bId);
+        if (!newAcc && b && b.customer_name) {
+            newAcc = b.customer_name;
+        }
 
         const btn = document.getElementById('btnSaveSocialMedia');
         const origHtml = btn ? btn.innerHTML : '';
@@ -19502,6 +19613,7 @@ async edit(id) { this.openModal(id); },
                 body: JSON.stringify({
                     platform: newPlat,
                     account: newAcc,
+                    link: newLink,
                     admin_id: adminUser ? adminUser.id : 1,
                     admin_name: adminUser ? (adminUser.full_name || adminUser.name || 'Admin') : 'Admin'
                 })
@@ -19509,24 +19621,14 @@ async edit(id) { this.openModal(id); },
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            const b = (this.bookings || []).find(x => x.id == bId);
             if (b) {
                 b.social_media_platform = newPlat;
                 b.social_media_account = newAcc;
+                b.social_media_link = newLink;
             }
-            const socialEl = document.getElementById('quickModalSocialText');
-            if (socialEl) {
-                if (newPlat && newAcc) {
-                    socialEl.textContent = `SOC. MED.: ${newPlat.toUpperCase()}: ${newAcc}`;
-                    socialEl.style.color = '#dc2626';
-                } else if (newAcc) {
-                    socialEl.textContent = `SOC. MED.: ${newAcc}`;
-                    socialEl.style.color = '#dc2626';
-                } else {
-                    socialEl.textContent = `SOC. MED.: NOT SET`;
-                    socialEl.style.color = '#94a3b8';
-                }
-            }
+
+            this.renderSocialMediaInHeader(b);
+
             this.closeSocialMediaModal();
             if (typeof showToast === 'function') showToast('Social media details updated.', 'success');
             if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
@@ -19869,21 +19971,7 @@ async edit(id) { this.openModal(id); },
             // Header titles
             const titleEl = document.getElementById('quickModalTitle');
             if (titleEl) titleEl.textContent = `${b.customer_name || 'Customer'}`;
-            const socialEl = document.getElementById('quickModalSocialText');
-            if (socialEl) {
-                const plat = (b.social_media_platform || '').toUpperCase();
-                const acc = b.social_media_account || '';
-                if (plat && acc) {
-                    socialEl.textContent = `SOC. MED.: ${plat}: ${acc}`;
-                    socialEl.style.color = '#dc2626';
-                } else if (acc) {
-                    socialEl.textContent = `SOC. MED.: ${acc}`;
-                    socialEl.style.color = '#dc2626';
-                } else {
-                    socialEl.textContent = `SOC. MED.: NOT SET`;
-                    socialEl.style.color = '#94a3b8';
-                }
-            }
+            this.renderSocialMediaInHeader(b);
             const subEl = document.getElementById('quickModalSubtitle');
             if (subEl) subEl.textContent = `Booking #${b.id} • ${b.brand || ''} ${b.model || ''} (${b.plate_number || 'No Plate'})`;
 
