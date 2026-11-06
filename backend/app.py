@@ -10399,7 +10399,9 @@ def pickup_booking(booking_id):
         pay_stat = b_data.get('payment_status') or 'Unpaid'
 
         # Payment validation: vehicle cannot be released without full payment or cash collection
-        if pay_stat != 'Paid' and bal > 0:
+        norm_pay_stat = str(pay_stat or '').strip().lower()
+        is_fully_paid = norm_pay_stat in ('paid', 'fully paid') or bal <= 0.0
+        if not is_fully_paid and bal > 0:
             if collect_cash:
                 cur.execute("""
                     INSERT INTO payments (booking_id, amount, method, reference_number, status)

@@ -20556,21 +20556,42 @@ input:checked + .ctrl-slider:before {
 
             const statusSelect = document.getElementById('quickPaymentStatus');
             if (statusSelect) {
-                if (bal === 0 && totalPrice > 0 && amountPaid >= totalPrice) {
+                const targetStat = (bal === 0 && totalPrice > 0 && amountPaid >= totalPrice)
+                    ? 'Paid'
+                    : (b.payment_status || (bal === 0 ? 'Paid' : (amountPaid > 0 ? 'Partially Paid' : 'Unpaid')));
+                const normStat = String(targetStat || '').trim().toLowerCase();
+                let matchedOpt = Array.from(statusSelect.options).find(opt => opt.value.trim().toLowerCase() === normStat);
+                if (matchedOpt) {
+                    statusSelect.value = matchedOpt.value;
+                } else if (normStat === 'paid' || normStat === 'completed' || normStat === 'fully paid') {
                     statusSelect.value = 'Paid';
+                } else if (normStat === 'partially paid' || normStat === 'partial') {
+                    statusSelect.value = 'Partially Paid';
                 } else {
-                    statusSelect.value = b.payment_status || (bal === 0 ? 'Paid' : (amountPaid > 0 ? 'Partially Paid' : 'Unpaid'));
+                    statusSelect.value = 'Unpaid';
                 }
             }
 
             const methodSelect = document.getElementById('quickPaymentMethod');
             if (methodSelect) {
-                methodSelect.value = b.payment_method || 'Cash';
+                const targetMeth = String(b.payment_method || 'Cash').trim().toLowerCase();
+                let matchedMeth = Array.from(methodSelect.options).find(opt => opt.value.trim().toLowerCase() === targetMeth);
+                if (matchedMeth) {
+                    methodSelect.value = matchedMeth.value;
+                } else if (targetMeth.includes('cash')) {
+                    methodSelect.value = 'Cash';
+                } else if (targetMeth.includes('gcash')) {
+                    methodSelect.value = 'GCash';
+                } else if (targetMeth.includes('maya')) {
+                    methodSelect.value = 'Maya';
+                } else if (targetMeth.includes('bank')) {
+                    methodSelect.value = 'Bank Transfer';
+                } else if (targetMeth.includes('card') || targetMeth.includes('paymongo')) {
+                    methodSelect.value = 'Card';
+                } else {
+                    methodSelect.value = 'Cash';
+                }
             }
-
-            // Snapshot baseline state to protect against accidental dismissal
-            const initOpt = vehSelect && vehSelect.selectedIndex >= 0 ? vehSelect.options[vehSelect.selectedIndex] : null;
-            const initVehicleName = initOpt ? initOpt.text.split('—')[0].trim() : `${b.brand || ''} ${b.model || ''} (${b.plate_number || ''})`.trim();
 
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
@@ -20910,9 +20931,9 @@ input:checked + .ctrl-slider:before {
         },
 
         quickHandOverKey(bId) {
-            this.closeQuickModal();
+            const bData = this.quickBookingData || (Array.isArray(this.bookings) ? this.bookings.find(x => x.id == bId) : null);
             if (typeof Bookings !== 'undefined' && typeof Bookings.pickup === 'function') {
-                Bookings.pickup(bId);
+                Bookings.pickup(bId, bData);
             }
         },
 
@@ -26340,13 +26361,22 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        async pickup(id) {
-            const b = (this.data && this.data.find(x => x.id == id)) || (this.currentBooking);
+        async pickup(id, bookingOverride = null) {
+            let b = bookingOverride || (this.data && this.data.find(x => x.id == id)) || (this.currentBooking);
+            if (!b && typeof FleetCalendar !== 'undefined' && FleetCalendar.quickBookingData && FleetCalendar.quickBookingData.id == id) {
+                b = FleetCalendar.quickBookingData;
+            }
+            if (!b && typeof FleetCalendar !== 'undefined' && Array.isArray(FleetCalendar.bookings)) {
+                b = FleetCalendar.bookings.find(x => x.id == id);
+            }
+
             let collectCash = false;
             let overrideUnpaid = false;
 
-            if (b && !['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim()) && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
-                const bal = parseFloat(b.balance_amount || (b.total_price - (b.amount_paid || 0)));
+            const bBal = b ? parseFloat(b.balance_amount !== undefined ? b.balance_amount : (b.total_price - (b.amount_paid || 0))) : 0;
+            const bPayStat = b ? (b.payment_status || '').toLowerCase().trim() : '';
+            if (b && !['paid', 'fully paid'].includes(bPayStat) && bBal > 0) {
+                const bal = bBal;
                 const ans = confirm(
                     `⚠️ PAYMENT REQUIRED BEFORE PICKUP\n\n` +
                     `Booking #${id} has an unsettled balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n` +
@@ -26364,7 +26394,7 @@ function toggleNewsletterModal(show = true) {
             try {
                 const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
                 const adminId = adminUser ? adminUser.id : 0;
-                const res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
+                let res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -26373,15 +26403,40 @@ function toggleNewsletterModal(show = true) {
                         override_unpaid: overrideUnpaid
                     })
                 });
-                const resData = await res.json().catch(() => ({}));
+                let resData = await res.json().catch(() => ({}));
+
+                // If backend requires cash settlement for balance, offer immediate settlement in-place
+                if (!res.ok && resData && resData.requires_payment && !collectCash) {
+                    const unsettledBal = parseFloat(resData.balance_amount || 0);
+                    if (confirm(`⚠️ UNSETTLED BALANCE DETECTED\n\nBooking #${id} has an unsettled balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\nCollect balance in CASH and mark vehicle as Picked Up now?`)) {
+                        res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                admin_id: adminId,
+                                collect_balance_cash: true,
+                                override_unpaid: false
+                            })
+                        });
+                        resData = await res.json().catch(() => ({}));
+                        if (res.ok) collectCash = true;
+                    }
+                }
+
                 if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
 
                 if (res.ok) {
                     showNotification(collectCash ? 'Balance collected in cash & vehicle marked as Picked Up!' : 'Marked as Picked Up!', 'success');
                     const bdm = document.getElementById('bookingDetailsModal');
                     if (bdm) bdm.style.display = 'none';
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.closeQuickModal === 'function') {
+                        FleetCalendar.closeQuickModal();
+                    }
                     if (typeof modalClose === 'function') modalClose();
                     this.refresh();
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                        FleetCalendar.refresh();
+                    }
                 } else {
                     showNotification(resData.error || 'Failed to mark vehicle as picked up', 'error');
                 }
