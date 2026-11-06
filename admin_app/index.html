@@ -19209,7 +19209,12 @@ input:checked + .ctrl-slider:before {
             const utilizationPct = Math.min(100, Math.round((totalBookedDays / totalPossibleVehicleDays) * 100));
             const statUtilEl = document.getElementById('fleetStatUtilization');
             if (statUtilEl) {
-                statUtilEl.innerHTML = `<i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>${utilizationPct}%</strong>`;
+                const overdueCount = (this.bookings || []).filter(b => {
+                    const st = (b.status || '').toLowerCase();
+                    return (st === 'picked up' || st === 'ongoing') && b.end_date && (new Date() >= new Date(b.end_date));
+                }).length;
+                const overdueHtml = overdueCount > 0 ? ` <span style="font-weight: 800; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 3px; margin-left: 8px;"><i class="fas fa-clock"></i><strong>${overdueCount}</strong> Due for Return</span>` : '';
+                statUtilEl.innerHTML = `<i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>${utilizationPct}%</strong>${overdueHtml}`;
             }
 
             // Build fast lookup map from date string YYYY-MM-DD to day index in allDays
@@ -19445,6 +19450,20 @@ input:checked + .ctrl-slider:before {
                             const paid = parseFloat(bk.amount_paid || 0);
                             const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
 
+                            const bStat = (bk.status || '').toLowerCase();
+                            let statusIcon = '🗓️';
+                            if (bStat === 'picked up' || bStat === 'ongoing') {
+                                statusIcon = '⏩';
+                            } else if (bStat === 'completed') {
+                                statusIcon = '✅';
+                            } else if (bStat === 'cancelled' || bStat === 'rejected') {
+                                statusIcon = '❌';
+                            }
+                            const isOverdueReturn = (bStat === 'picked up' || bStat === 'ongoing') && bk.end_date && (new Date() >= new Date(bk.end_date));
+                            if (isOverdueReturn) {
+                                statusIcon = '⚠️ ⏩';
+                            }
+
                             const cellEndSlot = s + spanSlots - 1;
                             const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
                             const connectsRightToTurnaround = (cellEndSlot === bkItem.endSlot - 1 && turnaroundMap[bkItem.endSlot]);
@@ -19505,14 +19524,14 @@ input:checked + .ctrl-slider:before {
                                 onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
                                 onmouseleave="FleetCalendar.hideTooltip()"
                                 style="${tdPadding} border: 1px solid var(--border); ${tdBorderLeft} ${tdBorderRight} ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px; width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; overflow: hidden;">
-                                <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; ${radiusStyle} padding: 3px 6px; font-weight: 800; line-height: 1.25; ${shadowStyle} height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                                <div style="background: ${color.bg}; color: ${color.text}; border: ${isOverdueReturn ? '2px solid #ef4444' : `1.5px solid ${color.border}`}; ${radiusStyle} padding: 3px 6px; font-weight: 800; line-height: 1.25; ${shadowStyle} height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
                                      onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                      onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
-                                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0;">
-                                        <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
+                                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0; display: flex; align-items: center;">
+                                        <span style="font-size: ${spanSlots === 1 ? '0.64rem' : '0.74rem'}; margin-right: 3px; line-height: 1; flex-shrink: 0;" title="Status: ${bk.status}">${statusIcon}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${custName}</span>
                                     </div>
                                     <div style="font-size: 0.58rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 3px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
-                                        <span>₱${Math.round(rate).toLocaleString()}</span>
+                                        <span>₱${Math.round(rate).toLocaleString()}</span>${isOverdueReturn ? ` <span style="background: #dc2626; color: white; padding: 0 3px; border-radius: 3px; font-size: 0.50rem; font-weight: 900; flex-shrink: 0;" title="Return Schedule Passed">DUE</span>` : ''}
                                         ${spanSlots > 1 ? (bal > 0 
                                             ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
                                             : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; flex-shrink: 0;">PAID</span>`) 
