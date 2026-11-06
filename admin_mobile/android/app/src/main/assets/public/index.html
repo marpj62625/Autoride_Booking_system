@@ -18345,6 +18345,20 @@ async edit(id) { this.openModal(id); },
             return defaultHalf;
         },
 
+        formatTime12(timeStr, defaultTime = '06:00 AM') {
+            if (!timeStr) return defaultTime;
+            let s = String(timeStr).trim();
+            if (/(am|pm)/i.test(s)) return s;
+            const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+            if (!m) return s;
+            let h = parseInt(m[1], 10);
+            const min = m[2];
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            if (h === 0) h = 12;
+            return `${h}:${min} ${ampm}`;
+        },
+
         formatShortTime(timeStr, defaultHalf = 'PM') {
             if (!timeStr) return defaultHalf;
             let s = String(timeStr).trim();
@@ -19193,8 +19207,8 @@ async edit(id) { this.openModal(id); },
 
             const sDate = b.start_date ? new Date(b.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
             const eDate = b.end_date ? new Date(b.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
-            const sTime = b.start_time || '06:00';
-            const eTime = b.end_time || '06:00';
+            const sTime = this.formatTime12(b.start_time || '06:00');
+            const eTime = this.formatTime12(b.end_time || '06:00');
 
             const v = (this.vehicles || []).find(x => x.id == b.vehicle_id);
             let dispatchBranch = b.dispatch_branch || b.pickup_location || b.branch || (v && v.location) || 'SAN PABLO';
@@ -19224,8 +19238,8 @@ async edit(id) { this.openModal(id); },
                         <b>Complete Address:</b> ${b.customer_address || 'N/A'}<br>
                         ${(b.emergency_contact_name || b.emergency_name) ? `<b>Emergency Contact:</b> ${b.emergency_contact_name || b.emergency_name}${b.emergency_contact_phone || b.emergency_phone ? ' (' + (b.emergency_contact_phone || b.emergency_phone) + ')' : ''}<br>` : ''}
                         <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
-                        <b>Date:</b> ${sDate} to ${eDate}<br>
-                        <b>Time:</b> ${sTime} to ${eTime}<br>
+                        <b>Start:</b> ${sDate} @ ${sTime}<br>
+                        <b>Return:</b> ${eDate} @ ${eTime}<br>
                         <b>Payment Status:</b> <span style="font-weight:800; color:${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) || String(b.payment_status || '').toLowerCase() === 'paid' ? '#16a34a' : (String(b.payment_status || '').toLowerCase().includes('partial') || (dp > 0 && bal > 0) ? '#d97706' : '#dc2626')};">${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) ? 'Paid' : (b.payment_status || (bal === 0 ? 'Paid' : (dp > 0 ? 'Partially Paid' : 'Unpaid')))}</span>
                     </div>
                 </div>
@@ -19911,7 +19925,7 @@ async edit(id) { this.openModal(id); },
                 summaryCard.innerHTML = `
                     <div style="display:flex; flex-direction:column; gap:5px;">
                         <div><strong style="color:#475569;">Booking Status:</strong> <span style="font-weight:800; color:#0284c7; text-transform:uppercase;">${b.status || 'Active'}</span></div>
-                        <div><strong style="color:#475569;">Schedule:</strong> ${sDate} ${b.start_time || '06:00'} &rarr; ${eDate} ${b.end_time || '06:00'}</div>
+                        <div><strong style="color:#475569;">Start:</strong> ${sDate} @ ${this.formatTime12(b.start_time || '06:00')} &nbsp;&bull;&nbsp; <strong style="color:#475569;">Return:</strong> ${eDate} @ ${this.formatTime12(b.end_time || '06:00')}</div>
                         <div><strong style="color:#475569;">Destination:</strong> ${b.destination || 'N/A'}</div>
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
                     </div>
