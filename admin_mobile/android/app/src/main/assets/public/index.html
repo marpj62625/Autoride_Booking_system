@@ -3402,7 +3402,33 @@
 
 
 
-        /* Fleet calendar: compact sticky vehicle column on phones */
+        /* Fleet Calendar Collapsible Controls Wrapper & Crisp Borders */
+.fc-collapsible-wrapper {
+    max-height: 350px;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.35s ease, padding 0.35s ease;
+}
+.fc-collapsible-wrapper.collapsed {
+    max-height: 0px !important;
+    opacity: 0 !important;
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    pointer-events: none !important;
+}
+.fc-bcol {
+    border-right: 2px solid var(--border) !important;
+}
+.fc-vcol {
+    border-right: 2px solid var(--border) !important;
+}
+.fc-bhead, .fc-vhead {
+    border-bottom: 2px solid var(--border) !important;
+}
+
+/* Fleet calendar: compact sticky vehicle column on phones */
 
         @media (max-width: 600px) {
 
@@ -37206,156 +37232,106 @@ input:checked + .ctrl-slider:before {
 
 
         toggleToolbarRollup() {
-
             const wrap = document.getElementById('fcCollapsibleControls');
-
             const btn = document.getElementById('fcRollupToggleBtn');
-
             const icon = document.getElementById('fcRollupIcon');
-
             const text = document.getElementById('fcRollupText');
-
             if (!wrap) return;
 
-
-
             const isCurrentlyCollapsed = wrap.classList.contains('collapsed');
-
             if (isCurrentlyCollapsed) {
-
+                // EXPAND
                 wrap.classList.remove('collapsed');
+                wrap.style.maxHeight = '350px';
+                wrap.style.opacity = '1';
+                wrap.style.marginTop = '';
+                wrap.style.marginBottom = '';
+                wrap.style.pointerEvents = 'auto';
 
                 if (btn) {
-
                     btn.style.background = 'var(--surface-solid)';
-
                     btn.style.color = 'var(--primary)';
-
                     btn.style.borderColor = 'var(--primary)';
-
                 }
-
                 if (icon) {
-
                     icon.className = 'fas fa-chevron-up';
-
-                    icon.style.transform = 'rotate(0deg)';
-
+                    icon.style.transform = 'none';
                 }
-
                 if (text) text.textContent = 'Compact';
-
                 localStorage.setItem('fleet_calendar_toolbar_collapsed', '0');
-
             } else {
-
+                // COLLAPSE / ROLL UP
                 wrap.classList.add('collapsed');
+                wrap.style.maxHeight = '0px';
+                wrap.style.opacity = '0';
+                wrap.style.marginTop = '0px';
+                wrap.style.marginBottom = '0px';
+                wrap.style.pointerEvents = 'none';
 
                 if (btn) {
-
                     btn.style.background = 'var(--primary)';
-
                     btn.style.color = '#ffffff';
-
                     btn.style.borderColor = 'var(--primary)';
-
                 }
-
                 if (icon) {
-
                     icon.className = 'fas fa-chevron-down';
-
-                    icon.style.transform = 'rotate(180deg)';
-
+                    icon.style.transform = 'none';
                 }
-
                 if (text) text.textContent = 'More Controls';
-
                 localStorage.setItem('fleet_calendar_toolbar_collapsed', '1');
-
             }
-
         },
-
-
 
         initToolbarRollup() {
-
             try {
-
                 const isCollapsed = localStorage.getItem('fleet_calendar_toolbar_collapsed') === '1';
-
                 const wrap = document.getElementById('fcCollapsibleControls');
-
                 const btn = document.getElementById('fcRollupToggleBtn');
-
                 const icon = document.getElementById('fcRollupIcon');
-
                 const text = document.getElementById('fcRollupText');
-
                 if (!wrap) return;
 
-
-
                 if (isCollapsed) {
-
                     wrap.classList.add('collapsed');
+                    wrap.style.maxHeight = '0px';
+                    wrap.style.opacity = '0';
+                    wrap.style.marginTop = '0px';
+                    wrap.style.marginBottom = '0px';
+                    wrap.style.pointerEvents = 'none';
 
                     if (btn) {
-
                         btn.style.background = 'var(--primary)';
-
                         btn.style.color = '#ffffff';
-
                         btn.style.borderColor = 'var(--primary)';
-
                     }
-
                     if (icon) {
-
                         icon.className = 'fas fa-chevron-down';
-
-                        icon.style.transform = 'rotate(180deg)';
-
+                        icon.style.transform = 'none';
                     }
-
                     if (text) text.textContent = 'More Controls';
-
                 } else {
-
                     wrap.classList.remove('collapsed');
+                    wrap.style.maxHeight = '350px';
+                    wrap.style.opacity = '1';
+                    wrap.style.marginTop = '';
+                    wrap.style.marginBottom = '';
+                    wrap.style.pointerEvents = 'auto';
 
                     if (btn) {
-
                         btn.style.background = 'var(--surface-solid)';
-
                         btn.style.color = 'var(--primary)';
-
                         btn.style.borderColor = 'var(--primary)';
-
                     }
-
                     if (icon) {
-
                         icon.className = 'fas fa-chevron-up';
-
-                        icon.style.transform = 'rotate(0deg)';
-
+                        icon.style.transform = 'none';
                     }
-
                     if (text) text.textContent = 'Compact';
-
                 }
-
             } catch (e) {
-
-                console.warn('Failed to load fleet calendar toolbar rollup state:', e);
-
+                console.warn('Failed to initialize fleet calendar toolbar rollup state:', e);
             }
-
         },
-
-
 
         initSortSettings() {
 
