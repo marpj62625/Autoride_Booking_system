@@ -20094,6 +20094,10 @@ async edit(id) { this.openModal(id); },
                 }
             }
 
+            // Snapshot baseline state to protect against accidental dismissal
+            const initOpt = vehSelect && vehSelect.selectedIndex >= 0 ? vehSelect.options[vehSelect.selectedIndex] : null;
+            const initVehicleName = initOpt ? (initOpt.text.split('—')[0] || initOpt.text.split('-')[0] || initOpt.text).trim() : `${b.brand || ''} ${b.model || ''} (${b.plate_number || ''})`.trim();
+
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
                 vehicle_name: initVehicleName,
@@ -26246,9 +26250,19 @@ function toggleNewsletterModal(show = true) {
                         FleetCalendar.closeQuickModal();
                     }
                     if (typeof modalClose === 'function') modalClose();
-                    this.refresh();
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
-                        FleetCalendar.refresh();
+                    try {
+                        if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                            FleetCalendar.refresh();
+                        }
+                    } catch (e) {
+                        console.error('FleetCalendar refresh error:', e);
+                    }
+                    try {
+                        if (typeof this.refresh === 'function') {
+                            this.refresh();
+                        }
+                    } catch (e) {
+                        console.error('Bookings refresh error:', e);
                     }
                 } else {
                     showNotification(resData.error || 'Failed to mark vehicle as picked up', 'error');
