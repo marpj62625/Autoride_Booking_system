@@ -20438,7 +20438,7 @@ async edit(id) { this.openModal(id); },
         quickHandOverKey(bId) {
             const bData = this.quickBookingData || (Array.isArray(this.bookings) ? this.bookings.find(x => x.id == bId) : null);
             if (typeof Bookings !== 'undefined' && typeof Bookings.pickup === 'function') {
-                Bookings.pickup(bId, bData);
+                return Bookings.pickup(bId, bData);
             }
         },
 
