@@ -5117,28 +5117,14 @@ function autoSetReturnTime() {
   if (!pickupTimeEl || !returnTimeEl) return;
 
   var pickupTime = pickupTimeEl.value || getCurrentTimeRounded();
-  var parts = pickupTime.split(':');
-  var pickupHour = parseInt(parts[0]);
-  var pickupMin  = parseInt(parts[1]);
 
-  // Return time = pickup time + 24h (same time next day)
-  var returnHour = pickupHour;
-  var returnMin  = pickupMin;
-  var returnHH = String(returnHour).padStart(2, '0');
-  var returnMM = String(returnMin).padStart(2, '0');
-  var returnVal = returnHH + ':' + returnMM;
+  // Return time always matches pickup time
+  if (returnTimeEl) returnTimeEl.value = pickupTime;
 
-  // Set return time select
-  if (returnTimeEl) returnTimeEl.value = returnVal;
-
-  // Auto-advance end date by 1 day from start date if not already set
+  // If end date is before start date, sync end date to start date (1-day default)
   if (startDateEl && startDateEl.value && endDateEl) {
-    var start = new Date(startDateEl.value + 'T00:00:00');
-    var minEnd = new Date(start);
-    minEnd.setDate(minEnd.getDate() + 1);
-    var minEndStr = minEnd.toISOString().split('T')[0];
-    if (!endDateEl.value || endDateEl.value < minEndStr) {
-      endDateEl.value = minEndStr;
+    if (!endDateEl.value || endDateEl.value < startDateEl.value) {
+      endDateEl.value = startDateEl.value;
       updateBookingPrice();
     }
   }
@@ -5294,10 +5280,10 @@ function openBookingForm(vehicleId) {
     '</select></div>' +
     '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" max="' + maxBookingDateStr + '" onchange="updateBookingPrice(); if(typeof _renderWebCal===\'function\')_renderWebCal();"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
-    '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<select id="bfReturnTime" disabled style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;cursor:not-allowed;opacity:0.85;">' +
     generateTimeOptions() +
     '</select>' +
-    '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
+    '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-lock"></i> Return time matches pickup time</small>' +
     '</div>' +
     '</div>' +
 
@@ -5698,7 +5684,7 @@ function getBookingDays() {
   if (!startEl || !endEl || !startEl.value || !endEl.value) return 1;
   var start = new Date(startEl.value);
   var end = new Date(endEl.value);
-  return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+  return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
 }
 
 function setRentalType(type) {
@@ -6020,7 +6006,7 @@ function submitBooking() {
     vehicle_id: bookingFormVehicle.id,
     start_date: start, end_date: end,
     pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
-    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
+    return_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
     pickup_location: pickupLocation,
     pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
     return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
@@ -15121,19 +15107,21 @@ function _renderWebCal() {
       cursor = 'pointer';
       title = 'Available';
 
-      // Selection highlights
-      if (startVal && dateStr === startVal) {
+      // Selection highlights (inclusive range)
+      if (startVal && endVal && dateStr >= startVal && dateStr <= endVal) {
+        if (dateStr === startVal || dateStr === endVal) {
+          bg = 'var(--primary)';
+          color = '#ffffff';
+          border = 'none';
+        } else {
+          bg = 'rgba(0,177,79,0.15)';
+          color = 'var(--primary)';
+          border = '1px dashed rgba(0, 177, 79, 0.3)';
+        }
+      } else if (startVal && dateStr === startVal) {
         bg = 'var(--primary)';
         color = '#ffffff';
         border = 'none';
-      } else if (endVal && dateStr === endVal) {
-        bg = 'var(--primary)';
-        color = '#ffffff';
-        border = 'none';
-      } else if (startVal && endVal && dateStr > startVal && dateStr < endVal) {
-        bg = 'rgba(0,177,79,0.15)';
-        color = 'var(--primary)';
-        border = '1px dashed rgba(0, 177, 79, 0.3)';
       } else if (isToday) {
         bg = 'rgba(0,177,79,0.12)';
         color = 'var(--primary)';
@@ -15171,11 +15159,11 @@ function _webCalPickDate(dateStr) {
         }
      }
      
-     // Set return time select safely (mimicking autoSetReturnTime without date overwrite)
+     // Return time strictly matches pickup time
      var pickupTimeEl = document.getElementById('bfPickupTime');
      var returnTimeEl = document.getElementById('bfReturnTime');
      if (pickupTimeEl && returnTimeEl) {
-        var pickupTime = pickupTimeEl.value || "12:00";
+        var pickupTime = pickupTimeEl.value || getCurrentTimeRounded();
         returnTimeEl.value = pickupTime;
      }
 

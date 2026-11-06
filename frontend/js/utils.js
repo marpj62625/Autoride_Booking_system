@@ -738,12 +738,12 @@ function validateDateRange(startDate, endDate, pickupTime) {
     }
   }
 
-  if (end <= start) {
-    return { valid: false, error: 'End date must be after the start date.' };
+  if (end < start) {
+    return { valid: false, error: 'End date cannot be before the start date.' };
   }
 
   const maxBookingDays = (typeof appSettings !== 'undefined' && Number(appSettings.max_booking_duration_days)) || 730;
-  const bookingDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  const bookingDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
   if (bookingDays > maxBookingDays) {
     return {
       valid: false,
@@ -798,7 +798,7 @@ function calculateBookingPrice(
 ) {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+  const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
 
   const rate = Number(dailyRate) || 0;
   const basePrice = rate * days;

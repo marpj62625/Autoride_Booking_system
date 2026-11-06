@@ -6339,8 +6339,8 @@ def book():
 
 
         # ── Overlap guard: reject if the requested vehicle_id already has an active booking that overlaps (minute precision) ──
-        _req_st = (data.get('start_time') or '08:00').strip()
-        _req_et = (data.get('end_time') or '08:00').strip()
+        _req_st = (data.get('pickup_time') or data.get('start_time') or '08:00').strip()
+        _req_et = _req_st
         cur.execute("""
             SELECT id, start_date, end_date, start_time, end_time, status,
                    (end_date + INTERVAL '1 day')::date AS next_available
@@ -6368,14 +6368,15 @@ def book():
                                  status=o['status'], next=str(o['next_available']))
                 }), 409
 
-        # ── Booking duration limit check ──
+        # ── Booking duration limit check (Inclusive Days: start to end inclusive) ──
         try:
             from datetime import datetime as _dt
             s_date = _dt.strptime(str(start_date)[:10], '%Y-%m-%d').date()
             e_date = _dt.strptime(str(end_date)[:10], '%Y-%m-%d').date()
-            booking_days = (e_date - s_date).days
-            if booking_days < 1:
-                return jsonify({"error": "Return date must be after pickup date."}), 400
+            raw_days = (e_date - s_date).days
+            if raw_days < 0:
+                return jsonify({"error": "Return date cannot be before pickup date."}), 400
+            booking_days = raw_days + 1
 
             cur.execute("SELECT value FROM settings WHERE key = 'max_booking_duration_days'")
             mb_row = cur.fetchone()
@@ -6442,9 +6443,9 @@ def book():
 
             return_barangay = data.get('return_barangay')
 
-            pickup_time = data.get('pickup_time', '06:00')
+            pickup_time = data.get('pickup_time') or data.get('start_time') or '06:00'
 
-            return_time = data.get('return_time', '06:00')
+            return_time = pickup_time
 
             service_type = data.get('service_type', 'pickup')
 
