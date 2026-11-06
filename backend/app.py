@@ -6182,15 +6182,13 @@ def update_image_order(vehicle_id):
 @app.route('/maintenance/migrate', methods=['GET'])
 @app.route('/api/maintenance/migrate', methods=['GET'])
 def run_migration():
-
     try:
-
         cur = get_cursor()
-
         cur.execute("ALTER TABLE vehicle_images ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;")
-
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';")
         commit_db()
-
+        migrate_archive_columns()
         return jsonify({"message": "Migration successful"}), 200
 
     except Exception as e:
@@ -18983,6 +18981,14 @@ def get_fleet_bookings():
     vehicle_id = request.args.get('vehicle_id')
     try:
         cur = get_cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+            """)
+            commit_db()
+        except Exception:
+            rollback_db()
         query = """
             SELECT 
                 b.id, b.vehicle_id, b.user_id,
@@ -19038,8 +19044,27 @@ def get_fleet_bookings():
             params.append(vehicle_id)
 
         query += " ORDER BY b.start_date ASC"
-        cur.execute(query, tuple(params))
-        rows = cur.fetchall()
+        try:
+            cur.execute(query, tuple(params))
+            rows = cur.fetchall()
+        except Exception as q_err:
+            if 'social_media_link' in str(q_err).lower():
+                rollback_db()
+                try:
+                    cur.execute("""
+                        ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+                        ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+                    """)
+                    commit_db()
+                    cur.execute(query, tuple(params))
+                    rows = cur.fetchall()
+                except Exception:
+                    rollback_db()
+                    fallback_query = query.replace("COALESCE(NULLIF(TRIM(b.social_media_link), ''), NULLIF(TRIM(u.social_media_link), ''), '') AS social_media_link,", "'' AS social_media_link,")
+                    cur.execute(fallback_query, tuple(params))
+                    rows = cur.fetchall()
+            else:
+                raise q_err
         
         result = []
         for r in rows:
@@ -20043,6 +20068,14 @@ def update_booking_social_media(booking_id):
 
     try:
         cur = get_cursor()
+        try:
+            cur.execute("""
+                ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+            """)
+            commit_db()
+        except Exception:
+            rollback_db()
         cur.execute("SELECT id, user_id FROM bookings WHERE id = %s", (booking_id,))
         b = cur.fetchone()
         if not b:

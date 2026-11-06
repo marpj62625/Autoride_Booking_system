@@ -18909,8 +18909,14 @@ input:checked + .ctrl-slider:before {
                     fetch(`${API_BASE}/api/admin/fleet-bookings?start=${startStr}&end=${endStr}`),
                     fetch(`${API_BASE}/api/admin/blackout-dates`)
                 ]);
-                let fetchedVehicles = await vRes.json();
-                let fetchedBookings = await cRes.json();
+                let fetchedVehicles = await vRes.json();
+                if (!Array.isArray(fetchedVehicles)) fetchedVehicles = [];
+
+                let fetchedBookings = await cRes.json();
+                if (!Array.isArray(fetchedBookings)) {
+                    console.error("Fleet bookings fetch error:", fetchedBookings);
+                    fetchedBookings = [];
+                }
                 if (typeof isConsignor === 'function' && isConsignor()) {
                     const curUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
                     const assignedIds = (typeof getConsignorVehicleIds === 'function') ? getConsignorVehicleIds() : (curUser && curUser.assigned_vehicle_id ? [parseInt(curUser.assigned_vehicle_id, 10)] : []);
@@ -18925,7 +18931,8 @@ input:checked + .ctrl-slider:before {
                 this.initSortSettings();
                 this.vehicles = fetchedVehicles;
                 this.bookings = fetchedBookings;
-                this.blackouts = await bRes.json();
+                let fetchedBlackouts = await bRes.json();
+                this.blackouts = Array.isArray(fetchedBlackouts) ? fetchedBlackouts : [];
                 this.render();
             } catch (e) {
                 console.error("Failed to load Fleet Calendar data:", e);
