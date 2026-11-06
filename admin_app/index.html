@@ -24437,6 +24437,40 @@ input:checked + .ctrl-slider:before {
 
                 </div>
 
+                <!-- + Booking (Always Visible & Prominent) -->
+
+                <button type="button" onclick="WalkinBooking.openModal()" class="btn-primary" title="Create new booking" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,177,79,0.35);">
+
+                    <i class="fas fa-plus-circle"></i> <span class="fc-btn-text">+ Booking</span>
+
+                </button>
+
+
+
+                <!-- Roll-up Toggle Button -->
+
+                <button id="fcRollupToggleBtn" type="button" onclick="FleetCalendar.toggleToolbarRollup()" class="btn-secondary" title="Roll up secondary controls to view more vehicles"
+
+                        style="padding: 7px 11px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; background: var(--surface-solid); border: 1.5px solid var(--primary); color: var(--primary); display: flex; align-items: center; gap: 6px; transition: all 0.25s ease;">
+
+                    <span id="fcRollupText">Compact</span>
+
+                    <i id="fcRollupIcon" class="fas fa-chevron-up" style="transition: transform 0.3s ease;"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Collapsible Controls Tray: Secondary Toolbar + Summary Banner (Smooth Roll-Up) -->
+
+        <div id="fcCollapsibleControls" class="fc-collapsible-wrapper">
+
+            <div id="fcSecondaryToolbar" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; padding-top: 4px;">
+
                 <!-- Sort Presets Dropdown & Reset (Option C) -->
 
                 <div id="fleetCalendarSortWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
@@ -24501,37 +24535,29 @@ input:checked + .ctrl-slider:before {
 
                 </button>
 
-                <button type="button" onclick="WalkinBooking.openModal()" class="btn-primary" title="Create new booking" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,177,79,0.35);">
-
-                    <i class="fas fa-plus-circle"></i> <span class="fc-btn-text">+ Booking</span>
-
-                </button>
-
             </div>
 
-        </div>
+            <!-- Quick Summary & Instructions Banner -->
 
+            <div id="fcSummaryBanner" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.74rem; color: var(--text-muted); flex-wrap: wrap; background: var(--surface-solid); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);">
 
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
 
-        <!-- Quick Summary & Instructions Banner -->
+                    <span id="fleetStatBookingsCount" style="font-weight: 700; color: var(--text-main);"><i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>0</strong> Ongoing Bookings</span>
 
-        <div id="fcSummaryBanner" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 0.74rem; color: var(--text-muted); flex-wrap: wrap; background: var(--surface-solid); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);">
+                    <span id="fleetStatUtilization" style="font-weight: 700; color: var(--text-main);"><i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>0%</strong></span>
 
-            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <span style="color: var(--text-muted);"><i class="fas fa-info-circle" style="color: #f59e0b; margin-right: 4px;"></i>Click any booking bar to <strong>edit pricing, collect payment, or change color</strong>.</span>
 
-                <span id="fleetStatBookingsCount" style="font-weight: 700; color: var(--text-main);"><i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>0</strong> Ongoing Bookings</span>
+                </div>
 
-                <span id="fleetStatUtilization" style="font-weight: 700; color: var(--text-main);"><i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>0%</strong></span>
+                <div style="display: flex; align-items: center; gap: 12px;">
 
-                <span style="color: var(--text-muted);"><i class="fas fa-info-circle" style="color: #f59e0b; margin-right: 4px;"></i>Click any booking bar to <strong>edit pricing, collect payment, or change color</strong>.</span>
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #fde047; display: inline-block; border: 1px solid rgba(0,0,0,0.15);"></span> Client Color</span>
 
-            </div>
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 12px; height: 12px; border-radius: 3px; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.2) 2px, rgba(239, 68, 68, 0.5) 2px, rgba(239, 68, 68, 0.5) 4px); display: inline-block; border: 1px solid rgba(239, 68, 68, 0.4);"></span> Blackout</span>
 
-            <div style="display: flex; align-items: center; gap: 12px;">
-
-                <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #fde047; display: inline-block; border: 1px solid rgba(0,0,0,0.15);"></span> Client Color</span>
-
-                <span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 12px; height: 12px; border-radius: 3px; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.2) 2px, rgba(239, 68, 68, 0.5) 2px, rgba(239, 68, 68, 0.5) 4px); display: inline-block; border: 1px solid rgba(239, 68, 68, 0.4);"></span> Blackout</span>
+                </div>
 
             </div>
 
@@ -37179,7 +37205,161 @@ input:checked + .ctrl-slider:before {
 
 
 
+        toggleToolbarRollup() {
+
+            const wrap = document.getElementById('fcCollapsibleControls');
+
+            const btn = document.getElementById('fcRollupToggleBtn');
+
+            const icon = document.getElementById('fcRollupIcon');
+
+            const text = document.getElementById('fcRollupText');
+
+            if (!wrap) return;
+
+
+
+            const isCurrentlyCollapsed = wrap.classList.contains('collapsed');
+
+            if (isCurrentlyCollapsed) {
+
+                wrap.classList.remove('collapsed');
+
+                if (btn) {
+
+                    btn.style.background = 'var(--surface-solid)';
+
+                    btn.style.color = 'var(--primary)';
+
+                    btn.style.borderColor = 'var(--primary)';
+
+                }
+
+                if (icon) {
+
+                    icon.className = 'fas fa-chevron-up';
+
+                    icon.style.transform = 'rotate(0deg)';
+
+                }
+
+                if (text) text.textContent = 'Compact';
+
+                localStorage.setItem('fleet_calendar_toolbar_collapsed', '0');
+
+            } else {
+
+                wrap.classList.add('collapsed');
+
+                if (btn) {
+
+                    btn.style.background = 'var(--primary)';
+
+                    btn.style.color = '#ffffff';
+
+                    btn.style.borderColor = 'var(--primary)';
+
+                }
+
+                if (icon) {
+
+                    icon.className = 'fas fa-chevron-down';
+
+                    icon.style.transform = 'rotate(180deg)';
+
+                }
+
+                if (text) text.textContent = 'More Controls';
+
+                localStorage.setItem('fleet_calendar_toolbar_collapsed', '1');
+
+            }
+
+        },
+
+
+
+        initToolbarRollup() {
+
+            try {
+
+                const isCollapsed = localStorage.getItem('fleet_calendar_toolbar_collapsed') === '1';
+
+                const wrap = document.getElementById('fcCollapsibleControls');
+
+                const btn = document.getElementById('fcRollupToggleBtn');
+
+                const icon = document.getElementById('fcRollupIcon');
+
+                const text = document.getElementById('fcRollupText');
+
+                if (!wrap) return;
+
+
+
+                if (isCollapsed) {
+
+                    wrap.classList.add('collapsed');
+
+                    if (btn) {
+
+                        btn.style.background = 'var(--primary)';
+
+                        btn.style.color = '#ffffff';
+
+                        btn.style.borderColor = 'var(--primary)';
+
+                    }
+
+                    if (icon) {
+
+                        icon.className = 'fas fa-chevron-down';
+
+                        icon.style.transform = 'rotate(180deg)';
+
+                    }
+
+                    if (text) text.textContent = 'More Controls';
+
+                } else {
+
+                    wrap.classList.remove('collapsed');
+
+                    if (btn) {
+
+                        btn.style.background = 'var(--surface-solid)';
+
+                        btn.style.color = 'var(--primary)';
+
+                        btn.style.borderColor = 'var(--primary)';
+
+                    }
+
+                    if (icon) {
+
+                        icon.className = 'fas fa-chevron-up';
+
+                        icon.style.transform = 'rotate(0deg)';
+
+                    }
+
+                    if (text) text.textContent = 'Compact';
+
+                }
+
+            } catch (e) {
+
+                console.warn('Failed to load fleet calendar toolbar rollup state:', e);
+
+            }
+
+        },
+
+
+
         initSortSettings() {
+
+            this.initToolbarRollup();
 
             try {
 
@@ -38069,19 +38249,19 @@ input:checked + .ctrl-slider:before {
 
 
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border); text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; border-right: 1px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
 
                 <span style="display: block; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap; text-align: center; text-transform: uppercase; line-height: 1;">AREA</span>
 
             </th>
 
-            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
+            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: left; background: var(--surface-solid); font-weight: 800; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; color: var(--text-main); font-size: 0.8rem; vertical-align: middle; box-sizing: border-box;">
 
                 <div style="display:flex; align-items:center; gap:6px;">
 
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
 
-                    <span class="fc-vhead-text">VEHICLE / UNIT</span>
+                    <span class="fc-vhead-text">VEHICLE</span>
 
                 </div>
 
