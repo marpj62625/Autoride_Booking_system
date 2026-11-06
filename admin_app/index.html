@@ -19474,9 +19474,7 @@ input:checked + .ctrl-slider:before {
                                 statusIcon = '❌';
                             }
                             const isOverdueReturn = (bStat === 'picked up' || bStat === 'ongoing') && bk.end_date && (new Date() >= new Date(bk.end_date));
-                            if (isOverdueReturn) {
-                                statusIcon = '⚠️ ⏩';
-                            }
+                            const iconBorder = isOverdueReturn ? 'border: 1.5px solid #dc2626; border-radius: 4px; padding: 0 1px; background: rgba(220, 38, 38, 0.12);' : '';
 
                             const cellEndSlot = s + spanSlots - 1;
                             const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
@@ -19542,7 +19540,7 @@ input:checked + .ctrl-slider:before {
                                      onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                      onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
                                     <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0; display: flex; align-items: center;">
-                                        <span style="font-size: ${spanSlots === 1 ? '0.64rem' : '0.74rem'}; margin-right: 3px; line-height: 1; flex-shrink: 0;" title="Status: ${bk.status}">${statusIcon}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${custName}</span>
+                                        <span style="font-size: ${spanSlots === 1 ? '0.64rem' : '0.74rem'}; margin-right: 3px; line-height: 1; flex-shrink: 0; ${iconBorder}" title="Status: ${bk.status}${isOverdueReturn ? ' (Return Due)' : ''}">${statusIcon}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${custName}</span>
                                     </div>
                                     <div style="font-size: 0.58rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 3px; margin-top: 1px; overflow: hidden; min-width: 0; white-space: nowrap;">
                                         <span>₱${Math.round(rate).toLocaleString()}</span>${isOverdueReturn ? ` <span style="background: #dc2626; color: white; padding: 0 3px; border-radius: 3px; font-size: 0.50rem; font-weight: 900; flex-shrink: 0;" title="Return Schedule Passed">DUE</span>` : ''}
@@ -19723,6 +19721,27 @@ input:checked + .ctrl-slider:before {
                 dispatchBranch = dispatchBranch.trim().toUpperCase();
             }
 
+            
+            const bStatusRaw = String(b.status || 'Active').trim();
+            const bStatusLower = bStatusRaw.toLowerCase();
+            let bStatusColor = '#2563eb';
+            let bStatusText = 'CONFIRMED';
+            if (bStatusLower === 'picked up' || bStatusLower === 'ongoing') {
+                bStatusColor = '#d97706';
+                bStatusText = 'ONGOING';
+            } else if (bStatusLower === 'completed') {
+                bStatusColor = '#16a34a';
+                bStatusText = 'COMPLETED';
+            } else if (bStatusLower === 'cancelled' || bStatusLower === 'rejected') {
+                bStatusColor = '#dc2626';
+                bStatusText = bStatusLower.toUpperCase();
+            } else if (bStatusLower === 'approved') {
+                bStatusColor = '#2563eb';
+                bStatusText = 'CONFIRMED';
+            } else {
+                bStatusText = bStatusRaw.toUpperCase();
+            }
+
             tip.innerHTML = `
                 <div style="background:#ffffe1;color:#000000;padding:12px 14px;border:1.5px solid #222222;box-shadow:3px 3px 10px rgba(0,0,0,0.35);font-family:Arial, Helvetica, sans-serif;font-size:0.75rem;line-height:1.45;min-width:240px;max-width:320px;">
                     <div style="font-weight:bold;margin-bottom:6px;border-bottom:1px dashed #555;padding-bottom:5px;">
@@ -19736,6 +19755,7 @@ input:checked + .ctrl-slider:before {
                         <b>Contact no:</b> ${b.customer_phone || 'N/A'}<br>
                         <b>Complete Address:</b> ${b.customer_address || 'N/A'}<br>
                         ${(b.emergency_contact_name || b.emergency_name) ? `<b>Emergency Contact:</b> ${b.emergency_contact_name || b.emergency_name}${b.emergency_contact_phone || b.emergency_phone ? ' (' + (b.emergency_contact_phone || b.emergency_phone) + ')' : ''}<br>` : ''}
+                        <b>Booking Status:</b> <span style="font-weight:800; color:${bStatusColor}; text-transform:uppercase;">${bStatusText}</span><br>
                         <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
                         <b>Start:</b> ${sDate} @ ${sTime}<br>
                         <b>Return:</b> ${eDate} @ ${eTime}<br>
