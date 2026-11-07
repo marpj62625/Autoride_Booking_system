@@ -39700,7 +39700,9 @@ input:checked + .ctrl-slider:before {
 
                         <b>Return:</b> ${eDate} @ ${eTime}${this.isOverdue(b) ? ' <span style="background:#dc2626; color:#ffffff; padding:1px 5px; border-radius:4px; font-weight:800; font-size:0.65rem; margin-left:4px;">OVERDUE</span>' : ''}<br>
 
-                        <b>Payment Status:</b> <span style="font-weight:800; color:${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) || String(b.payment_status || '').toLowerCase() === 'paid' ? '#16a34a' : (String(b.payment_status || '').toLowerCase().includes('partial') || (dp > 0 && bal > 0) ? '#d97706' : '#dc2626')};">${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) ? 'Paid' : (b.payment_status || (bal === 0 ? 'Paid' : (dp > 0 ? 'Partially Paid' : 'Unpaid')))}</span>
+                        <b>Payment Status:</b> <span style="font-weight:800; color:${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) || String(b.payment_status || '').toLowerCase() === 'paid' ? '#16a34a' : (String(b.payment_status || '').toLowerCase().includes('partial') || (dp > 0 && bal > 0) ? '#d97706' : '#dc2626')};">${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) ? 'Paid' : (b.payment_status || (bal === 0 ? 'Paid' : (dp > 0 ? 'Partially Paid' : 'Unpaid')))}</span><br>
+
+                        <b>Purpose of Rental:</b> ${b.rental_purpose || b.purpose || 'N/A'}
 
                     </div>
 
@@ -41166,6 +41168,7 @@ input:checked + .ctrl-slider:before {
                         <div><strong style="color:#475569;">Destination:</strong> ${b.destination || 'N/A'}</div>
                         <div><strong style="color:#475569;">Dispatch Branch:</strong> <span id="quickModalSummaryBranch" style="font-weight:800; color:#ea580c;">${this.getBookingBranchDisplay(b)}</span></div>
 
+                        <div><strong style="color:#475569;">Purpose of Rental:</strong> ${b.rental_purpose || b.purpose || 'N/A'}</div>
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
 
                     </div>
