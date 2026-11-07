@@ -17304,7 +17304,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <span style="display: flex; align-items: center; gap: 6px;"><i class="fas fa-id-card" style="color: #4f46e5;"></i> Customer Name Breakdown <span style="color: #ef4444;">*</span></span>
 
-                        <span style="font-size: 0.65rem; color: #dc2626; font-weight: 700;">(No spaces allowed)</span>
+                        <span style="font-size: 0.65rem; color: #64748b; font-weight: 600;">(First, Middle, Last)</span>
 
                     </div>
 
@@ -17320,7 +17320,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             </div>
 
-                            <input type="text" id="saEditFirstName" required placeholder="First Name" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saFnameCount', 50)" />
+                            <input type="text" id="saEditFirstName" required placeholder="First Name" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this, 'saFnameCount', 50)" />
 
                         </div>
 
@@ -17334,7 +17334,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             </div>
 
-                            <input type="text" id="saEditMiddleName" placeholder="Optional" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saMnameCount', 50)" />
+                            <input type="text" id="saEditMiddleName" placeholder="Optional" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this, 'saMnameCount', 50)" />
 
                         </div>
 
@@ -17348,7 +17348,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             </div>
 
-                            <input type="text" id="saEditLastName" required placeholder="Last Name" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" onkeydown="if(event.key === ' ' || event.code === 'Space') { event.preventDefault(); return false; }" oninput="Bookings.validateSaNameField(this, 'saLnameCount', 50)" />
+                            <input type="text" id="saEditLastName" required placeholder="Last Name" maxlength="50" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 600; color: #0f172a; box-sizing: border-box;" oninput="Bookings.validateSaNameField(this, 'saLnameCount', 50)" />
 
                         </div>
 
@@ -48584,21 +48584,21 @@ function toggleNewsletterModal(show = true) {
 
             if (parts.length === 1) {
 
-                return { first: parts[0].replace(/\s+/g, ''), middle: '', last: '' };
+                return { first: parts[0], middle: '', last: '' };
 
             } else if (parts.length === 2) {
 
-                return { first: parts[0].replace(/\s+/g, ''), middle: '', last: parts[1].replace(/\s+/g, '') };
+                return { first: parts[0], middle: '', last: parts[1] };
 
             } else {
 
                 return {
 
-                    first: parts[0].replace(/\s+/g, ''),
+                    first: parts[0],
 
-                    middle: parts.slice(1, -1).join('').replace(/\s+/g, ''),
+                    middle: parts.slice(1, -1).join(' '),
 
-                    last: parts[parts.length - 1].replace(/\s+/g, '')
+                    last: parts[parts.length - 1]
 
                 };
 
@@ -48612,9 +48612,8 @@ function toggleNewsletterModal(show = true) {
 
             if (!inputEl) return;
 
-            // Strictly disallow spaces (spaces are stripped instantly), numbers, and special symbols except hyphen/period/apostrophe
-
-            inputEl.value = inputEl.value.replace(/\s+/g, '').replace(/[^a-zA-Z\-\.\'ñÑ]/g, '');
+            // Allow letters, single spaces between words, hyphens, periods, apostrophes, and accented characters
+            inputEl.value = inputEl.value.replace(/[^a-zA-Z\s\-\.\'ñÑ\u00C0-\u00FF]/g, '').replace(/\s{2,}/g, ' ');
 
             if (countId && max) {
 
@@ -49103,7 +49102,7 @@ function toggleNewsletterModal(show = true) {
 
                 if (nameErrEl) {
 
-                    nameErrEl.textContent = 'Please enter a valid First Name (minimum 2 characters, no spaces).';
+                    nameErrEl.textContent = 'Please enter a valid First Name (minimum 2 characters).';
 
                     nameErrEl.style.display = 'block';
 
@@ -49119,7 +49118,7 @@ function toggleNewsletterModal(show = true) {
 
                 if (nameErrEl) {
 
-                    nameErrEl.textContent = 'Please enter a valid Last Name (minimum 2 characters, no spaces).';
+                    nameErrEl.textContent = 'Please enter a valid Last Name (minimum 2 characters).';
 
                     nameErrEl.style.display = 'block';
 
