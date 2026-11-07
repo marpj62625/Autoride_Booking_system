@@ -17329,6 +17329,17 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
 
 
+                <!-- Dispatching Branch Selector -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px;">
+                    <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px;">
+                        <span><i class="fas fa-map-marker-alt" style="color: #ea580c; margin-right: 4px;"></i> Dispatching Branch</span>
+                        <span id="saBranchBadge" style="font-size: 0.65rem; color: #ea580c; background: #fff7ed; border: 1px solid #fed7aa; padding: 2px 7px; border-radius: 8px; font-weight: 800;">Branch</span>
+                    </label>
+                    <select id="saEditPickupLocation" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 700; color: #0f172a; box-sizing: border-box; background: #ffffff; cursor: pointer;">
+                        <!-- Options injected via JS -->
+                    </select>
+                </div>
+
                 <!-- Destination & Purpose Grid with Character Limits -->
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
@@ -41718,6 +41729,10 @@ input:checked + .ctrl-slider:before {
 
                         apply_to_customer: applyToCustomer,
 
+                        dispatch_branch: (document.getElementById('quickDispatchBranchSelect')?.value === '__add_new__' ? '' : document.getElementById('quickDispatchBranchSelect')?.value || ''),
+
+                        pickup_location: (document.getElementById('quickDispatchBranchSelect')?.value === '__add_new__' ? '' : document.getElementById('quickDispatchBranchSelect')?.value || ''),
+
                         requester_id: currentAdminId,
 
                         admin_id: currentAdminId
@@ -48486,7 +48501,22 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            const destEl = document.getElementById('saEditDestination');
+            const destEl = // Populate Dispatching Branch
+            const saBranchSelect = document.getElementById('saEditPickupLocation');
+            if (saBranchSelect) {
+                const branches = typeof FleetCalendar !== 'undefined' && FleetCalendar.getAllKnownBranches ? FleetCalendar.getAllKnownBranches() : ['Tanauan/Sto. Tomas, Batangas', 'San Pablo City, Laguna'];
+                const curBranch = (b.pickup_location || b.dispatch_branch || (b.vehicle && b.vehicle.location) || 'San Pablo City, Laguna').trim();
+                let bOpts = '';
+                branches.forEach(br => {
+                    const isSel = curBranch && br.toLowerCase() === curBranch.toLowerCase();
+                    bOpts += `<option value="${br.replace(/"/g, '&quot;')}" ${isSel ? 'selected' : ''}>${br}</option>`;
+                });
+                saBranchSelect.innerHTML = bOpts;
+                const badge = document.getElementById('saBranchBadge');
+                if (badge) badge.textContent = curBranch.toLowerCase().includes('tanauan') ? 'Tanauan' : (curBranch.toLowerCase().includes('san pablo') ? 'San Pablo' : curBranch.split(',')[0]);
+            }
+
+            document.getElementById('saEditDestination');
 
             if (destEl) {
 
@@ -48832,24 +48862,18 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            const saPickupLoc = (document.getElementById('saEditPickupLocation')?.value || '').trim();
             const payload = {
-
                 admin_id: adminId,
-
                 booking_id: bookingId,
-
                 customer_name: combinedName,
-
                 customer_phone: customerPhone,
-
                 destination: destination,
-
                 rental_purpose: rentalPurpose,
-
+                pickup_location: saPickupLoc,
+                dispatch_branch: saPickupLoc,
                 reason: reason,
-
                 apply_to_all: false
-
             };
 
 

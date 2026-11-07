@@ -686,7 +686,7 @@ def verify_admin_access(super_admin_only=False):
             row = cur.fetchone()
             if row:
                 role = (row.get('role') or '').lower().replace(' ', '_')
-                allowed_roles = ('super_admin', 'superadmin') if super_admin_only else ('admin', 'super_admin', 'superadmin')
+                allowed_roles = ('super_admin', 'superadmin') if super_admin_only else ('admin', 'super_admin', 'superadmin', 'staff')
                 if role in allowed_roles:
                     return True, None
                 elif super_admin_only:
@@ -8881,7 +8881,7 @@ def get_related_customer_bookings(booking_id=None):
 
     """
 
-    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    is_authorized, err_resp = verify_admin_access(super_admin_only=False)
 
     if not is_authorized:
 
@@ -9116,6 +9116,21 @@ def edit_booking_details_super_admin(booking_id=None):
                 rental_purpose = %s
             WHERE id = %s
         """, (customer_name, customer_phone, destination or None, rental_purpose or None, b_id))
+
+        pickup_location = str(data.get('pickup_location') or data.get('dispatch_branch') or '').strip()
+        if pickup_location:
+            if (bk.get('pickup_location') or '') != pickup_location:
+                changes.append(f"Dispatch Branch: '{bk.get('pickup_location') or 'None'}' -> '{pickup_location}'")
+            cur.execute("UPDATE bookings SET pickup_location = %s WHERE id = %s", (pickup_location, b_id))
+            try:
+                cur.execute("SELECT location_id FROM locations WHERE LOWER(name) = LOWER(%s) LIMIT 1", (pickup_location,))
+                if not cur.fetchone():
+                    cur.execute("""
+                        INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (pickup_location, '', '', '', 0.00))
+            except Exception as loc_e:
+                logger.warning("Auto-insert location failed: %s", loc_e)
 
         # Check if user requested to apply Name and Phone to other bookings of the same customer
         apply_to_all = bool(data.get('apply_to_all'))
@@ -15588,14 +15603,21 @@ def add_location():
         cur = get_cursor()
         cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
         user = cur.fetchone()
-        if not user or user['role'] != 'super_admin':
-            return jsonify({"error": "Unauthorized. Super Admin only."}), 403
+        role = (user.get('role') or '').lower().replace(' ', '_') if user else ''
+        if not user or role not in ('admin', 'super_admin', 'superadmin', 'staff'):
+            return jsonify({"error": "Unauthorized. Admin or Staff only."}), 403
 
         cur.execute("""
             INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
-            VALUES (%s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s) RETURNING location_id, id
         """, (name, province, municipality, barangay, delivery_fee))
-        new_id = cur.fetchone()['id']
+        loc_row = cur.fetchone()
+        new_id = loc_row.get('location_id') or loc_row.get('id')
+        if not loc_row.get('id') and new_id:
+            try:
+                cur.execute("UPDATE locations SET id = %s WHERE location_id = %s", (new_id, new_id))
+            except Exception:
+                pass
         commit_db()
 
         log_activity(
@@ -19497,6 +19519,25 @@ def update_booking_quick_pricing(booking_id):
                 calendar_color = %s
             WHERE id = %s
         """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
+
+        # Update Dispatch Branch / Pickup Location if provided
+        new_branch = (data.get('dispatch_branch') or data.get('pickup_location') or '').strip()[:100]
+        if new_branch:
+            cur.execute("""
+                UPDATE bookings
+                SET pickup_location = %s
+                WHERE id = %s
+            """, (new_branch, booking_id))
+            # Auto-insert into locations table if new
+            try:
+                cur.execute("SELECT location_id FROM locations WHERE LOWER(name) = LOWER(%s) LIMIT 1", (new_branch,))
+                if not cur.fetchone():
+                    cur.execute("""
+                        INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (new_branch, '', '', '', 0.00))
+            except Exception as loc_e:
+                logger.warning("Auto-insert location failed: %s", loc_e)
 
         if apply_to_customer and b.get('user_id') and calendar_color:
             cur.execute("""
