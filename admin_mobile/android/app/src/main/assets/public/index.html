@@ -24473,6 +24473,16 @@ input:checked + .ctrl-slider:before {
 
 
 
+                <!-- Refresh Button (Always Visible in Primary Toolbar) -->
+
+                <button id="fcRefreshBtn" type="button" onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 11px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+
+                    <i id="fcRefreshIcon" class="fas fa-sync-alt"></i>
+
+                </button>
+
+
+
                 <!-- Roll-up Toggle Button -->
 
                 <button id="fcRollupToggleBtn" type="button" onclick="FleetCalendar.toggleToolbarRollup()" class="btn-secondary" title="Roll up secondary controls to view more vehicles"
@@ -24537,11 +24547,7 @@ input:checked + .ctrl-slider:before {
 
                 </div>
 
-                <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
 
-                    <i class="fas fa-sync-alt"></i>
-
-                </button>
 
                 <button type="button" onclick="FleetCalendar.openExportModal()" class="btn-primary" title="Export Fleet Schedule & Bookings to Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #00B14F; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
 
@@ -37231,6 +37237,36 @@ input:checked + .ctrl-slider:before {
 
 
 
+        getReturnDateTime(b) {
+            if (!b || !b.end_date) return null;
+            try {
+                let dateStr = String(b.end_date).trim();
+                if (dateStr.includes('T')) dateStr = dateStr.split('T')[0];
+                else if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+
+                let timeStr = String(b.end_time || '00:00').trim();
+                if (timeStr.length === 5) timeStr += ':00';
+
+                const dParts = dateStr.split('-').map(Number);
+                const tParts = timeStr.split(':').map(Number);
+                if (dParts.length < 3 || isNaN(dParts[0]) || isNaN(dParts[1]) || isNaN(dParts[2])) {
+                    return new Date(b.end_date);
+                }
+                return new Date(dParts[0], dParts[1] - 1, dParts[2], tParts[0] || 0, tParts[1] || 0, tParts[2] || 0);
+            } catch (e) {
+                return new Date(b.end_date);
+            }
+        },
+
+        isOverdue(b) {
+            if (!b) return false;
+            const st = String(b.status || '').trim().toLowerCase();
+            if (st !== 'picked up' && st !== 'ongoing') return false;
+            const returnDt = this.getReturnDateTime(b);
+            if (!returnDt) return false;
+            return new Date() >= returnDt;
+        },
+
         toggleToolbarRollup() {
             const wrap = document.getElementById('fcCollapsibleControls');
             const btn = document.getElementById('fcRollupToggleBtn');
@@ -37811,6 +37847,10 @@ input:checked + .ctrl-slider:before {
 
         async refresh() {
 
+            const refreshIcon = document.getElementById('fcRefreshIcon');
+
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
             try {
 
                 const year1 = this.currentDate.getFullYear();
@@ -37904,6 +37944,12 @@ input:checked + .ctrl-slider:before {
                 console.error("Failed to load Fleet Calendar data:", e);
 
                 showNotification("Failed to load calendar data", "error");
+
+            } finally {
+
+                const refreshIcon = document.getElementById('fcRefreshIcon');
+
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
             }
 
@@ -38507,13 +38553,7 @@ input:checked + .ctrl-slider:before {
 
             if (statUtilEl) {
 
-                const overdueCount = (this.bookings || []).filter(b => {
-
-                    const st = (b.status || '').toLowerCase();
-
-                    return (st === 'picked up' || st === 'ongoing') && b.end_date && (new Date() >= new Date(b.end_date));
-
-                }).length;
+                const overdueCount = (this.bookings || []).filter(b => this.isOverdue(b)).length;
 
                 const overdueHtml = overdueCount > 0 ? ` <span style="font-weight: 800; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 3px; margin-left: 8px;"><i class="fas fa-clock"></i><strong>${overdueCount}</strong> Due for Return</span>` : '';
 
@@ -39007,9 +39047,9 @@ input:checked + .ctrl-slider:before {
 
                             }
 
-                            const isOverdueReturn = (bStat === 'picked up' || bStat === 'ongoing') && bk.end_date && (new Date() >= new Date(bk.end_date));
+                            const isOverdueReturn = this.isOverdue(bk);
 
-                            const iconBorder = isOverdueReturn ? 'border: 1.5px solid #dc2626; border-radius: 4px; padding: 0 1px; background: rgba(220, 38, 38, 0.12);' : '';
+                            const iconBorder = isOverdueReturn ? 'border: 1.5px solid #dc2626; border-radius: 4px; padding: 1px 3px; background: #fee2e2; color: #dc2626; box-shadow: 0 0 0 1px #dc2626; display: inline-flex; align-items: center; justify-content: center;' : '';
 
 
 
@@ -39577,7 +39617,7 @@ input:checked + .ctrl-slider:before {
 
                         <b>Start:</b> ${sDate} @ ${sTime}<br>
 
-                        <b>Return:</b> ${eDate} @ ${eTime}<br>
+                        <b>Return:</b> ${eDate} @ ${eTime}${this.isOverdue(b) ? ' <span style="background:#dc2626; color:#ffffff; padding:1px 5px; border-radius:4px; font-weight:800; font-size:0.65rem; margin-left:4px;">OVERDUE</span>' : ''}<br>
 
                         <b>Payment Status:</b> <span style="font-weight:800; color:${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) || String(b.payment_status || '').toLowerCase() === 'paid' ? '#16a34a' : (String(b.payment_status || '').toLowerCase().includes('partial') || (dp > 0 && bal > 0) ? '#d97706' : '#dc2626')};">${(bal === 0 && dp >= totalWithFee && totalWithFee > 0) ? 'Paid' : (b.payment_status || (bal === 0 ? 'Paid' : (dp > 0 ? 'Partially Paid' : 'Unpaid')))}</span>
 
