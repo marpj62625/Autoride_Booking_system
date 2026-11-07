@@ -17435,7 +17435,21 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         </div>
 
-                        <input type="text" id="saEditRentalPurpose" placeholder="e.g. Vacation" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 100)" />
+                        <select id="saEditPurposePreset" onchange="Bookings.onSaPurposeSelect(this.value)"
+                                style="width: 100%; padding: 7px 8px; margin-bottom: 6px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #0f172a; box-sizing: border-box; background: #ffffff; cursor: pointer;">
+                            <option value="">Select preset purpose...</option>
+                            <option value="Personal / Leisure">Personal / Leisure</option>
+                            <option value="Family Vacation / Travel">Family Vacation / Travel</option>
+                            <option value="Business / Corporate Trip">Business / Corporate Trip</option>
+                            <option value="Event / Wedding / Party">Event / Wedding / Party</option>
+                            <option value="Airport Transfer">Airport Transfer</option>
+                            <option value="City Tour / Sightseeing">City Tour / Sightseeing</option>
+                            <option value="Emergency / Vehicle Breakdown">Emergency / Vehicle Breakdown</option>
+                            <option value="Walk-in Counter Rental">Walk-in Counter Rental</option>
+                            <option value="Other">Other (Custom Type)</option>
+                        </select>
+
+                        <input type="text" id="saEditRentalPurpose" placeholder="Type or select purpose (e.g. Vacation, Wedding)" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 100); Bookings.syncSaPurposePreset(this.value);" />
 
                     </div>
 
@@ -48629,6 +48643,34 @@ function toggleNewsletterModal(show = true) {
 
 
 
+        onSaPurposeSelect(val) {
+            const input = document.getElementById('saEditRentalPurpose');
+            if (!input) return;
+            if (val === 'Other') {
+                input.value = '';
+                input.focus();
+            } else if (val) {
+                input.value = val;
+            }
+            this.updateCharCount(input, 'saPurpCount', 100);
+        },
+
+        syncSaPurposePreset(val) {
+            const presetEl = document.getElementById('saEditPurposePreset');
+            if (!presetEl) return;
+            const clean = (val || '').trim().toLowerCase();
+            const matchedOpt = Array.from(presetEl.options).find(o => o.value && o.value.toLowerCase() === clean);
+            if (matchedOpt) {
+                presetEl.value = matchedOpt.value;
+            } else if (clean) {
+                presetEl.value = 'Other';
+            } else {
+                presetEl.value = '';
+            }
+        },
+
+
+
         formatSaPhoneInput(inputEl) {
 
             if (!inputEl) return;
@@ -48835,12 +48877,35 @@ function toggleNewsletterModal(show = true) {
 
 
             const purpEl = document.getElementById('saEditRentalPurpose');
+            const purpPresetEl = document.getElementById('saEditPurposePreset');
 
             if (purpEl) {
 
-                purpEl.value = (b.rental_purpose || '').trim();
+                const curPurp = (b.rental_purpose || '').trim();
+
+                purpEl.value = curPurp;
 
                 this.updateCharCount(purpEl, 'saPurpCount', 100);
+
+                if (purpPresetEl) {
+
+                    const matchedOpt = Array.from(purpPresetEl.options).find(o => o.value && o.value.toLowerCase() === curPurp.toLowerCase());
+
+                    if (matchedOpt) {
+
+                        purpPresetEl.value = matchedOpt.value;
+
+                    } else if (curPurp) {
+
+                        purpPresetEl.value = 'Other';
+
+                    } else {
+
+                        purpPresetEl.value = '';
+
+                    }
+
+                }
 
             }
 
