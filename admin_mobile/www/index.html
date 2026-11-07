@@ -16051,7 +16051,32 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
 
 
-<!-- Color Selection (User Select Colors for Flexibility) -->
+<!-- Dispatching Branch Section (Option 1 + Option 2 Combined) -->
+            <div id="quickDispatchBranchCard" style="margin-bottom: 10px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 12px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-bottom: 6px;">
+                    <span><i class="fas fa-map-marker-alt" style="color: #ea580c; margin-right: 5px;"></i> Dispatching Branch</span>
+                    <span id="quickBranchBadge" style="font-size: 0.68rem; font-weight: 800; color: #ea580c; background: #fff7ed; border: 1px solid #fed7aa; padding: 2px 7px; border-radius: 10px; text-transform: uppercase;">Branch</span>
+                </label>
+                <select id="quickDispatchBranchSelect" onchange="FleetCalendar.onQuickBranchChange(this.value)"
+                        style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; outline: none; box-sizing: border-box; cursor: pointer;">
+                    <!-- Dynamically injected via JS -->
+                </select>
+                <!-- Inline Add New Branch Container (Option 1) -->
+                <div id="quickNewBranchContainer" style="display: none; margin-top: 8px; padding: 9px 12px; background: #fff7ed; border: 1.5px dashed #f97316; border-radius: 8px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #c2410c; margin-bottom: 5px;">
+                        <i class="fas fa-plus-circle"></i> Type New Branch Name:
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="quickNewBranchInput" placeholder="e.g. Calamba Main Hub, Laguna" maxlength="60"
+                               style="flex: 1; padding: 7px 10px; font-size: 0.8rem; font-weight: 600; border: 1.5px solid #cbd5e1; border-radius: 6px; outline: none;"
+                               onkeydown="if(event.key === 'Enter'){ event.preventDefault(); FleetCalendar.confirmAddNewBranch(); }">
+                        <button type="button" onclick="FleetCalendar.confirmAddNewBranch()" style="background: #00B14F; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">Add &amp; Select</button>
+                        <button type="button" onclick="FleetCalendar.cancelAddNewBranch()" style="background: #e2e8f0; color: #475569; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Selection (User Select Colors for Flexibility) -->
 
             <div style="margin-bottom: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px;">
 
@@ -40930,6 +40955,7 @@ input:checked + .ctrl-slider:before {
                         <div><strong style="color:#475569;">Start:</strong> ${sDate} @ ${this.formatTime12(b.start_time || '06:00')} &nbsp;&bull;&nbsp; <strong style="color:#475569;">Return:</strong> ${eDate} @ ${this.formatTime12(b.end_time || '06:00')}</div>
 
                         <div><strong style="color:#475569;">Destination:</strong> ${b.destination || 'N/A'}</div>
+                        <div><strong style="color:#475569;">Dispatch Branch:</strong> <span id="quickModalSummaryBranch" style="font-weight:800; color:#ea580c;">${this.getBookingBranchDisplay(b)}</span></div>
 
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
 
@@ -41365,22 +41391,18 @@ input:checked + .ctrl-slider:before {
 
 
 
+            const currentBookingBranch = this.getBookingBranchDisplay(b);
+            this.renderQuickBranchOptions(currentBookingBranch);
+
             this.quickInitialState = {
-
                 vehicle_id: String(b.vehicle_id || ''),
-
                 vehicle_name: initVehicleName,
-
                 total_price: Math.round(totalPrice),
-
                 amount_paid: Math.round(amountPaid),
-
                 payment_status: statusSelect ? statusSelect.value : '',
-
                 payment_method: methodSelect ? methodSelect.value : 'Cash',
-
-                color: (this.selectedColor || '').toLowerCase()
-
+                color: (this.selectedColor || '').toLowerCase(),
+                dispatch_branch: currentBookingBranch
             };
 
 
@@ -41896,6 +41918,17 @@ input:checked + .ctrl-slider:before {
             }
 
 
+
+            // Dispatching Branch
+            const branchSelect = document.getElementById('quickDispatchBranchSelect');
+            const currentBranch = String(branchSelect?.value || '').trim();
+            if (currentBranch && currentBranch !== '__add_new__' && currentBranch !== (this.quickInitialState.dispatch_branch || '')) {
+                diff.push({
+                    label: 'Dispatching Branch',
+                    oldVal: this.quickInitialState.dispatch_branch || 'Not set',
+                    newVal: currentBranch
+                });
+            }
 
             // 6. Booking Color
 
@@ -48516,7 +48549,7 @@ function toggleNewsletterModal(show = true) {
                 if (badge) badge.textContent = curBranch.toLowerCase().includes('tanauan') ? 'Tanauan' : (curBranch.toLowerCase().includes('san pablo') ? 'San Pablo' : curBranch.split(',')[0]);
             }
 
-            document.getElementById('saEditDestination');
+            const destEl = document.getElementById('saEditDestination');
 
             if (destEl) {
 
