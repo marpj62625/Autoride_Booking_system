@@ -16882,6 +16882,37 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                     </div>
 
+                    <!-- Purpose of Rental (Dropdown Preset + Custom Text Input with 100 char limit) -->
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-main, #0f172a);">
+                                <i class="fas fa-bullseye" style="color: #00B14F; margin-right: 4px;"></i> Purpose of Rental
+                            </label>
+                            <span id="walkinPurposeCharCount" style="font-size: 0.68rem; color: var(--text-muted, #64748b); font-weight: 700;">0/100</span>
+                        </div>
+                        <div class="walkin-sub-grid-2" style="gap: 10px;">
+                            <div>
+                                <select id="walkinPurposePreset" onchange="WalkinBooking.onPurposeSelect(this.value)"
+                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
+                                    <option value="">Select preset purpose...</option>
+                                    <option value="Personal / Leisure">Personal / Leisure</option>
+                                    <option value="Family Vacation / Travel">Family Vacation / Travel</option>
+                                    <option value="Business / Corporate Trip">Business / Corporate Trip</option>
+                                    <option value="Event / Wedding / Party">Event / Wedding / Party</option>
+                                    <option value="Airport Transfer">Airport Transfer</option>
+                                    <option value="City Tour / Sightseeing">City Tour / Sightseeing</option>
+                                    <option value="Emergency / Vehicle Breakdown">Emergency / Vehicle Breakdown</option>
+                                    <option value="Other">Other (Custom)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <input type="text" id="walkinRentalPurpose" maxlength="100" placeholder="Type or select purpose (e.g. Vacation, Wedding)"
+                                       oninput="WalkinBooking.updatePurposeCharCount()"
+                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
 
@@ -17397,11 +17428,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             </label>
 
-                            <span id="saPurpCount" style="font-size: 0.62rem; color: #94a3b8; font-weight: 700;">0/40</span>
+                            <span id="saPurpCount" style="font-size: 0.62rem; color: #94a3b8; font-weight: 700;">0/100</span>
 
                         </div>
 
-                        <input type="text" id="saEditRentalPurpose" placeholder="e.g. Vacation" maxlength="40" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 40)" />
+                        <input type="text" id="saEditRentalPurpose" placeholder="e.g. Vacation" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 100)" />
 
                     </div>
 
@@ -48787,7 +48818,7 @@ function toggleNewsletterModal(show = true) {
 
                 purpEl.value = (b.rental_purpose || '').trim();
 
-                this.updateCharCount(purpEl, 'saPurpCount', 40);
+                this.updateCharCount(purpEl, 'saPurpCount', 100);
 
             }
 
@@ -78778,6 +78809,37 @@ function toggleNewsletterModal(show = true) {
 
 
 
+        onPurposeSelect(val) {
+            const input = document.getElementById('walkinRentalPurpose');
+            if (!input) return;
+            if (val === 'Other') {
+                input.value = '';
+                input.focus();
+            } else if (val) {
+                input.value = val;
+            }
+            this.updatePurposeCharCount();
+        },
+
+        updatePurposeCharCount() {
+            const input = document.getElementById('walkinRentalPurpose');
+            const countEl = document.getElementById('walkinPurposeCharCount');
+            if (!input || !countEl) return;
+            if (input.value.length > 100) {
+                input.value = input.value.slice(0, 100);
+            }
+            countEl.textContent = `${input.value.length}/100`;
+            if (input.value.length >= 100) {
+                countEl.style.color = '#ef4444';
+            } else if (input.value.length >= 80) {
+                countEl.style.color = '#f59e0b';
+            } else {
+                countEl.style.color = 'var(--text-muted, #64748b)';
+            }
+        },
+
+
+
         async openModal(preselectedVehicleId = null) {
 
             if (typeof isConsignor === 'function' && isConsignor()) {
@@ -78857,6 +78919,12 @@ function toggleNewsletterModal(show = true) {
             const disc = document.getElementById('walkinDiscount');
 
             if (disc) disc.value = '0';
+
+            const purposePreset = document.getElementById('walkinPurposePreset');
+            if (purposePreset) purposePreset.value = '';
+            const purposeInput = document.getElementById('walkinRentalPurpose');
+            if (purposeInput) purposeInput.value = '';
+            this.updatePurposeCharCount();
 
 
 
@@ -80400,7 +80468,7 @@ function toggleNewsletterModal(show = true) {
 
                     pickup_location: pickupLocation,
 
-                    rental_purpose: 'Walk-in Counter Rental',
+                    rental_purpose: (document.getElementById('walkinRentalPurpose')?.value || '').trim().slice(0, 100) || 'Walk-in Counter Rental',
 
                     admin_id: adminId
 
