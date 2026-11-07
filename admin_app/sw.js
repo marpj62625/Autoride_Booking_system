@@ -4,7 +4,7 @@
    Android (Chrome) and iOS (Safari)
    ============================================================ */
 
-const CACHE_NAME = 'autoride-admin-v6';
+const CACHE_NAME = 'autoride-admin-v7';
 
 // Core shell files to cache during install
 const CORE_ASSETS = [
@@ -63,6 +63,7 @@ self.addEventListener('fetch', (event) => {
         url.includes('/api/') ||
         url.includes('/bookings') ||
         url.includes('/vehicles') ||
+        url.includes('/locations') ||
         url.includes('/inspections') ||
         url.includes('/users') ||
         url.includes('/admin/') ||

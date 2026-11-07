@@ -17228,7 +17228,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             <h2 style="font-size: 1.12rem; font-weight: 800; color: #0f172a; margin: 0;">Edit Booking Details</h2>
 
-                            <span style="font-size: 0.65rem; background: #fef3c7; color: #b45309; padding: 2px 7px; border-radius: 6px; font-weight: 800; border: 1px solid #fde68a;">SUPER ADMIN</span>
+                            <span style="font-size: 0.65rem; background: #dbeafe; color: #1e40af; padding: 2px 7px; border-radius: 6px; font-weight: 800; border: 1px solid #bfdbfe;">OFFICIAL EDIT</span>
 
                         </div>
 
@@ -50851,6 +50851,7 @@ function toggleNewsletterModal(show = true) {
             const st = (b.status||'').toLowerCase();
 
             const isSuperAdmin = (typeof adminAuth !== 'undefined' && adminAuth.getUser() && ['super_admin', 'superadmin'].includes((adminAuth.getUser().role || '').toLowerCase()));
+            const canEditBooking = (typeof adminAuth !== 'undefined' && adminAuth.getUser() && ['super_admin', 'superadmin', 'admin', 'staff'].includes(((adminAuth.getUser().role || '').toLowerCase().replace(' ', '_'))));
 
             let actionBtns = '';
 
@@ -50878,9 +50879,9 @@ function toggleNewsletterModal(show = true) {
 
             }
 
-                        if (isSuperAdmin) {
+                        if (canEditBooking || isSuperAdmin) {
 
-                actionBtns += `<button onclick="Bookings.openSuperAdminEditModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-edit"></i>Edit Renter Details</button>`;
+                actionBtns += `<button onclick="Bookings.openSuperAdminEditModal(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-edit"></i>Edit Booking Details</button>`;
 
             }
 
@@ -51120,7 +51121,7 @@ function toggleNewsletterModal(show = true) {
 
                             <div style="display:flex;align-items:center;gap:5px;">
 
-                                ${isSuperAdmin ? `
+                                ${(canEditBooking || isSuperAdmin) ? `
 
                                 <button type="button" onclick="Bookings.openSuperAdminEditModal(${b.id})" style="padding:3px 8px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;border-radius:6px;font-size:0.68rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Super Admin: Edit Customer Info">
 
@@ -69532,6 +69533,8 @@ function toggleNewsletterModal(show = true) {
 
             } catch (err) {
 
+                console.error('Failed to load settings:', err);
+
                 if (list) list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
 
             }
@@ -69567,6 +69570,8 @@ function toggleNewsletterModal(show = true) {
                     desc: 'Manage active branches, pickup points, and dispatch hubs for vehicles and bookings',
 
                     isBranchManager: true,
+
+                    keys: [],
 
                     settings: []
 
@@ -69898,7 +69903,7 @@ function toggleNewsletterModal(show = true) {
 
                 for (const cat in groups) {
 
-                    if (groups[cat].keys.includes(s.key)) {
+                    if (Array.isArray(groups[cat].keys) && groups[cat].keys.includes(s.key)) {
 
                         groups[cat].settings.push(s);
 

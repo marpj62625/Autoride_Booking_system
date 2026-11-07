@@ -9051,7 +9051,7 @@ def edit_booking_details_super_admin(booking_id=None):
     - reason (for audit log)
     Also synchronizes with users table if booking is linked to a customer user account.
     """
-    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    is_authorized, err_resp = verify_admin_access(super_admin_only=False)
     if not is_authorized:
         return err_resp
 
