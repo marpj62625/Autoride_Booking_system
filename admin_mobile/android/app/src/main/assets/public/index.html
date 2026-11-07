@@ -19057,6 +19057,51 @@ input:checked + .ctrl-slider:before {
 
 
 
+    <!-- MANAGE COMPANY BRANCH (ADD / EDIT) MODAL -->
+    <div id="manageBranchModal" style="display: none; position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) Settings.closeBranchModal()">
+        <div style="width: 100%; max-width: 480px; background: var(--surface-solid, #ffffff); border: 1px solid var(--border); border-radius: 20px; padding: 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); margin: auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(234,88,12,0.12); color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div>
+                        <h3 id="manageBranchModalTitle" style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-main);">Add Company Branch</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Set branch name and dispatch location details</p>
+                    </div>
+                </div>
+                <button type="button" onclick="Settings.closeBranchModal()" style="background: rgba(0,0,0,0.05); border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+            <input type="hidden" id="branchModalLocId" value="">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                    <label style="display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Branch Name <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="branchModalName" placeholder="e.g. Tanauan/Sto. Tomas, Batangas or Calamba Branch" maxlength="60" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--surface-container, #f8fafc); border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 600; color: var(--text-main); outline: none;">
+                    <span style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; display: block;">Official name used across Fleet Calendar & dispatch dropdowns</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Province</label>
+                        <input type="text" id="branchModalProvince" placeholder="e.g. Batangas or Laguna" maxlength="40" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-container, #f8fafc); border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); outline: none;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">City / Municipality</label>
+                        <input type="text" id="branchModalMunicipality" placeholder="e.g. Tanauan City or San Pablo" maxlength="40" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-container, #f8fafc); border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); outline: none;">
+                    </div>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Delivery Fee (₱)</label>
+                    <input type="number" id="branchModalDeliveryFee" placeholder="0.00" min="0" max="10000" step="10" value="0" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--surface-container, #f8fafc); border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: var(--text-main); outline: none;">
+                    <span style="font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; display: block;">Standard delivery/pickup surcharge (₱0 for garage/hub pickups)</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" onclick="Settings.closeBranchModal()" style="flex: 1; padding: 11px; background: var(--surface-solid, #f1f5f9); color: var(--text-muted, #475569); border: 1.5px solid var(--border); border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnSaveBranch" onclick="Settings.saveBranch(this)" style="flex: 1.5; padding: 11px; background: #ea580c; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(234,88,12,0.3);"><i class="fas fa-check"></i> Save Branch</button>
+            </div>
+        </div>
+    </div>
+
     <!-- FLEET CALENDAR AUDIT HISTORY MODAL -->
 
     <div id="fleetHistoryModal" class="premium-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) FleetCalendar.closeHistoryModal(event)">
@@ -40819,29 +40864,30 @@ input:checked + .ctrl-slider:before {
             ];
             const list = [];
             standard.forEach(b => {
-                if (!list.includes(b)) list.push(b);
+                if (!list.some(c => c.toLowerCase() === b.toLowerCase())) list.push(b);
             });
-            (this.vehicles || []).forEach(v => {
-                if (v && v.location && typeof v.location === 'string') {
-                    const loc = v.location.trim();
-                    if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
-                        list.push(loc);
-                    }
+
+            // Official branches loaded from locations table / Settings
+            const official = (this.officialBranches && this.officialBranches.length)
+                ? this.officialBranches
+                : ((typeof Settings !== 'undefined' && Settings._branches && Settings._branches.length)
+                    ? Settings._branches
+                    : (window.__officialCompanyBranches || []));
+
+            official.forEach(loc => {
+                const name = typeof loc === 'string' ? loc.trim() : (loc && loc.name ? loc.name.trim() : '');
+                if (name && !name.toLowerCase().includes('other') && !list.some(c => c.toLowerCase() === name.toLowerCase())) {
+                    list.push(name);
                 }
             });
-            (this.bookings || []).forEach(b => {
-                if (b && b.pickup_location && typeof b.pickup_location === 'string') {
-                    const loc = b.pickup_location.trim();
-                    if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
-                        list.push(loc);
-                    }
+
+            (this.customBranches || []).forEach(name => {
+                const clean = String(name || '').trim();
+                if (clean && !clean.toLowerCase().includes('other') && !list.some(c => c.toLowerCase() === clean.toLowerCase())) {
+                    list.push(clean);
                 }
             });
-            (this.customBranches || []).forEach(loc => {
-                if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
-                    list.push(loc);
-                }
-            });
+
             return list;
         },
 
@@ -40870,12 +40916,13 @@ input:checked + .ctrl-slider:before {
             allBranches.forEach(b => {
                 const isSel = target && b.toLowerCase() === target.toLowerCase();
                 let label = b;
-                if (b.toLowerCase().includes('tanauan') || b.toLowerCase().includes('batangas')) {
+                const bLower = b.toLowerCase();
+                if (bLower.includes('tanauan') || bLower.includes('batangas')) {
                     label = `Tanauan Branch (${b})`;
-                } else if (b.toLowerCase().includes('san pablo') || b.toLowerCase().includes('spc')) {
+                } else if (bLower.includes('san pablo') || bLower.includes('spc')) {
                     label = `San Pablo City Branch (${b})`;
                 } else {
-                    label = `${b} Branch`;
+                    label = bLower.endsWith('branch') ? b : `${b} Branch`;
                 }
                 html += `<option value="${b.replace(/"/g, '&quot;')}" ${isSel ? 'selected' : ''}>${label}</option>`;
             });
@@ -69453,6 +69500,8 @@ function toggleNewsletterModal(show = true) {
 
         _groups: {},
 
+        _branches: [],
+
         _activeCat: 'all',
 
         _searchQuery: '',
@@ -69476,6 +69525,8 @@ function toggleNewsletterModal(show = true) {
                 const data = await res.json();
 
                 this._allData = Array.isArray(data) ? data.filter(s => s && s.key && !s.key.startsWith('qrph_img_')) : [];
+
+                await this.loadBranches();
 
                 this.render();
 
@@ -69502,6 +69553,24 @@ function toggleNewsletterModal(show = true) {
             // Define modular categories
 
             const groups = {
+
+                branches: {
+
+                    title: 'Company Branches & Dispatch Hubs',
+
+                    shortTitle: 'Branches',
+
+                    icon: 'fa-building',
+
+                    color: '#ea580c',
+
+                    desc: 'Manage active branches, pickup points, and dispatch hubs for vehicles and bookings',
+
+                    isBranchManager: true,
+
+                    settings: []
+
+                },
 
                 safety: {
 
@@ -69877,15 +69946,17 @@ function toggleNewsletterModal(show = true) {
 
                     const g = groups[cat];
 
-                    if (g.settings.length === 0) continue;
+                    if (g.settings.length === 0 && !g.isBranchManager) continue;
 
                     const isActive = this._activeCat === cat;
+
+                    const countVal = g.isBranchManager ? (this._branches ? this._branches.length : 2) : g.settings.length;
 
                     tabsHtml += `
 
                         <button type="button" onclick="Settings.selectCategory('${cat}')" id="tab_${cat}" class="settings-tab-btn" style="display: flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 20px; border: 1px solid ${isActive ? g.color : 'var(--border)'}; background: ${isActive ? g.color + '22' : 'var(--surface-solid)'}; color: ${isActive ? g.color : 'var(--text-muted)'}; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
 
-                            <i class="fas ${g.icon}" style="color: ${g.color};"></i> ${g.shortTitle} <span style="font-size: 0.7rem; opacity: 0.85; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.08);">${g.settings.length}</span>
+                            <i class="fas ${g.icon}" style="color: ${g.color};"></i> ${g.shortTitle} <span style="font-size: 0.7rem; opacity: 0.85; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.08);">${countVal}</span>
 
                         </button>
 
@@ -69907,7 +69978,59 @@ function toggleNewsletterModal(show = true) {
 
                 const g = groups[cat];
 
-                if (g.settings.length === 0) continue;
+                if (g.settings.length === 0 && !g.isBranchManager) continue;
+
+                if (g.isBranchManager) {
+
+                    html += `
+
+                    <div class="settings-group-card" data-cat="${cat}" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s;">
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap;">
+
+                            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px;">
+
+                                <div style="width: 36px; height: 36px; flex-shrink: 0; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+
+                                    <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 1rem;"></i>
+
+                                </div>
+
+                                <div style="flex: 1; min-width: 0;">
+
+                                    <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);">${g.title}</div>
+
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px;">${g.desc}</div>
+
+                                </div>
+
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 8px;">
+
+                                <button type="button" onclick="Settings.openAddBranchModal()" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #ea580c; color: #ffffff; font-size: 0.78rem; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 8px rgba(234,88,12,0.3); transition: transform 0.15s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+
+                                    <i class="fas fa-plus"></i> Add Branch
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div id="settingsBranchList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px; width: 100%;">
+
+                            <!-- Injected dynamically via Settings.renderBranchList() -->
+
+                        </div>
+
+                    </div>
+
+                    `;
+
+                    continue;
+
+                }
 
 
 
@@ -70006,6 +70129,8 @@ function toggleNewsletterModal(show = true) {
 
 
             list.innerHTML = html;
+
+            this.renderBranchList();
 
             this.applyFilters();
 
@@ -70567,6 +70692,26 @@ function toggleNewsletterModal(show = true) {
 
 
 
+                if (cat === 'branches') {
+
+                    if (matchesCategory) {
+
+                        card.style.display = 'block';
+
+                        visibleCards++;
+
+                    } else {
+
+                        card.style.display = 'none';
+
+                    }
+
+                    return;
+
+                }
+
+
+
                 if (!q) {
 
                     card.style.display = 'block';
@@ -70980,6 +71125,438 @@ function toggleNewsletterModal(show = true) {
                 showNotification('❌ Network error: ' + err.message, 'error');
 
                 return false;
+
+            }
+
+        },
+
+
+
+        async loadBranches() {
+
+            try {
+
+                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : (typeof API_URL !== 'undefined' ? API_URL : '');
+
+                let res = await fetch(`${apiBase}/locations`);
+
+                if (!res.ok) res = await fetch(`${apiBase}/api/locations`);
+
+                if (res.ok) {
+
+                    const data = await res.json();
+
+                    if (Array.isArray(data)) {
+
+                        this._branches = data.filter(d => d && d.name && !String(d.name).toLowerCase().includes('other'));
+
+                        window.__officialCompanyBranches = this._branches;
+
+                        if (typeof FleetCalendar !== 'undefined' && FleetCalendar) {
+
+                            FleetCalendar.officialBranches = this._branches;
+
+                        }
+
+                    }
+
+                }
+
+            } catch (e) {
+
+                console.warn('Failed to load branches in Settings:', e);
+
+            }
+
+            this.renderBranchList();
+
+        },
+
+
+
+        renderBranchList() {
+
+            const container = document.getElementById('settingsBranchList');
+
+            if (!container) return;
+
+            const branches = (this._branches && this._branches.length > 0) ? this._branches : [
+
+                { id: 1, name: 'Tanauan/Sto. Tomas, Batangas', province: 'Batangas', municipality: 'Tanauan/Sto. Tomas', delivery_fee: 0 },
+
+                { id: 2, name: 'San Pablo City, Laguna', province: 'Laguna', municipality: 'San Pablo City', delivery_fee: 0 }
+
+            ];
+
+
+
+            let html = '';
+
+            branches.forEach((b, idx) => {
+
+                const bId = b.id || b.location_id || (idx + 1);
+
+                const bName = b.name || 'Unnamed Branch';
+
+                const bProv = b.province || '';
+
+                const bMuni = b.municipality || '';
+
+                const fee = parseFloat(b.delivery_fee || 0);
+
+                const locDetail = [bMuni, bProv].filter(Boolean).join(', ') || bName;
+
+                const isDefault = ['tanauan', 'san pablo'].some(k => bName.toLowerCase().includes(k));
+
+                const bJson = JSON.stringify(b).replace(/"/g, '&quot;');
+
+
+
+                html += `
+
+                <div class="settings-branch-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-solid); border: 1.5px solid var(--border); border-radius: 12px; transition: all 0.2s; flex-wrap: wrap;">
+
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(234,88,12,0.12); color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">
+
+                            <i class="fas fa-building"></i>
+
+                        </div>
+
+                        <div style="flex: 1; min-width: 0;">
+
+                            <div style="font-size: 0.88rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+
+                                <span>${bName}</span>
+
+                                <span style="font-size: 0.65rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 2px 7px; border-radius: 8px;">Active Hub</span>
+
+                                ${isDefault ? '<span style="font-size: 0.65rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 8px;">Main Branch</span>' : ''}
+
+                            </div>
+
+                            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+
+                                <i class="fas fa-map-marker-alt" style="color: #ea580c;"></i> ${locDetail} &bull; Delivery Surcharge: <strong>₱${fee.toFixed(2)}</strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 6px;">
+
+                        <button type="button" onclick="Settings.openEditBranchModal(${bJson})" style="padding: 6px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+
+                            <i class="fas fa-edit" style="color: #2563eb;"></i> Edit
+
+                        </button>
+
+                        <button type="button" onclick="Settings.deleteBranch(${bId}, '${bName.replace(/'/g, "\\'")}')" style="padding: 6px 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; color: #dc2626; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+
+                            <i class="fas fa-trash-alt"></i> Delete
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                `;
+
+            });
+
+
+
+            container.innerHTML = html;
+
+        },
+
+
+
+        openAddBranchModal() {
+
+            const idEl = document.getElementById('branchModalLocId');
+
+            const nameEl = document.getElementById('branchModalName');
+
+            const provEl = document.getElementById('branchModalProvince');
+
+            const muniEl = document.getElementById('branchModalMunicipality');
+
+            const feeEl = document.getElementById('branchModalDeliveryFee');
+
+            const titleEl = document.getElementById('manageBranchModalTitle');
+
+            if (idEl) idEl.value = '';
+
+            if (nameEl) nameEl.value = '';
+
+            if (provEl) provEl.value = '';
+
+            if (muniEl) muniEl.value = '';
+
+            if (feeEl) feeEl.value = '0';
+
+            if (titleEl) titleEl.textContent = 'Add Company Branch';
+
+            const m = document.getElementById('manageBranchModal');
+
+            if (m) m.style.display = 'flex';
+
+            if (nameEl) setTimeout(() => nameEl.focus(), 60);
+
+        },
+
+
+
+        openEditBranchModal(loc) {
+
+            if (!loc) return;
+
+            const idEl = document.getElementById('branchModalLocId');
+
+            const nameEl = document.getElementById('branchModalName');
+
+            const provEl = document.getElementById('branchModalProvince');
+
+            const muniEl = document.getElementById('branchModalMunicipality');
+
+            const feeEl = document.getElementById('branchModalDeliveryFee');
+
+            const titleEl = document.getElementById('manageBranchModalTitle');
+
+            if (idEl) idEl.value = loc.id || loc.location_id || '';
+
+            if (nameEl) nameEl.value = loc.name || '';
+
+            if (provEl) provEl.value = loc.province || '';
+
+            if (muniEl) muniEl.value = loc.municipality || '';
+
+            if (feeEl) feeEl.value = loc.delivery_fee || '0';
+
+            if (titleEl) titleEl.textContent = 'Edit Company Branch';
+
+            const m = document.getElementById('manageBranchModal');
+
+            if (m) m.style.display = 'flex';
+
+            if (nameEl) setTimeout(() => nameEl.focus(), 60);
+
+        },
+
+
+
+        closeBranchModal() {
+
+            const m = document.getElementById('manageBranchModal');
+
+            if (m) m.style.display = 'none';
+
+        },
+
+
+
+        async saveBranch(btn) {
+
+            const id = (document.getElementById('branchModalLocId')?.value || '').trim();
+
+            const name = (document.getElementById('branchModalName')?.value || '').trim();
+
+            const province = (document.getElementById('branchModalProvince')?.value || '').trim();
+
+            const municipality = (document.getElementById('branchModalMunicipality')?.value || '').trim();
+
+            const fee = parseFloat(document.getElementById('branchModalDeliveryFee')?.value || 0);
+
+
+
+            if (!name) {
+
+                if (typeof showToast === 'function') showToast('Please enter a branch name.', 'warning');
+
+                document.getElementById('branchModalName')?.focus();
+
+                return;
+
+            }
+
+
+
+            let requesterId = 1;
+
+            try {
+
+                const u = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+
+                if (u && u.id) requesterId = u.id;
+
+            } catch(_) {}
+
+
+
+            const origText = btn ? btn.innerHTML : '';
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+
+
+
+            try {
+
+                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : (typeof API_URL !== 'undefined' ? API_URL : '');
+
+                const payload = {
+
+                    requester_id: requesterId,
+
+                    name: name,
+
+                    province: province,
+
+                    municipality: municipality,
+
+                    barangay: '',
+
+                    delivery_fee: fee
+
+                };
+
+
+
+                let res;
+
+                if (id) {
+
+                    res = await fetch(`${apiBase}/api/admin/locations/${id}`, {
+
+                        method: 'PUT',
+
+                        headers: { 'Content-Type': 'application/json' },
+
+                        body: JSON.stringify(payload)
+
+                    });
+
+                } else {
+
+                    res = await fetch(`${apiBase}/api/admin/locations`, {
+
+                        method: 'POST',
+
+                        headers: { 'Content-Type': 'application/json' },
+
+                        body: JSON.stringify(payload)
+
+                    });
+
+                }
+
+
+
+                if (!res.ok) {
+
+                    const errData = await res.json().catch(() => ({}));
+
+                    throw new Error(errData.error || 'Failed to save branch');
+
+                }
+
+
+
+                if (typeof showToast === 'function') {
+
+                    showToast(id ? 'Branch updated successfully!' : 'New branch created successfully!', 'success');
+
+                }
+
+                this.closeBranchModal();
+
+                await this.loadBranches();
+
+                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.renderQuickBranchOptions) {
+
+                    FleetCalendar.renderQuickBranchOptions();
+
+                }
+
+            } catch (err) {
+
+                console.error('Error saving branch:', err);
+
+                if (typeof showToast === 'function') showToast(err.message || 'Error saving branch', 'error');
+
+            } finally {
+
+                if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+
+            }
+
+        },
+
+
+
+        async deleteBranch(id, name) {
+
+            if (!confirm(`Are you sure you want to delete branch "${name}"?`)) return;
+
+
+
+            let requesterId = 1;
+
+            try {
+
+                const u = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+
+                if (u && u.id) requesterId = u.id;
+
+            } catch(_) {}
+
+
+
+            try {
+
+                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : (typeof API_URL !== 'undefined' ? API_URL : '');
+
+                const res = await fetch(`${apiBase}/api/admin/locations/${id}`, {
+
+                    method: 'DELETE',
+
+                    headers: { 'Content-Type': 'application/json' },
+
+                    body: JSON.stringify({ requester_id: requesterId })
+
+                });
+
+
+
+                if (!res.ok) {
+
+                    const errData = await res.json().catch(() => ({}));
+
+                    throw new Error(errData.error || 'Failed to delete branch');
+
+                }
+
+
+
+                if (typeof showToast === 'function') showToast('Branch deleted successfully!', 'success');
+
+                await this.loadBranches();
+
+                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.renderQuickBranchOptions) {
+
+                    FleetCalendar.renderQuickBranchOptions();
+
+                }
+
+            } catch (err) {
+
+                console.error('Error deleting branch:', err);
+
+                if (typeof showToast === 'function') showToast(err.message || 'Error deleting branch', 'error');
 
             }
 

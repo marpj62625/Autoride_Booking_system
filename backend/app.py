@@ -917,8 +917,7 @@ def migrate_settings_v2():
         # Populate default locations
         default_locs = [
             ('San Pablo City, Laguna', 'Laguna', 'San Pablo City', '', 0.00),
-            ('Tanauan/Sto. Tomas, Batangas', 'Batangas', 'Tanauan', 'Sto. Tomas', 0.00),
-            ('Others (Subject to Admin Coordination)', 'Other', 'Other', 'Other', 0.00)
+            ('Tanauan/Sto. Tomas, Batangas', 'Batangas', 'Tanauan', 'Sto. Tomas', 0.00)
         ]
         for name, prov, muni, brgy, fee in default_locs:
             cur.execute("""
@@ -926,6 +925,10 @@ def migrate_settings_v2():
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (name) DO NOTHING
             """, (name, prov, muni, brgy, fee))
+        try:
+            cur.execute("DELETE FROM locations WHERE LOWER(name) LIKE '%other%'")
+        except Exception:
+            pass
 
         # Add new columns to bookings table
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0.00")
@@ -15572,7 +15575,7 @@ def handle_admin_settings():
 def get_locations():
     try:
         cur = get_cursor()
-        cur.execute("SELECT location_id, location_id AS id, name, province, municipality, barangay, delivery_fee FROM locations ORDER BY name ASC")
+        cur.execute("SELECT location_id, location_id AS id, name, province, municipality, barangay, delivery_fee FROM locations WHERE LOWER(name) NOT LIKE '%other%' ORDER BY name ASC")
         rows = cur.fetchall()
         return jsonify([dict(r) for r in rows]), 200
     except Exception as e:
@@ -15655,8 +15658,9 @@ def handle_location_detail(loc_id):
 
         cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
         user = cur.fetchone()
-        if not user or user['role'] != 'super_admin':
-            return jsonify({"error": "Unauthorized. Super Admin only."}), 403
+        role = (user.get('role') or '').lower().replace(' ', '_') if user else ''
+        if not user or role not in ('admin', 'super_admin', 'superadmin', 'staff'):
+            return jsonify({"error": "Unauthorized. Admin or Super Admin only."}), 403
 
         if request.method == 'PUT':
 
@@ -15676,8 +15680,8 @@ def handle_location_detail(loc_id):
             cur.execute("""
                 UPDATE locations
                 SET name=%s, province=%s, municipality=%s, barangay=%s, delivery_fee=%s
-                WHERE id=%s
-            """, (name, province, municipality, barangay, delivery_fee, loc_id))
+                WHERE id=%s OR location_id=%s
+            """, (name, province, municipality, barangay, delivery_fee, loc_id, loc_id))
             commit_db()
 
             log_activity(
@@ -15691,12 +15695,12 @@ def handle_location_detail(loc_id):
             return jsonify({"message": "Location updated successfully"}), 200
 
         elif request.method == 'DELETE':
-            cur.execute("SELECT name FROM locations WHERE id=%s", (loc_id,))
+            cur.execute("SELECT name FROM locations WHERE id=%s OR location_id=%s", (loc_id, loc_id))
             loc_row = cur.fetchone()
             if not loc_row:
                 return jsonify({"error": "Location not found"}), 404
 
-            cur.execute("DELETE FROM locations WHERE id=%s", (loc_id,))
+            cur.execute("DELETE FROM locations WHERE id=%s OR location_id=%s", (loc_id, loc_id))
             commit_db()
 
             log_activity(

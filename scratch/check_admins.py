@@ -1,21 +1,21 @@
-import sys
-sys.path.append('backend')
-import psycopg
-from config import SUPABASE_DB_URL
-from psycopg.rows import dict_row
+import os, sys
 
-conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
-cur = conn.cursor(row_factory=dict_row)
+backend_dir = r'c:\Dev\AutorideSystem2sides\AutorideSystem\backend'
+sys.path.insert(0, backend_dir)
+os.chdir(backend_dir)
 
-cur.execute("SELECT * FROM admins")
-print("Admins table:")
-for r in cur.fetchall():
-    print(dict(r))
+from app import app, get_cursor
 
-cur.execute("SELECT id, user_id, role, full_name, email FROM users WHERE role LIKE '%admin%'")
-print("\nUsers table admins:")
-for r in cur.fetchall():
-    print(dict(r))
-
-cur.close()
-conn.close()
+with app.app_context():
+    cur = get_cursor()
+    cur.execute("SELECT id, username FROM admins")
+    admins = cur.fetchall()
+    print("Admins table:")
+    for a in admins:
+        print(" ", dict(a))
+    
+    cur.execute("SELECT id, full_name, role FROM users WHERE role IN ('admin', 'super_admin')")
+    admin_users = cur.fetchall()
+    print("Users table with admin role:")
+    for u in admin_users:
+        print(" ", dict(u))
