@@ -40812,6 +40812,168 @@ input:checked + .ctrl-slider:before {
 
 
 
+        getAllKnownBranches() {
+            const standard = [
+                'Tanauan/Sto. Tomas, Batangas',
+                'San Pablo City, Laguna'
+            ];
+            const list = [];
+            standard.forEach(b => {
+                if (!list.includes(b)) list.push(b);
+            });
+            (this.vehicles || []).forEach(v => {
+                if (v && v.location && typeof v.location === 'string') {
+                    const loc = v.location.trim();
+                    if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
+                        list.push(loc);
+                    }
+                }
+            });
+            (this.bookings || []).forEach(b => {
+                if (b && b.pickup_location && typeof b.pickup_location === 'string') {
+                    const loc = b.pickup_location.trim();
+                    if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
+                        list.push(loc);
+                    }
+                }
+            });
+            (this.customBranches || []).forEach(loc => {
+                if (loc && !list.some(c => c.toLowerCase() === loc.toLowerCase())) {
+                    list.push(loc);
+                }
+            });
+            return list;
+        },
+
+        getBookingBranchDisplay(b) {
+            if (b && b.pickup_location && b.pickup_location.trim()) {
+                return b.pickup_location.trim();
+            }
+            if (b && b.vehicle_id) {
+                const v = (this.vehicles || []).find(veh => veh.id == b.vehicle_id);
+                if (v && v.location && v.location.trim()) {
+                    return v.location.trim();
+                }
+            }
+            return 'San Pablo City, Laguna';
+        },
+
+        renderQuickBranchOptions(selectedBranch) {
+            const selectEl = document.getElementById('quickDispatchBranchSelect');
+            if (!selectEl) return;
+            const allBranches = this.getAllKnownBranches();
+            const target = String(selectedBranch || '').trim();
+            if (target && !allBranches.some(b => b.toLowerCase() === target.toLowerCase())) {
+                allBranches.push(target);
+            }
+            let html = '';
+            allBranches.forEach(b => {
+                const isSel = target && b.toLowerCase() === target.toLowerCase();
+                let label = b;
+                if (b.toLowerCase().includes('tanauan') || b.toLowerCase().includes('batangas')) {
+                    label = `Tanauan Branch (${b})`;
+                } else if (b.toLowerCase().includes('san pablo') || b.toLowerCase().includes('spc')) {
+                    label = `San Pablo City Branch (${b})`;
+                } else {
+                    label = `${b} Branch`;
+                }
+                html += `<option value="${b.replace(/"/g, '&quot;')}" ${isSel ? 'selected' : ''}>${label}</option>`;
+            });
+            html += `<option value="__add_new__" style="color: #2563eb; font-weight: 800;">➕ Add New Branch...</option>`;
+            selectEl.innerHTML = html;
+            this.updateQuickBranchBadge(target || allBranches[0] || '');
+        },
+
+        updateQuickBranchBadge(val) {
+            const badge = document.getElementById('quickBranchBadge');
+            if (!badge) return;
+            const lower = String(val || '').toLowerCase();
+            if (lower.includes('tanauan') || lower.includes('batangas')) {
+                badge.textContent = 'Tanauan';
+                badge.style.color = '#ea580c';
+                badge.style.background = '#fff7ed';
+                badge.style.borderColor = '#fed7aa';
+            } else if (lower.includes('san pablo') || lower.includes('spc')) {
+                badge.textContent = 'San Pablo';
+                badge.style.color = '#dc2626';
+                badge.style.background = '#fef2f2';
+                badge.style.borderColor = '#fecaca';
+            } else if (lower) {
+                const shortName = val.split(/[\/,]+/)[0].trim().toUpperCase();
+                badge.textContent = shortName.length > 10 ? shortName.substring(0, 10) : shortName;
+                badge.style.color = '#2563eb';
+                badge.style.background = '#eff6ff';
+                badge.style.borderColor = '#bfdbfe';
+            } else {
+                badge.textContent = 'Branch';
+                badge.style.color = '#64748b';
+                badge.style.background = '#f1f5f9';
+                badge.style.borderColor = '#e2e8f0';
+            }
+        },
+
+        onQuickBranchChange(val) {
+            const container = document.getElementById('quickNewBranchContainer');
+            if (val === '__add_new__') {
+                if (container) {
+                    container.style.display = 'block';
+                    const inp = document.getElementById('quickNewBranchInput');
+                    if (inp) {
+                        inp.value = '';
+                        setTimeout(() => inp.focus(), 50);
+                    }
+                }
+                return;
+            }
+            if (container) container.style.display = 'none';
+            this.updateQuickBranchBadge(val);
+            const sumBranch = document.getElementById('quickModalSummaryBranch');
+            if (sumBranch) sumBranch.textContent = val;
+        },
+
+        confirmAddNewBranch() {
+            const inp = document.getElementById('quickNewBranchInput');
+            const name = (inp?.value || '').trim();
+            if (!name) {
+                if (typeof showToast === 'function') showToast('Please enter a branch name.', 'warning');
+                if (inp) inp.focus();
+                return;
+            }
+            if (!this.customBranches) this.customBranches = [];
+            if (!this.customBranches.includes(name)) this.customBranches.push(name);
+
+            try {
+                let currentAdminId = 1;
+                try {
+                    const u = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+                    if (u && u.id) currentAdminId = u.id;
+                } catch(_) {}
+                const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : (typeof API_URL !== 'undefined' ? API_URL : '');
+                fetch(`${apiBase}/api/admin/locations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requester_id: currentAdminId, name: name })
+                }).catch(e => console.warn('Branch persistence:', e));
+            } catch(_) {}
+
+            this.renderQuickBranchOptions(name);
+            const container = document.getElementById('quickNewBranchContainer');
+            if (container) container.style.display = 'none';
+            const sumBranch = document.getElementById('quickModalSummaryBranch');
+            if (sumBranch) sumBranch.textContent = name;
+            if (typeof showToast === 'function') showToast(`Added and selected "${name}"!`, 'success');
+        },
+
+        cancelAddNewBranch() {
+            const container = document.getElementById('quickNewBranchContainer');
+            if (container) container.style.display = 'none';
+            const selectEl = document.getElementById('quickDispatchBranchSelect');
+            if (selectEl) {
+                selectEl.value = this.quickInitialState?.dispatch_branch || 'San Pablo City, Laguna';
+                this.updateQuickBranchBadge(selectEl.value);
+            }
+        },
+
         openBookingQuickModal(bId) {
 
             this.hideTooltip();
