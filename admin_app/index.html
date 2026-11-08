@@ -16784,11 +16784,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
 
-                                <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate(); WalkinBooking.syncInitialStatus();"
+                                <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.onScheduleInputChanged(); WalkinBooking.syncInitialStatus();"
 
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
-                                <input type="time" id="walkinStartTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinStartTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.onScheduleInputChanged()"
 
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
@@ -16802,21 +16802,25 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <div>
 
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-
+                                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                 <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a);">Return / End <span style="color:#ef4444;">*</span></label>
-
-                                <span id="walkinDurationDaysBadge" style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); padding: 2px 7px; border-radius: 5px;">1 Day</span>
-
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span id="walkinExcessBadge" style="display: none; font-size: 0.65rem; font-weight: 800; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px;" title="Rental duration exceeded 24-hr period. Admin decides whether to increase billable days or add fee."></span>
+                                    <select id="walkinBillableDays" onchange="WalkinBooking.onDaysManualChange(this.value)"
+                                            style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.25); padding: 2px 6px; border-radius: 5px; cursor: pointer; outline: none;"
+                                            title="Billable rental days (Admin can adjust if time is exceeded)">
+                                    </select>
+                                    <span id="walkinDurationDaysBadge" style="display: none;"></span>
+                                </div>
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
 
-                                <input type="date" id="walkinEndDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
+                                <input type="date" id="walkinEndDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.onScheduleInputChanged()"
 
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
-                                <input type="time" id="walkinEndTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinEndTime" step="900" min="00:00" max="23:59" required onchange="WalkinBooking.onScheduleInputChanged()"
 
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
@@ -43106,11 +43110,12 @@ input:checked + .ctrl-slider:before {
 
                 if (saveBtn) saveBtn.disabled = false;
 
-                const sTime = b.start_date ? new Date(b.start_date).getTime() : 0;
-
-                const eTime = b.end_date ? new Date(b.end_date).getTime() : 0;
-
-                const diffDays = Math.max(1, Math.round(Math.abs(eTime - sTime) / (1000 * 60 * 60 * 24)) + 1);
+                                const sStr = b.start_time ? `${(b.start_date || '').split('T')[0]}T${b.start_time}:00` : b.start_date;
+                const eStr = b.end_time ? `${(b.end_date || '').split('T')[0]}T${b.end_time}:00` : b.end_date;
+                const sTime = sStr ? new Date(sStr).getTime() : 0;
+                const eTime = eStr ? new Date(eStr).getTime() : 0;
+                const diffHours = (sTime && eTime && eTime > sTime) ? ((eTime - sTime) / (1000 * 60 * 60)) : 24;
+                const diffDays = diffHours <= 24.0 ? 1 : Math.max(1, Math.floor(diffHours / 24.0));
 
                 const newDailyRate = parseFloat(opt ? opt.dataset.rate : 0) || 0;
 
@@ -78934,9 +78939,19 @@ function toggleNewsletterModal(show = true) {
 
     // ==================== WALKIN BOOKING CONTROLLER ====================
 
-    const WalkinBooking = {
-
+        const WalkinBooking = {
         mode: 'guest',
+        manualDaysOverride: null,
+        onScheduleInputChanged() {
+            this.manualDaysOverride = null;
+            this.recalculate();
+        },
+        onDaysManualChange(val) {
+            const parsed = parseInt(val, 10);
+            this.manualDaysOverride = (parsed && parsed >= 1) ? parsed : 1;
+            this.recalculateTotal();
+            this.checkCollision();
+        },
 
         populateBranches(preselectedVehicleId = null) {
             const dispatchSel = document.getElementById('walkinDispatchLocation');
@@ -79210,6 +79225,7 @@ function toggleNewsletterModal(show = true) {
 
             this.selectedCustomer = null;
 
+            this.manualDaysOverride = null;
             this.setMode('guest');
 
             this.attachUppercaseListeners();
@@ -79461,6 +79477,7 @@ function toggleNewsletterModal(show = true) {
 
             }
 
+            this.manualDaysOverride = null;
             this.recalculate();
 
         },
@@ -80172,35 +80189,81 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        getDays() {
-
+                getDuration() {
             const startD = document.getElementById('walkinStartDate');
-
+            const startT = document.getElementById('walkinStartTime');
             const endD = document.getElementById('walkinEndDate');
+            const endT = document.getElementById('walkinEndTime');
 
-            if (!startD || !endD || !startD.value || !endD.value) return 1;
+            if (!startD || !endD || !startD.value || !endD.value) {
+                return { baseDays: 1, excessHours: 0, diffHours: 24.0 };
+            }
 
+            const sTime = (startT && startT.value) ? startT.value : '08:00';
+            const eTime = (endT && endT.value) ? endT.value : sTime;
 
+            const s = new Date(`${startD.value}T${sTime}:00`).getTime();
+            const e = new Date(`${endD.value}T${eTime}:00`).getTime();
 
-            const s = new Date(startD.value).getTime();
+            if (isNaN(s) || isNaN(e) || e <= s) {
+                return { baseDays: 1, excessHours: 0, diffHours: 24.0 };
+            }
 
-            const e = new Date(endD.value).getTime();
+            const diffMs = e - s;
+            const diffHours = diffMs / (1000 * 60 * 60);
 
-            if (isNaN(s) || isNaN(e) || e < s) return 1;
+            let baseDays = 1;
+            let excessHours = 0;
+            if (diffHours <= 24.0) {
+                baseDays = 1;
+                excessHours = 0;
+            } else {
+                baseDays = Math.max(1, Math.floor(diffHours / 24.0));
+                const exactExcess = diffHours - (baseDays * 24.0);
+                excessHours = Math.round(exactExcess * 10) / 10;
+            }
 
-            return Math.max(1, Math.round((e - s) / 86400000) + 1);
-
+            return { baseDays, excessHours, diffHours: Math.round(diffHours * 10) / 10 };
         },
 
-
+        getDays() {
+            if (this.manualDaysOverride !== null && typeof this.manualDaysOverride === 'number' && this.manualDaysOverride >= 1) {
+                return this.manualDaysOverride;
+            }
+            return this.getDuration().baseDays;
+        },
 
         recalculate(forcedDailyRate = null) {
+            const duration = this.getDuration();
+            const currentDays = this.getDays();
 
-            const days = this.getDays();
+            const daysSelect = document.getElementById('walkinBillableDays');
+            if (daysSelect) {
+                if (daysSelect.options.length === 0) {
+                    let optsHtml = '';
+                    for (let d = 1; d <= 30; d++) {
+                        optsHtml += `<option value="${d}">${d} Day${d > 1 ? 's' : ''}</option>`;
+                    }
+                    daysSelect.innerHTML = optsHtml;
+                }
+                daysSelect.value = String(currentDays);
+            }
+
+            const excessBadge = document.getElementById('walkinExcessBadge');
+            if (excessBadge) {
+                if (duration.excessHours > 0) {
+                    excessBadge.style.display = 'inline-block';
+                    excessBadge.textContent = `+${duration.excessHours}h excess`;
+                    excessBadge.title = `Total rental time: ${duration.diffHours}h (${duration.baseDays} × 24h + ${duration.excessHours}h excess). Admin may adjust billable days or charge extra fee.`;
+                } else {
+                    excessBadge.style.display = 'none';
+                    excessBadge.textContent = '';
+                }
+            }
 
             const daysBadge = document.getElementById('walkinDurationDaysBadge');
-
-            if (daysBadge) daysBadge.textContent = `${days} Day${days > 1 ? 's' : ''}`;
+            if (daysBadge) daysBadge.textContent = `${currentDays} Day${currentDays > 1 ? 's' : ''}`;
+            const days = currentDays;
 
 
 
