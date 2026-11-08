@@ -33374,7 +33374,7 @@ input:checked + .ctrl-slider:before {
                 }
             });
 
-            const curVal = selectEl.value;
+            const curVal = selectEl.value || (document.getElementById('vLocation') ? document.getElementById('vLocation').value : '');
             let html = '';
             allBranches.forEach(loc => {
                 html += `<option value="${loc.replace(/"/g, '&quot;')}">${loc}</option>`;
@@ -33382,8 +33382,17 @@ input:checked + .ctrl-slider:before {
             html += `<option value="__custom__">✏️ Other (Specify Custom Location)...</option>`;
 
             selectEl.innerHTML = html;
-            if (curVal && Array.from(selectEl.options).some(o => o.value === curVal)) {
-                selectEl.value = curVal;
+            if (curVal) {
+                const optMatch = Array.from(selectEl.options).find(o => o.value && o.value.toLowerCase() === curVal.toLowerCase());
+                if (optMatch && optMatch.value !== '__custom__') {
+                    selectEl.value = optMatch.value;
+                } else if (curVal && curVal !== '__custom__') {
+                    selectEl.value = '__custom__';
+                    const customWrap = document.getElementById('vCustomLocationWrap');
+                    const customInput = document.getElementById('vLocationCustom');
+                    if (customWrap) customWrap.style.display = 'block';
+                    if (customInput) customInput.value = curVal;
+                }
             }
         },
 
@@ -34632,6 +34641,13 @@ input:checked + .ctrl-slider:before {
 
 
                     showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
+                    try {
+                        if (typeof Settings !== 'undefined' && typeof Settings.loadBranches === 'function') {
+                            await Settings.loadBranches();
+                        }
+                    } catch(setErr) {
+                        console.warn('Settings loadBranches sync notice:', setErr);
+                    }
                     try {
                         if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
                             await FleetCalendar.refresh();
@@ -71716,8 +71732,9 @@ function toggleNewsletterModal(show = true) {
 
                 await this.loadBranches();
 
-                if (typeof Vehicles !== 'undefined' && typeof Vehicles.syncLocationDatalist === 'function') {
-                    Vehicles.syncLocationDatalist();
+                if (typeof Vehicles !== 'undefined') {
+                    if (typeof Vehicles.load === 'function') Vehicles.load();
+                    if (typeof Vehicles.syncLocationDatalist === 'function') Vehicles.syncLocationDatalist();
                 }
                 if (typeof FleetCalendar !== 'undefined') {
                     FleetCalendar.officialBranches = this._branches;
@@ -71789,8 +71806,9 @@ function toggleNewsletterModal(show = true) {
 
                 await this.loadBranches();
 
-                if (typeof Vehicles !== 'undefined' && typeof Vehicles.syncLocationDatalist === 'function') {
-                    Vehicles.syncLocationDatalist();
+                if (typeof Vehicles !== 'undefined') {
+                    if (typeof Vehicles.load === 'function') Vehicles.load();
+                    if (typeof Vehicles.syncLocationDatalist === 'function') Vehicles.syncLocationDatalist();
                 }
                 if (typeof FleetCalendar !== 'undefined') {
                     FleetCalendar.officialBranches = this._branches;

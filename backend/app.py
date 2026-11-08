@@ -930,6 +930,25 @@ def migrate_settings_v2():
         except Exception:
             pass
 
+        # Backfill any custom vehicle locations into locations table so they are manageable in System Settings > Branches
+        try:
+            cur.execute("""
+                INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+                SELECT DISTINCT TRIM(v.location), 
+                       CASE WHEN TRIM(v.location) LIKE '%,%' THEN TRIM(SPLIT_PART(v.location, ',', 2)) ELSE TRIM(v.location) END,
+                       CASE WHEN TRIM(v.location) LIKE '%,%' THEN TRIM(SPLIT_PART(v.location, ',', 1)) ELSE TRIM(v.location) END,
+                       '', 0.00
+                FROM vehicles v
+                WHERE v.location IS NOT NULL 
+                  AND TRIM(v.location) != '' 
+                  AND LOWER(TRIM(v.location)) NOT IN ('other', 'specify custom location', 'n/a', 'none')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM locations l WHERE LOWER(TRIM(l.name)) = LOWER(TRIM(v.location))
+                  )
+            """)
+        except Exception:
+            pass
+
         # Add new columns to bookings table
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0.00")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_redeemed INT DEFAULT 0")
@@ -14371,6 +14390,62 @@ def get_vehicles():
 
 
 
+def _ensure_location_exists(cur, location_name):
+    """
+    Ensures that a vehicle branch/location exists in the locations table.
+    If not, it auto-registers it so that it appears in System Settings > Branches.
+    Supports both dict and tuple cursors.
+    """
+    if not location_name:
+        return None
+    loc_clean = str(location_name).strip()
+    if not loc_clean:
+        return None
+    loc_lower = loc_clean.lower()
+    if loc_lower in ('other', 'specify custom location', 'specify custom location...', 'n/a', 'none', 'select branch', 'choose branch'):
+        return None
+
+    try:
+        cur.execute("SELECT location_id, id, name FROM locations WHERE LOWER(TRIM(name)) = LOWER(TRIM(%s)) LIMIT 1", (loc_clean,))
+        existing = cur.fetchone()
+        if existing:
+            if isinstance(existing, dict):
+                return existing.get('location_id') or existing.get('id')
+            return existing[0] if len(existing) > 0 and existing[0] else (existing[1] if len(existing) > 1 else None)
+
+        if ',' in loc_clean:
+            parts = [p.strip() for p in loc_clean.split(',') if p.strip()]
+            municipality = parts[0][:40] if len(parts) > 0 else loc_clean[:40]
+            province = parts[1][:40] if len(parts) > 1 else loc_clean[:40]
+        else:
+            municipality = loc_clean[:40]
+            province = loc_clean[:40]
+
+        cur.execute("""
+            INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+            VALUES (%s, %s, %s, '', 0.00)
+            RETURNING location_id, id
+        """, (loc_clean[:60], province, municipality))
+        row = cur.fetchone()
+        if not row:
+            return None
+        if isinstance(row, dict):
+            new_id = row.get('location_id') or row.get('id')
+            has_id = bool(row.get('id'))
+        else:
+            new_id = row[0] or (row[1] if len(row) > 1 else None)
+            has_id = bool(len(row) > 1 and row[1])
+        if not has_id and new_id:
+            try:
+                cur.execute("UPDATE locations SET id = %s WHERE location_id = %s", (new_id, new_id))
+            except Exception:
+                pass
+        return new_id
+    except Exception as e:
+        print(f"Warning in _ensure_location_exists for '{loc_clean}': {e}")
+        return None
+
+
 @app.route('/vehicles', methods=['POST'])
 @app.route('/api/vehicles', methods=['POST'])
 def add_vehicle():
@@ -14454,6 +14529,10 @@ def add_vehicle():
                             vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
                     except Exception:
                         pass
+        # Auto-register location in locations table so it connects to System Settings Branches
+        if data.get('location'):
+            _ensure_location_exists(cur, data.get('location'))
+
         cur.execute(
             "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
@@ -14571,6 +14650,10 @@ def update_vehicle(vehicle_id):
                                 vehicle_image = img_url  # Update main image to first new photo
                     except Exception:
                         pass
+        # Auto-register location in locations table so it connects to System Settings Branches
+        if data.get('location'):
+            _ensure_location_exists(cur, data.get('location'))
+
         cur.execute(
             "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=COALESCE(%s, status), daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s, gps_device_token=%s, gps_device_name=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
@@ -15680,11 +15763,28 @@ def handle_location_detail(loc_id):
             if not name:
                 return jsonify({"error": "Missing location name"}), 400
 
+            # Fetch old name before update to cascade rename to assigned vehicles
+            cur.execute("SELECT name FROM locations WHERE id=%s OR location_id=%s", (loc_id, loc_id))
+            old_loc_row = cur.fetchone()
+            old_name = (old_loc_row.get('name') if isinstance(old_loc_row, dict) else old_loc_row[0]) if old_loc_row else None
+
             cur.execute("""
                 UPDATE locations
                 SET name=%s, province=%s, municipality=%s, barangay=%s, delivery_fee=%s
                 WHERE id=%s OR location_id=%s
             """, (name, province, municipality, barangay, delivery_fee, loc_id, loc_id))
+
+            # Cascade renamed branch to vehicles
+            if old_name and str(old_name).strip() and str(old_name).strip().lower() != name.strip().lower():
+                try:
+                    cur.execute("""
+                        UPDATE vehicles
+                        SET location = %s
+                        WHERE LOWER(TRIM(location)) = LOWER(TRIM(%s))
+                    """, (name, str(old_name).strip()))
+                except Exception as ve:
+                    print(f"Warning cascading location rename to vehicles: {ve}")
+
             commit_db()
 
             log_activity(
