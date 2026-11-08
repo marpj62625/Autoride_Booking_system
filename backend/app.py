@@ -9075,11 +9075,14 @@ def edit_booking_details_super_admin(booking_id=None):
     if len(customer_name) > 120:
         return jsonify({"error": "Customer name cannot exceed 120 characters."}), 400
 
-    # Sanitize and validate Philippine mobile or telephone number strictly
-    ok_ph, err_ph, clean_phone = _validate_phone_ph_py(customer_phone, "Customer phone")
-    if not ok_ph:
-        return jsonify({"error": err_ph}), 400
-    customer_phone = clean_phone
+    # Sanitize and validate Philippine mobile or telephone number if provided (optional)
+    if customer_phone:
+        ok_ph, err_ph, clean_phone = _validate_phone_ph_py(customer_phone, "Customer phone")
+        if not ok_ph:
+            return jsonify({"error": err_ph}), 400
+        customer_phone = clean_phone
+    else:
+        customer_phone = None
 
     if len(destination) > 150:
         return jsonify({"error": "Destination cannot exceed 150 characters."}), 400

@@ -17365,7 +17365,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <label style="display: block; font-size: 0.72rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.4px;">
 
-                            <i class="fas fa-phone-alt" style="color: #00B14F; margin-right: 4px;"></i> Contact Number / Phone <span style="color: #ef4444;">*</span>
+                            <i class="fas fa-phone-alt" style="color: #00B14F; margin-right: 4px;"></i> Contact Number / Phone <span style="font-size: 0.68rem; color: #64748b; font-weight: 600; text-transform: none;">(Optional)</span>
 
                         </label>
 
@@ -17373,11 +17373,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                     </div>
 
-                    <input type="tel" id="saEditCustomerPhone" required placeholder="09XXXXXXXXX or (02) 8XXX-XXXX" maxlength="13" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; font-weight: 700; color: #0f172a; box-sizing: border-box; letter-spacing: 0.5px;" oninput="Bookings.formatSaPhoneInput(this)" />
+                    <input type="tel" id="saEditCustomerPhone" placeholder="09XXXXXXXXX (Optional)" maxlength="13" style="width: 100%; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem; font-weight: 700; color: #0f172a; box-sizing: border-box; letter-spacing: 0.5px;" oninput="Bookings.formatSaPhoneInput(this)" />
 
                     <div id="saPhoneFeedback" style="font-size: 0.7rem; color: #64748b; margin-top: 4px; font-weight: 600;">
 
-                        Format: Mobile (09XXXXXXXXX) or Telephone (e.g. (02) 8XXX-XXXX, 049-XXX-XXXX)
+                        Optional. If provided: 09XXXXXXXXX or +639XXXXXXXXX
 
                     </div>
 
@@ -17446,7 +17446,9 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             <option value="Other">Other (Custom Type)</option>
                         </select>
 
-                        <input type="text" id="saEditRentalPurpose" placeholder="Type or select purpose (e.g. Vacation, Wedding)" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 100); Bookings.syncSaPurposePreset(this.value);" />
+                        <div id="saEditRentalPurposeWrap" style="display: none; margin-top: 6px;">
+                            <input type="text" id="saEditRentalPurpose" placeholder="Type custom purpose (e.g. Out of town shoot, VIP guest)" maxlength="100" style="width: 100%; padding: 8px 10px; border: 1.5px dashed #cbd5e1; border-radius: 8px; font-size: 0.84rem; color: #0f172a; box-sizing: border-box; background: #f8fafc;" oninput="Bookings.updateCharCount(this, 'saPurpCount', 100);" />
+                        </div>
 
                     </div>
 
@@ -22889,15 +22891,17 @@ input:checked + .ctrl-slider:before {
 
                             </label>
 
-                            <input list="vLocationList" id="vLocation" required maxlength="45" oninput="if(this.value.length > 45) this.value = this.value.slice(0, 45); const cnt = document.getElementById('vLocationCount'); if(cnt) cnt.textContent = `${this.value.length}/45 chars`;" placeholder="e.g. Tanauan/Sto. Tomas, Batangas" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <select id="vLocationSelect" onchange="Vehicles.onLocationSelectChange(this.value)" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;cursor:pointer;">
+                                <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
+                                <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                                <option value="__custom__">✏️ Other (Specify Custom Location)...</option>
+                            </select>
 
-                            <datalist id="vLocationList">
+                            <div id="vCustomLocationWrap" style="display:none; margin-top:8px;">
+                                <input type="text" id="vLocationCustom" maxlength="45" oninput="Vehicles.onCustomLocationInput(this.value)" placeholder="Type custom branch/area location..." style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px dashed var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+                            </div>
 
-                                <option value="Tanauan/Sto. Tomas, Batangas">Tanauan Branch</option>
-
-                                <option value="San Pablo City, Laguna">San Pablo City (SPC) Branch</option>
-
-                            </datalist>
+                            <input type="hidden" id="vLocation" required>
 
                         </div>
 
@@ -33315,8 +33319,8 @@ input:checked + .ctrl-slider:before {
 
 
         async syncLocationDatalist() {
-            const listEl = document.getElementById('vLocationList');
-            if (!listEl) return;
+            const selectEl = document.getElementById('vLocationSelect');
+            if (!selectEl) return;
 
             // Fetch or get official company branches from cache or API
             let official = window.__officialCompanyBranches || (typeof Settings !== 'undefined' && Settings._branches) || [];
@@ -33370,21 +33374,45 @@ input:checked + .ctrl-slider:before {
                 }
             });
 
+            const curVal = selectEl.value;
             let html = '';
             allBranches.forEach(loc => {
-                let label = loc;
-                const locL = loc.toLowerCase();
-                if (locL.includes('tanauan') || locL.includes('sto. tomas')) {
-                    label = `Tanauan Branch (${loc})`;
-                } else if (locL.includes('san pablo') || locL.includes('spc')) {
-                    label = `San Pablo City (SPC) Branch (${loc})`;
-                } else if (!locL.endsWith('branch')) {
-                    label = `${loc} Branch`;
-                }
-                html += `<option value="${loc.replace(/"/g, '&quot;')}">${label}</option>`;
+                html += `<option value="${loc.replace(/"/g, '&quot;')}">${loc}</option>`;
             });
+            html += `<option value="__custom__">✏️ Other (Specify Custom Location)...</option>`;
 
-            listEl.innerHTML = html;
+            selectEl.innerHTML = html;
+            if (curVal && Array.from(selectEl.options).some(o => o.value === curVal)) {
+                selectEl.value = curVal;
+            }
+        },
+
+        onLocationSelectChange(val) {
+            const hiddenLoc = document.getElementById('vLocation');
+            const customWrap = document.getElementById('vCustomLocationWrap');
+            const customInput = document.getElementById('vLocationCustom');
+            const countEl = document.getElementById('vLocationCount');
+
+            if (val === '__custom__') {
+                if (customWrap) customWrap.style.display = 'block';
+                if (customInput) {
+                    customInput.focus();
+                    if (hiddenLoc) hiddenLoc.value = (customInput.value || '').trim().slice(0, 45);
+                    if (countEl) countEl.textContent = `${(customInput.value || '').length}/45 chars`;
+                }
+            } else {
+                if (customWrap) customWrap.style.display = 'none';
+                if (hiddenLoc) hiddenLoc.value = (val || '').trim().slice(0, 45);
+                if (countEl) countEl.textContent = `${(val || '').length}/45 chars`;
+            }
+        },
+
+        onCustomLocationInput(val) {
+            const hiddenLoc = document.getElementById('vLocation');
+            const countEl = document.getElementById('vLocationCount');
+            const clean = (val || '').trim().slice(0, 45);
+            if (hiddenLoc) hiddenLoc.value = clean;
+            if (countEl) countEl.textContent = `${(val || '').length}/45 chars`;
         },
 
 
@@ -33475,9 +33503,30 @@ input:checked + .ctrl-slider:before {
 
                 document.getElementById('vSeats').value = v.seats || 5;
 
-                document.getElementById('vLocation').value = (v.location || 'Tanauan/Sto. Tomas, Batangas').slice(0, 45);
+            const vehLocVal = (v.location || 'Tanauan/Sto. Tomas, Batangas').trim().slice(0, 45);
+            const vLocHidden = document.getElementById('vLocation');
+            const vLocSelect = document.getElementById('vLocationSelect');
+            const vLocWrap = document.getElementById('vCustomLocationWrap');
+            const vLocCustom = document.getElementById('vLocationCustom');
 
-                if (locCntEl) locCntEl.textContent = `${document.getElementById('vLocation').value.length}/45 chars`;
+            if (vLocHidden) vLocHidden.value = vehLocVal;
+            if (vLocSelect) {
+                const optMatch = Array.from(vLocSelect.options).find(o => o.value && o.value.toLowerCase() === vehLocVal.toLowerCase());
+                if (optMatch && optMatch.value !== '__custom__') {
+                    vLocSelect.value = optMatch.value;
+                    if (vLocWrap) vLocWrap.style.display = 'none';
+                    if (vLocCustom) vLocCustom.value = '';
+                } else if (vehLocVal) {
+                    vLocSelect.value = '__custom__';
+                    if (vLocWrap) vLocWrap.style.display = 'block';
+                    if (vLocCustom) vLocCustom.value = vehLocVal;
+                } else {
+                    vLocSelect.selectedIndex = 0;
+                    if (vLocWrap) vLocWrap.style.display = 'none';
+                    if (vLocCustom) vLocCustom.value = '';
+                }
+            }
+            if (locCntEl) locCntEl.textContent = `${vehLocVal.length}/45 chars`;
 
                 if (document.getElementById('vStatus')) document.getElementById('vStatus').value = v.status || 'Available';
 
@@ -33517,9 +33566,20 @@ input:checked + .ctrl-slider:before {
 
                 this.updateModels();
 
-                document.getElementById('vLocation').value = 'Tanauan/Sto. Tomas, Batangas';
+            const vDefLoc = 'Tanauan/Sto. Tomas, Batangas';
+            const vLocHiddenNew = document.getElementById('vLocation');
+            const vLocSelectNew = document.getElementById('vLocationSelect');
+            const vLocWrapNew = document.getElementById('vCustomLocationWrap');
+            const vLocCustomNew = document.getElementById('vLocationCustom');
 
-                if (locCntEl) locCntEl.textContent = `${document.getElementById('vLocation').value.length}/45 chars`;
+            if (vLocHiddenNew) vLocHiddenNew.value = vDefLoc;
+            if (vLocSelectNew) {
+                const optMatch = Array.from(vLocSelectNew.options).find(o => o.value && o.value.toLowerCase() === vDefLoc.toLowerCase());
+                if (optMatch) vLocSelectNew.value = optMatch.value;
+            }
+            if (vLocWrapNew) vLocWrapNew.style.display = 'none';
+            if (vLocCustomNew) vLocCustomNew.value = '';
+            if (locCntEl) locCntEl.textContent = `${vDefLoc.length}/45 chars`;
 
                 document.getElementById('vYear').value = '';
 
@@ -48678,12 +48738,14 @@ function toggleNewsletterModal(show = true) {
 
         onSaPurposeSelect(val) {
             const input = document.getElementById('saEditRentalPurpose');
+            const wrap = document.getElementById('saEditRentalPurposeWrap');
             if (!input) return;
             if (val === 'Other') {
-                input.value = '';
+                if (wrap) wrap.style.display = 'block';
                 input.focus();
-            } else if (val) {
-                input.value = val;
+            } else {
+                if (wrap) wrap.style.display = 'none';
+                input.value = val || '';
             }
             this.updateCharCount(input, 'saPurpCount', 100);
         },
@@ -48776,7 +48838,7 @@ function toggleNewsletterModal(show = true) {
 
                 feedbackEl.style.color = '#64748b';
 
-                feedbackEl.textContent = 'Format: 11 digits starting with 09 (e.g. 09171234567) or +639XXXXXXXXX';
+                feedbackEl.textContent = 'Optional. If provided: 09XXXXXXXXX or +639XXXXXXXXX';
 
             } else {
 
@@ -48915,32 +48977,26 @@ function toggleNewsletterModal(show = true) {
 
             const purpEl = document.getElementById('saEditRentalPurpose');
             const purpPresetEl = document.getElementById('saEditPurposePreset');
+            const purpWrap = document.getElementById('saEditRentalPurposeWrap');
 
             if (purpEl) {
-
                 const curPurp = (b.rental_purpose || '').trim();
-
                 purpEl.value = curPurp;
-
                 this.updateCharCount(purpEl, 'saPurpCount', 100);
-
                 if (purpPresetEl) {
-
                     const matchedOpt = Array.from(purpPresetEl.options).find(o => o.value && o.value.toLowerCase() === curPurp.toLowerCase());
-
-                    if (matchedOpt) {
-
+                    if (matchedOpt && matchedOpt.value !== 'Other') {
                         purpPresetEl.value = matchedOpt.value;
-
+                        if (purpWrap) purpWrap.style.display = 'none';
                     } else if (curPurp) {
-
                         purpPresetEl.value = 'Other';
-
+                        if (purpWrap) purpWrap.style.display = 'block';
                     } else {
-
                         purpPresetEl.value = '';
-
+                        if (purpWrap) purpWrap.style.display = 'none';
                     }
+                }
+            }
 
                 }
 
@@ -49186,7 +49242,11 @@ function toggleNewsletterModal(show = true) {
 
             const destination = (document.getElementById('saEditDestination')?.value || '').trim();
 
-            const rentalPurpose = (document.getElementById('saEditRentalPurpose')?.value || '').trim();
+            const saPresetVal = document.getElementById('saEditPurposePreset')?.value || '';
+            let rentalPurpose = (document.getElementById('saEditRentalPurpose')?.value || '').trim();
+            if (saPresetVal && saPresetVal !== 'Other') {
+                rentalPurpose = saPresetVal;
+            }
 
             const reason = (document.getElementById('saEditReason')?.value || '').trim();
 
@@ -49240,20 +49300,15 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            // Validate Phone
-
-            const is09Valid = /^09\d{9}$/.test(customerPhone);
-
-            const is63Valid = /^\+639\d{9}$/.test(customerPhone);
-
-            if (!is09Valid && !is63Valid) {
-
-                showNotification('Invalid contact number. Must be 11 digits starting with 09 (e.g. 09171234567) or +639XXXXXXXXX.', 'error');
-
-                document.getElementById('saEditCustomerPhone')?.focus();
-
-                return;
-
+            // Validate Phone (Only if provided, since phone is optional)
+            if (customerPhone) {
+                const is09Valid = /^09\d{9}$/.test(customerPhone);
+                const is63Valid = /^\+639\d{9}$/.test(customerPhone);
+                if (!is09Valid && !is63Valid) {
+                    showNotification('Invalid contact number. Must be 11 digits starting with 09 (e.g. 09171234567) or +639XXXXXXXXX.', 'error');
+                    document.getElementById('saEditCustomerPhone')?.focus();
+                    return;
+                }
             }
 
 
