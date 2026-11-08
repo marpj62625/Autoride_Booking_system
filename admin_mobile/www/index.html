@@ -24754,6 +24754,12 @@ input:checked + .ctrl-slider:before {
 
                     <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #16a34a;"><span style="font-size: 0.78rem;">✅</span> Complete</span>
 
+                    <span style="height: 12px; width: 1px; background: var(--border, #cbd5e1); margin: 0 2px;"></span>
+
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #0284c7;" title="Pickup Time / Rent Start"><span style="font-size: 0.58rem; line-height: 1;">&#9654;</span> Rent Start</span>
+
+                    <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #0f172a;" title="Return Time / Rent End"><span style="font-size: 0.52rem; line-height: 1;">&#9632;</span> Rent End</span>
+
                 </div>
 
             </div>
@@ -39266,7 +39272,7 @@ input:checked + .ctrl-slider:before {
 
                                      onmouseout="this.style.filter='none'">
 
-                                    <span style="font-size: 0.62rem; font-weight: 900; line-height: 1; opacity: 0.85;">◀</span>
+                                    <span style="font-size: 0.56rem; font-weight: 900; line-height: 1; opacity: 0.85;">&#9632;</span>
 
                                 </div>
 
@@ -39444,7 +39450,7 @@ input:checked + .ctrl-slider:before {
 
                                     <span style="opacity: 0.5;">•</span>
 
-                                    <span style="font-size: 0.44rem;">◀</span><span>${tEnd}</span>
+                                    <span style="font-size: 0.40rem; line-height: 1; display: inline-block;">&#9632;</span><span>${tEnd}</span>
 
                                 </div>`;
 
@@ -39454,7 +39460,7 @@ input:checked + .ctrl-slider:before {
 
                                 timeHtml = `<div style="font-size: 0.50rem; font-weight: 800; opacity: 0.92; margin-top: 1px; display: flex; align-items: center; gap: 2px; overflow: hidden; white-space: nowrap; letter-spacing: -0.2px;" title="Return Time: ${bk.end_time || 'PM'}">
 
-                                    <span style="font-size: 0.44rem;">◀</span><span>${tEnd}</span>
+                                    <span style="font-size: 0.40rem; line-height: 1; display: inline-block;">&#9632;</span><span>${tEnd}</span>
 
                                 </div>`;
 
