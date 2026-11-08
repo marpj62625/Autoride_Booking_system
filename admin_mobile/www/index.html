@@ -16868,15 +16868,42 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <div>
 
-                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Pickup Location</label>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
+                                <i class="fas fa-warehouse" style="color: #3b82f6; margin-right: 4px;"></i> Dispatch Location
+                            </label>
+
+                            <select id="walkinDispatchLocation" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
+                                <!-- Dynamically populated with all registered branches -->
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="walkin-sub-grid-2" style="gap: 10px; margin-top: 10px;">
+
+                        <div>
+
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
+                                <i class="fas fa-map-marker-alt" style="color: #10b981; margin-right: 4px;"></i> Pickup Location
+                            </label>
 
                             <select id="walkinPickupLocation" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
-
-                                <option value="Tanauan/Sto. Tomas, Batangas" selected>Tanauan/Sto. Tomas, Batangas</option>
-
-                                <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
-
+                                <!-- Dynamically populated with all registered branches (SPC/STO/TNN, etc.) -->
                             </select>
+
+                        </div>
+
+                        <div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-main, #0f172a);">Destination (Optional)</label>
+                                <span id="walkinDestCharCount" style="font-size: 0.68rem; color: var(--text-muted, #64748b); font-weight: 700;">0/40</span>
+                            </div>
+
+                            <input type="text" id="walkinDestination" maxlength="40" placeholder="e.g. Makati, Tagaytay"
+                                   oninput="var cc=document.getElementById('walkinDestCharCount'); if(cc) cc.textContent=this.value.length+'/40';"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
                         </div>
 
@@ -37346,8 +37373,18 @@ input:checked + .ctrl-slider:before {
             const rawLoc = String((v && v.location) || '').trim();
             const locLower = rawLoc.toLowerCase();
 
-            // 1. Tanauan Branch (specific town match)
-            if (locLower.includes('tanauan') || locLower.includes('sto. tomas')) {
+            const futurePalettes = [
+                { theme: '#4f46e5', border: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
+                { theme: '#0d9488', border: '#14b8a6', bg: '#f0fdfa', text: '#0f766e' },
+                { theme: '#9333ea', border: '#a855f7', bg: '#faf5ff', text: '#7e22ce' },
+                { theme: '#0284c7', border: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1' },
+                { theme: '#d97706', border: '#f59e0b', bg: '#fffbeb', text: '#b45309' },
+                { theme: '#059669', border: '#10b981', bg: '#ecfdf5', text: '#047857' },
+                { theme: '#e11d48', border: '#f43f5e', bg: '#fff1f2', text: '#be123c' }
+            ];
+
+            // 1. Tanauan Main Branch (canonical Tanauan/Sto. Tomas or Tanauan)
+            if (locLower === 'tanauan' || locLower === 'tanauan/sto. tomas, batangas' || locLower === 'tanauan/sto tomas, batangas' || locLower === 'tanauan branch') {
                 return {
                     key: 'tanauan',
                     name: 'Tanauan Branch',
@@ -37360,8 +37397,8 @@ input:checked + .ctrl-slider:before {
                 };
             }
 
-            // 2. San Pablo City (SPC) Branch (specific town match)
-            if (locLower.includes('san pablo') || locLower.includes('spc')) {
+            // 2. San Pablo City (SPC) Main Branch (canonical San Pablo City, Laguna or SPC)
+            if (locLower === 'spc' || locLower === 'san pablo' || locLower === 'san pablo city, laguna' || locLower === 'spc branch' || locLower === 'san pablo city') {
                 return {
                     key: 'spc',
                     name: 'San Pablo City Branch',
@@ -37374,17 +37411,7 @@ input:checked + .ctrl-slider:before {
                 };
             }
 
-            const futurePalettes = [
-                { theme: '#4f46e5', border: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
-                { theme: '#0d9488', border: '#14b8a6', bg: '#f0fdfa', text: '#0f766e' },
-                { theme: '#9333ea', border: '#a855f7', bg: '#faf5ff', text: '#7e22ce' },
-                { theme: '#0284c7', border: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1' },
-                { theme: '#d97706', border: '#f59e0b', bg: '#fffbeb', text: '#b45309' },
-                { theme: '#059669', border: '#10b981', bg: '#ecfdf5', text: '#047857' },
-                { theme: '#e11d48', border: '#f43f5e', bg: '#fff1f2', text: '#be123c' }
-            ];
-
-            // 3. Match against official company branches
+            // 3. Match against registered official company branches EXACTLY (e.g. SPC/STO/TNN, ting2, test, TANAUAN BATANGAS)
             const official = (this.officialBranches && this.officialBranches.length)
                 ? this.officialBranches
                 : (window.__officialCompanyBranches || (typeof Settings !== 'undefined' && Settings._branches) || []);
@@ -37395,11 +37422,10 @@ input:checked + .ctrl-slider:before {
                     const obName = typeof ob === 'string' ? ob.trim() : (ob && ob.name ? ob.name.trim() : '');
                     if (!obName || obName.toLowerCase().includes('other')) continue;
                     const obLower = obName.toLowerCase();
-                    const cleanObName = obName.replace(/[\/,]+/g, ',').split(',')[0].trim();
-                    const cleanObLower = cleanObName.toLowerCase();
 
-                    if (locLower === obLower || locLower.startsWith(cleanObLower) || cleanObLower.startsWith(locLower) || locLower.includes(cleanObLower)) {
-                        const branchKey = cleanObName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'branch';
+                    if (locLower === obLower) {
+                        const cleanObName = obName.includes(',') ? obName.split(',')[0].trim() : obName;
+                        const branchKey = obName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'branch';
                         let hash = 0;
                         for (let k = 0; k < branchKey.length; k++) hash = branchKey.charCodeAt(k) + ((hash << 5) - hash);
                         const pal = futurePalettes[Math.abs(hash) % futurePalettes.length];
@@ -37418,8 +37444,45 @@ input:checked + .ctrl-slider:before {
                 }
             }
 
-            // 4. Dynamic Fallback for custom location
-            const cleanName = rawLoc ? rawLoc.replace(/[\/,]+/g, ',').split(',')[0].trim() : 'OTHER';
+            // 4. Fallback checks for San Pablo and Tanauan substrings
+            if (locLower.includes('san pablo')) {
+                return { key: 'spc', name: 'San Pablo City Branch', shortName: 'SPC', themeColor: '#dc2626', borderColor: '#ef4444', bgColor: '#fef2f2', textColor: '#b91c1c', order: 2 };
+            }
+            if (locLower.includes('tanauan') && !locLower.includes('/')) {
+                return { key: 'tanauan', name: 'Tanauan Branch', shortName: 'TANAUAN', themeColor: '#ea580c', borderColor: '#f97316', bgColor: '#fff7ed', textColor: '#c2410c', order: 1 };
+            }
+
+            // 5. Match official branches partial/starts with
+            if (Array.isArray(official) && official.length > 0) {
+                for (let i = 0; i < official.length; i++) {
+                    const ob = official[i];
+                    const obName = typeof ob === 'string' ? ob.trim() : (ob && ob.name ? ob.name.trim() : '');
+                    if (!obName || obName.toLowerCase().includes('other')) continue;
+                    const cleanObName = obName.includes(',') ? obName.split(',')[0].trim() : obName;
+                    const cleanObLower = cleanObName.toLowerCase();
+
+                    if (locLower.startsWith(cleanObLower) || cleanObLower.startsWith(locLower)) {
+                        const branchKey = obName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'branch';
+                        let hash = 0;
+                        for (let k = 0; k < branchKey.length; k++) hash = branchKey.charCodeAt(k) + ((hash << 5) - hash);
+                        const pal = futurePalettes[Math.abs(hash) % futurePalettes.length];
+                        const short = cleanObName.toUpperCase();
+                        return {
+                            key: branchKey,
+                            name: obName.toLowerCase().endsWith('branch') ? obName : `${obName} Branch`,
+                            shortName: short || 'BRANCH',
+                            themeColor: pal.theme,
+                            borderColor: pal.border,
+                            bgColor: pal.bg,
+                            textColor: pal.text,
+                            order: 10 + i
+                        };
+                    }
+                }
+            }
+
+            // 6. Dynamic Fallback for custom location (preserves slashes and full display name)
+            const cleanName = rawLoc ? (rawLoc.includes(',') ? rawLoc.split(',')[0].trim() : rawLoc) : 'OTHER';
             const short = cleanName.toUpperCase();
             const branchKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'other';
 
@@ -41070,6 +41133,9 @@ input:checked + .ctrl-slider:before {
         },
 
         getBookingBranchDisplay(b) {
+            if (b && b.dispatch_location && b.dispatch_location.trim()) {
+                return b.dispatch_location.trim();
+            }
             if (b && b.pickup_location && b.pickup_location.trim()) {
                 return b.pickup_location.trim();
             }
@@ -41351,7 +41417,8 @@ input:checked + .ctrl-slider:before {
                         <div><strong style="color:#475569;">Start:</strong> ${sDate} @ ${this.formatTime12(b.start_time || '06:00')} &nbsp;&bull;&nbsp; <strong style="color:#475569;">Return:</strong> ${eDate} @ ${this.formatTime12(b.end_time || '06:00')}</div>
 
                         <div><strong style="color:#475569;">Destination:</strong> ${b.destination || 'N/A'}</div>
-                        <div><strong style="color:#475569;">Dispatch Branch:</strong> <span id="quickModalSummaryBranch" style="font-weight:800; color:#ea580c;">${this.getBookingBranchDisplay(b)}</span></div>
+                        <div><strong style="color:#475569;">Dispatch Location:</strong> <span id="quickModalSummaryBranch" style="font-weight:800; color:#ea580c;">${b.dispatch_location || this.getBookingBranchDisplay(b)}</span></div>
+                        <div><strong style="color:#475569;">Pickup Location:</strong> <span style="font-weight:700; color:#0f172a;">${b.pickup_location || 'N/A'}</span></div>
 
                         <div><strong style="color:#475569;">Purpose of Rental:</strong> ${b.rental_purpose || b.purpose || 'N/A'}</div>
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
@@ -49346,6 +49413,7 @@ function toggleNewsletterModal(show = true) {
                 rental_purpose: rentalPurpose,
                 pickup_location: saPickupLoc,
                 dispatch_branch: saPickupLoc,
+                dispatch_location: saPickupLoc,
                 reason: reason,
                 apply_to_all: false
             };
@@ -78864,6 +78932,59 @@ function toggleNewsletterModal(show = true) {
 
         mode: 'guest',
 
+        populateBranches(preselectedVehicleId = null) {
+            const dispatchSel = document.getElementById('walkinDispatchLocation');
+            const pickupSel = document.getElementById('walkinPickupLocation');
+            if (!dispatchSel && !pickupSel) return;
+
+            let allBranches = [];
+            if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.getAllKnownBranches === 'function') {
+                allBranches = FleetCalendar.getAllKnownBranches();
+            } else if (Array.isArray(window.__officialCompanyBranches) && window.__officialCompanyBranches.length) {
+                window.__officialCompanyBranches.forEach(b => {
+                    const n = typeof b === 'string' ? b.trim() : (b && b.name ? b.name.trim() : '');
+                    if (n && !allBranches.includes(n)) allBranches.push(n);
+                });
+            }
+            if (!allBranches.length) {
+                allBranches = ['Tanauan/Sto. Tomas, Batangas', 'San Pablo City, Laguna'];
+            }
+
+            // Also check vehicles for any active locations
+            (this.vehicles || []).forEach(v => {
+                const loc = (v && v.location ? String(v.location).trim() : '');
+                if (loc && !loc.toLowerCase().includes('other') && !allBranches.some(b => b.toLowerCase() === loc.toLowerCase())) {
+                    allBranches.push(loc);
+                }
+            });
+
+            // Populate Dispatch Location
+            if (dispatchSel) {
+                const currentVal = dispatchSel.value;
+                let dHtml = '';
+                allBranches.forEach(b => {
+                    dHtml += `<option value="${b.replace(/"/g, '&quot;')}">${b}</option>`;
+                });
+                dispatchSel.innerHTML = dHtml;
+                if (currentVal && allBranches.some(b => b.toLowerCase() === currentVal.toLowerCase())) {
+                    dispatchSel.value = currentVal;
+                }
+            }
+
+            // Populate Pickup Location (all branches selectable as requested by user)
+            if (pickupSel) {
+                const currentVal = pickupSel.value;
+                let pHtml = '';
+                allBranches.forEach(b => {
+                    pHtml += `<option value="${b.replace(/"/g, '&quot;')}">${b}</option>`;
+                });
+                pickupSel.innerHTML = pHtml;
+                if (currentVal && allBranches.some(b => b.toLowerCase() === currentVal.toLowerCase())) {
+                    pickupSel.value = currentVal;
+                }
+            }
+        },
+
 
 
         attachUppercaseListeners() {
@@ -79165,7 +79286,8 @@ function toggleNewsletterModal(show = true) {
 
             ]);
 
-
+            this.populateBranches(preselectedVehicleId);
+            this.onVehicleChange();
 
             this.recalculate();
 
@@ -80003,6 +80125,39 @@ function toggleNewsletterModal(show = true) {
 
             const dailyRate = opt ? Number(opt.dataset.rate || 0) : 0;
 
+            const vehId = sel.value;
+            const v = (this.vehicles || []).find(x => String(x.id || x.vehicle_id) === String(vehId));
+            if (v && v.location) {
+                const vehLoc = String(v.location).trim();
+                const dispEl = document.getElementById('walkinDispatchLocation');
+                if (dispEl && vehLoc) {
+                    let matched = false;
+                    for (let i = 0; i < dispEl.options.length; i++) {
+                        if (dispEl.options[i].value.toLowerCase() === vehLoc.toLowerCase()) {
+                            dispEl.selectedIndex = i;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = vehLoc;
+                        newOpt.textContent = vehLoc;
+                        dispEl.appendChild(newOpt);
+                        dispEl.value = vehLoc;
+                    }
+                }
+                const pickEl = document.getElementById('walkinPickupLocation');
+                if (pickEl && vehLoc && (!pickEl.value || pickEl.value === 'Tanauan/Sto. Tomas, Batangas' || pickEl.value === 'San Pablo City, Laguna')) {
+                    for (let i = 0; i < pickEl.options.length; i++) {
+                        if (pickEl.options[i].value.toLowerCase() === vehLoc.toLowerCase()) {
+                            pickEl.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
             this.recalculate(dailyRate);
 
             this.checkCollision();
@@ -80683,7 +80838,11 @@ function toggleNewsletterModal(show = true) {
 
                     rental_type: rentalType,
 
+                    dispatch_location: (document.getElementById('walkinDispatchLocation')?.value || '').trim() || pickupLocation,
+
                     pickup_location: pickupLocation,
+
+                    destination: (document.getElementById('walkinDestination')?.value || '').trim().slice(0, 40),
 
                     rental_purpose: (document.getElementById('walkinRentalPurpose')?.value || '').trim().slice(0, 100) || 'Walk-in Counter Rental',
 

@@ -950,6 +950,7 @@ def migrate_settings_v2():
             pass
 
         # Add new columns to bookings table
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS dispatch_location VARCHAR(255) DEFAULT ''")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0.00")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_redeemed INT DEFAULT 0")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_earned INT DEFAULT 0")
@@ -6929,7 +6930,7 @@ def user_bookings():
             SELECT b.id, b.user_id, b.vehicle_id, b.start_date, b.end_date,
                    b.start_time, b.end_time,
                    b.service_type, b.delivery_fee,
-                   b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
+                   b.pickup_location, b.dispatch_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
                    b.driver_fee, b.driver_ot_hours, b.driver_ot_rate, b.driver_ot_amount,
                    b.driver_ot_collection_method, b.driver_ot_notes,
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
@@ -8146,7 +8147,7 @@ def get_all_bookings():
                    b.driver_fee, b.driver_ot_hours, b.driver_ot_rate, b.driver_ot_amount,
                    b.driver_ot_collection_method, b.driver_ot_notes,
 
-                   b.pickup_location, b.rental_type, b.addons,
+                   b.pickup_location, b.dispatch_location, b.rental_type, b.addons,
                    b.start_time, b.end_time,
 
                    b.driver_id, d.full_name AS driver_name,
@@ -8459,6 +8460,13 @@ def create_walkin_booking():
             status = 'Confirmed'
         rental_type = str(data.get('rental_type') or 'Self Drive').strip()[:30]
         pickup_location = str(data.get('pickup_location') or 'Main Office / Garage').strip()[:150]
+        dispatch_location = str(data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()[:150]
+        if not dispatch_location:
+            dispatch_location = str(veh.get('location') or pickup_location).strip()[:150]
+
+        _ensure_location_exists(cur, dispatch_location)
+        _ensure_location_exists(cur, pickup_location)
+
         destination = str(data.get('destination') or '').strip()[:100]
         rental_purpose = str(data.get('rental_purpose') or 'Walk-in Counter Rental').strip()[:100]
         raw_addons = data.get('addons', '')
@@ -8467,7 +8475,7 @@ def create_walkin_booking():
         cur.execute("""
             INSERT INTO bookings (
                 user_id, vehicle_id, start_date, end_date, start_time, end_time,
-                pickup_location, rental_type, service_type,
+                pickup_location, dispatch_location, rental_type, service_type,
                 customer_name, customer_phone, customer_address,
                 emergency_name, emergency_phone, emergency_rel,
                 base_price, addon_price, driver_fee, delivery_fee, discount_amount,
@@ -8476,7 +8484,7 @@ def create_walkin_booking():
                 destination, rental_purpose, addons, created_at
             ) VALUES (
                 %s, %s, %s, %s, %s, %s,
-                %s, %s, 'pickup',
+                %s, %s, %s, 'pickup',
                 %s, %s, %s,
                 %s, %s, %s,
                 %s, %s, %s, %s, %s,
@@ -8486,7 +8494,7 @@ def create_walkin_booking():
             ) RETURNING id, booking_id
         """, (
             user_id, vehicle_id, start_date, end_date, start_time, end_time,
-            pickup_location, rental_type,
+            pickup_location, dispatch_location, rental_type,
             customer_name, customer_phone, customer_address,
             emergency_name, emergency_phone, emergency_rel,
             base_price, addon_price, driver_fee, delivery_fee, discount_amount,
@@ -9142,20 +9150,18 @@ def edit_booking_details_super_admin(booking_id=None):
             WHERE id = %s
         """, (customer_name, customer_phone, destination or None, rental_purpose or None, b_id))
 
-        pickup_location = str(data.get('pickup_location') or data.get('dispatch_branch') or '').strip()
+        dispatch_location = str(data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()
+        pickup_location = str(data.get('pickup_location') or '').strip()
+        if dispatch_location:
+            if (bk.get('dispatch_location') or '') != dispatch_location:
+                changes.append(f"Dispatch Branch: '{bk.get('dispatch_location') or 'None'}' -> '{dispatch_location}'")
+            cur.execute("UPDATE bookings SET dispatch_location = %s WHERE id = %s", (dispatch_location, b_id))
+            _ensure_location_exists(cur, dispatch_location)
         if pickup_location:
             if (bk.get('pickup_location') or '') != pickup_location:
-                changes.append(f"Dispatch Branch: '{bk.get('pickup_location') or 'None'}' -> '{pickup_location}'")
+                changes.append(f"Pickup Location: '{bk.get('pickup_location') or 'None'}' -> '{pickup_location}'")
             cur.execute("UPDATE bookings SET pickup_location = %s WHERE id = %s", (pickup_location, b_id))
-            try:
-                cur.execute("SELECT location_id FROM locations WHERE LOWER(name) = LOWER(%s) LIMIT 1", (pickup_location,))
-                if not cur.fetchone():
-                    cur.execute("""
-                        INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (pickup_location, '', '', '', 0.00))
-            except Exception as loc_e:
-                logger.warning("Auto-insert location failed: %s", loc_e)
+            _ensure_location_exists(cur, pickup_location)
 
         # Check if user requested to apply Name and Phone to other bookings of the same customer
         apply_to_all = bool(data.get('apply_to_all'))
@@ -12706,7 +12712,7 @@ def get_archived_bookings():
                    b.start_date, b.end_date, b.start_time, b.end_time,
                    b.total_price, b.status, b.payment_status, b.payment_type,
                    b.amount_paid, b.balance_amount,
-                   b.pickup_location, b.rental_type, b.addons,
+                   b.pickup_location, b.dispatch_location, b.rental_type, b.addons,
                    COALESCE(b.is_archived, FALSE) AS is_archived,
                    CAST(b.archived_at AS TEXT) AS archived_at,
                    b.archived_by, b.archive_reason,
@@ -13181,7 +13187,7 @@ def export_maintenance_data(data_type):
                 SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email,
                        CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                        b.start_date, b.end_date, b.total_price, b.status, b.payment_status,
-                       b.pickup_location, b.rental_type, b.addons,
+                       b.pickup_location, b.dispatch_location, b.rental_type, b.addons,
                        b.is_archived, b.archived_at, b.archived_by, b.archive_reason
                 FROM bookings b
                 LEFT JOIN users u ON b.user_id = u.id
@@ -19628,23 +19634,14 @@ def update_booking_quick_pricing(booking_id):
         """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
 
         # Update Dispatch Branch / Pickup Location if provided
-        new_branch = (data.get('dispatch_branch') or data.get('pickup_location') or '').strip()[:100]
-        if new_branch:
-            cur.execute("""
-                UPDATE bookings
-                SET pickup_location = %s
-                WHERE id = %s
-            """, (new_branch, booking_id))
-            # Auto-insert into locations table if new
-            try:
-                cur.execute("SELECT location_id FROM locations WHERE LOWER(name) = LOWER(%s) LIMIT 1", (new_branch,))
-                if not cur.fetchone():
-                    cur.execute("""
-                        INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (new_branch, '', '', '', 0.00))
-            except Exception as loc_e:
-                logger.warning("Auto-insert location failed: %s", loc_e)
+        new_dispatch = (data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()[:100]
+        new_pickup = (data.get('pickup_location') or '').strip()[:100]
+        if new_dispatch:
+            cur.execute("UPDATE bookings SET dispatch_location = %s WHERE id = %s", (new_dispatch, booking_id))
+            _ensure_location_exists(cur, new_dispatch)
+        if new_pickup:
+            cur.execute("UPDATE bookings SET pickup_location = %s WHERE id = %s", (new_pickup, booking_id))
+            _ensure_location_exists(cur, new_pickup)
 
         if apply_to_customer and b.get('user_id') and calendar_color:
             cur.execute("""
