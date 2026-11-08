@@ -17391,7 +17391,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <span><i class="fas fa-map-marker-alt" style="color: #ea580c; margin-right: 4px;"></i> Dispatching Branch</span>
                         <span id="saBranchBadge" style="font-size: 0.65rem; color: #ea580c; background: #fff7ed; border: 1px solid #fed7aa; padding: 2px 7px; border-radius: 8px; font-weight: 800;">Branch</span>
                     </label>
-                    <select id="saEditPickupLocation" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 700; color: #0f172a; box-sizing: border-box; background: #ffffff; cursor: pointer;">
+                    <select id="saEditPickupLocation" onchange="FleetCalendar.onSaBranchSelectChange(this.value)" style="width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.84rem; font-weight: 700; color: #0f172a; box-sizing: border-box; background: #ffffff; cursor: pointer;">
                         <!-- Options injected via JS -->
                     </select>
                 </div>
@@ -33314,50 +33314,77 @@ input:checked + .ctrl-slider:before {
 
 
 
-        syncLocationDatalist() {
-
+        async syncLocationDatalist() {
             const listEl = document.getElementById('vLocationList');
-
             if (!listEl) return;
 
-            const standard = ['Tanauan/Sto. Tomas, Batangas', 'San Pablo City, Laguna'];
-
-            const custom = [];
-
-            (this.data || []).forEach(v => {
-
-                if (v.location && typeof v.location === 'string') {
-
-                    const loc = v.location.trim();
-
-                    if (loc && !standard.includes(loc) && !custom.includes(loc)) {
-
-                        custom.push(loc);
-
+            // Fetch or get official company branches from cache or API
+            let official = window.__officialCompanyBranches || (typeof Settings !== 'undefined' && Settings._branches) || [];
+            if (!official || official.length === 0) {
+                try {
+                    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : (typeof API_URL !== 'undefined' ? API_URL : '');
+                    let res = await fetch(`${apiBase}/locations`);
+                    if (!res.ok) res = await fetch(`${apiBase}/api/locations`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                            official = data.filter(d => d && d.name && !String(d.name).toLowerCase().includes('other'));
+                            window.__officialCompanyBranches = official;
+                            if (typeof FleetCalendar !== 'undefined' && FleetCalendar) {
+                                FleetCalendar.officialBranches = official;
+                            }
+                        }
                     }
-
+                } catch(e) {
+                    console.warn('syncLocationDatalist branches fetch error:', e);
                 }
+            }
 
+            const standard = ['Tanauan/Sto. Tomas, Batangas', 'San Pablo City, Laguna'];
+            const allBranches = [];
+
+            // 1. Add official branches first
+            if (Array.isArray(official) && official.length > 0) {
+                official.forEach(b => {
+                    const name = typeof b === 'string' ? b.trim() : (b && b.name ? b.name.trim() : '');
+                    if (name && !allBranches.some(x => x.toLowerCase() === name.toLowerCase())) {
+                        allBranches.push(name);
+                    }
+                });
+            }
+
+            // Ensure standard branches are in list if not already present
+            standard.forEach(loc => {
+                if (!allBranches.some(x => x.toLowerCase() === loc.toLowerCase())) {
+                    allBranches.push(loc);
+                }
+            });
+
+            // 2. Add any custom locations present in loaded vehicles
+            (this.data || []).forEach(v => {
+                if (v.location && typeof v.location === 'string') {
+                    const loc = v.location.trim();
+                    if (loc && !allBranches.some(x => x.toLowerCase() === loc.toLowerCase())) {
+                        allBranches.push(loc);
+                    }
+                }
             });
 
             let html = '';
-
-            standard.forEach(loc => {
-
-                const label = loc.toLowerCase().includes('tanauan') ? 'Tanauan Branch' : (loc.toLowerCase().includes('san pablo') ? 'San Pablo City (SPC) Branch' : loc);
-
-                html += `<option value="${loc}">${label}</option>`;
-
-            });
-
-            custom.forEach(loc => {
-
-                html += `<option value="${loc}">${loc}</option>`;
-
+            allBranches.forEach(loc => {
+                let label = loc;
+                const locL = loc.toLowerCase();
+                if (locL.includes('tanauan') || locL.includes('sto. tomas')) {
+                    label = `Tanauan Branch (${loc})`;
+                } else if (locL.includes('san pablo') || locL.includes('spc')) {
+                    label = `San Pablo City (SPC) Branch (${loc})`;
+                } else if (!locL.endsWith('branch')) {
+                    label = `${loc} Branch`;
+                }
+                html += `<option value="${loc.replace(/"/g, '&quot;')}">${label}</option>`;
             });
 
             listEl.innerHTML = html;
-
         },
 
 
@@ -34546,11 +34573,14 @@ input:checked + .ctrl-slider:before {
 
                     showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
                     try {
-                        if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadVehicles === 'function') {
-                            FleetCalendar.loadVehicles();
+                        if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+                            await FleetCalendar.refresh();
                         }
                     } catch(fcErr) {
                         console.warn('FleetCalendar auto-refresh notice:', fcErr);
+                    }
+                    if (typeof this.syncLocationDatalist === 'function') {
+                        this.syncLocationDatalist();
                     }
 
 
@@ -37225,122 +37255,112 @@ input:checked + .ctrl-slider:before {
 
 
 
+        onSaBranchSelectChange(val) {
+            const badge = document.getElementById('saBranchBadge');
+            if (!badge) return;
+            const v = String(val || '').trim();
+            const b = this.getVehicleBranch({ location: v });
+            badge.textContent = b.shortName || b.name || 'Branch';
+            badge.style.color = b.textColor || '#ea580c';
+            badge.style.background = b.bgColor || '#fff7ed';
+            badge.style.borderColor = b.borderColor || '#fed7aa';
+        },
+
         getVehicleBranch(v) {
-
-            const rawLoc = String(v.location || '').trim();
-
+            const rawLoc = String((v && v.location) || '').trim();
             const locLower = rawLoc.toLowerCase();
 
-
-
-            // 1. Tanauan Branch
-
-            if (locLower.includes('tanauan') || locLower.includes('batangas') || locLower.includes('sto. tomas')) {
-
+            // 1. Tanauan Branch (specific town match)
+            if (locLower.includes('tanauan') || locLower.includes('sto. tomas')) {
                 return {
-
                     key: 'tanauan',
-
                     name: 'Tanauan Branch',
-
                     shortName: 'TANAUAN',
-
                     themeColor: '#ea580c',
-
                     borderColor: '#f97316',
-
                     bgColor: '#fff7ed',
-
                     textColor: '#c2410c',
-
                     order: 1
-
                 };
-
             }
 
-
-
-            // 2. San Pablo City (SPC) Branch
-
-            if (locLower.includes('san pablo') || locLower.includes('spc') || locLower.includes('laguna')) {
-
+            // 2. San Pablo City (SPC) Branch (specific town match)
+            if (locLower.includes('san pablo') || locLower.includes('spc')) {
                 return {
-
                     key: 'spc',
-
                     name: 'San Pablo City Branch',
-
                     shortName: 'SPC',
-
                     themeColor: '#dc2626',
-
                     borderColor: '#ef4444',
-
                     bgColor: '#fef2f2',
-
                     textColor: '#b91c1c',
-
                     order: 2
-
                 };
-
             }
-
-
-
-            // 3. Dynamic Handler for ANY Future Branch (Lipa, Calamba, Manila, etc.)
-
-            const cleanName = rawLoc ? rawLoc.split(/[\/,]+/)[0].trim() : 'OTHER';
-
-            const short = cleanName.length > 8 ? cleanName.substring(0, 8).toUpperCase() : cleanName.toUpperCase();
-
-            const branchKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-
-
 
             const futurePalettes = [
-
                 { theme: '#4f46e5', border: '#6366f1', bg: '#eef2ff', text: '#4338ca' },
-
                 { theme: '#0d9488', border: '#14b8a6', bg: '#f0fdfa', text: '#0f766e' },
-
                 { theme: '#9333ea', border: '#a855f7', bg: '#faf5ff', text: '#7e22ce' },
-
                 { theme: '#0284c7', border: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1' },
-
-                { theme: '#d97706', border: '#f59e0b', bg: '#fffbeb', text: '#b45309' }
-
+                { theme: '#d97706', border: '#f59e0b', bg: '#fffbeb', text: '#b45309' },
+                { theme: '#059669', border: '#10b981', bg: '#ecfdf5', text: '#047857' },
+                { theme: '#e11d48', border: '#f43f5e', bg: '#fff1f2', text: '#be123c' }
             ];
 
+            // 3. Match against official company branches
+            const official = (this.officialBranches && this.officialBranches.length)
+                ? this.officialBranches
+                : (window.__officialCompanyBranches || (typeof Settings !== 'undefined' && Settings._branches) || []);
+
+            if (Array.isArray(official) && official.length > 0) {
+                for (let i = 0; i < official.length; i++) {
+                    const ob = official[i];
+                    const obName = typeof ob === 'string' ? ob.trim() : (ob && ob.name ? ob.name.trim() : '');
+                    if (!obName || obName.toLowerCase().includes('other')) continue;
+                    const obLower = obName.toLowerCase();
+                    const cleanObName = obName.replace(/[\/,]+/g, ',').split(',')[0].trim();
+                    const cleanObLower = cleanObName.toLowerCase();
+
+                    if (locLower === obLower || locLower.startsWith(cleanObLower) || cleanObLower.startsWith(locLower) || locLower.includes(cleanObLower)) {
+                        const branchKey = cleanObName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'branch';
+                        let hash = 0;
+                        for (let k = 0; k < branchKey.length; k++) hash = branchKey.charCodeAt(k) + ((hash << 5) - hash);
+                        const pal = futurePalettes[Math.abs(hash) % futurePalettes.length];
+                        const short = cleanObName.toUpperCase();
+                        return {
+                            key: branchKey,
+                            name: obName.toLowerCase().endsWith('branch') ? obName : `${obName} Branch`,
+                            shortName: short || 'BRANCH',
+                            themeColor: pal.theme,
+                            borderColor: pal.border,
+                            bgColor: pal.bg,
+                            textColor: pal.text,
+                            order: 10 + i
+                        };
+                    }
+                }
+            }
+
+            // 4. Dynamic Fallback for custom location
+            const cleanName = rawLoc ? rawLoc.replace(/[\/,]+/g, ',').split(',')[0].trim() : 'OTHER';
+            const short = cleanName.toUpperCase();
+            const branchKey = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'other';
+
             let hash = 0;
-
             for (let i = 0; i < branchKey.length; i++) hash = branchKey.charCodeAt(i) + ((hash << 5) - hash);
-
             const pal = futurePalettes[Math.abs(hash) % futurePalettes.length];
 
-
-
             return {
-
                 key: branchKey,
-
-                name: `${cleanName} Branch`,
-
+                name: cleanName.toLowerCase().endsWith('branch') ? cleanName : `${cleanName} Branch`,
                 shortName: short || 'BRANCH',
-
                 themeColor: pal.theme,
-
                 borderColor: pal.border,
-
                 bgColor: pal.bg,
-
                 textColor: pal.text,
-
-                order: 10 + (Math.abs(hash) % 80)
-
+                order: 40 + (Math.abs(hash) % 50)
             };
-
         },
 
 
@@ -38021,13 +38041,15 @@ input:checked + .ctrl-slider:before {
 
                 // Fetch vehicles, fleet bookings and blackouts
 
-                const [vRes, cRes, bRes] = await Promise.all([
+                const [vRes, cRes, bRes, lRes] = await Promise.all([
 
                     fetch(`${API_BASE}/api/vehicles`),
 
                     fetch(`${API_BASE}/api/admin/fleet-bookings?start=${startStr}&end=${endStr}`),
 
-                    fetch(`${API_BASE}/api/admin/blackout-dates`)
+                    fetch(`${API_BASE}/api/admin/blackout-dates`),
+
+                    fetch(`${API_BASE}/api/locations`).catch(() => null)
 
                 ]);
 
@@ -38070,6 +38092,13 @@ input:checked + .ctrl-slider:before {
 
                 let fetchedBlackouts = await bRes.json();
                 this.blackouts = Array.isArray(fetchedBlackouts) ? fetchedBlackouts : [];
+                if (lRes && lRes.ok) {
+                    const fetchedLocs = await lRes.json().catch(() => []);
+                    if (Array.isArray(fetchedLocs)) {
+                        this.officialBranches = fetchedLocs.filter(d => d && d.name && !String(d.name).toLowerCase().includes('other'));
+                        window.__officialCompanyBranches = this.officialBranches;
+                    }
+                }
 
                 this.render();
 
@@ -38575,6 +38604,13 @@ input:checked + .ctrl-slider:before {
 
             });
 
+            const allOfficialForFilter = (this.officialBranches && this.officialBranches.length) ? this.officialBranches : (window.__officialCompanyBranches || []);
+            allOfficialForFilter.forEach(ob => {
+                const b = this.getVehicleBranch({ location: typeof ob === 'string' ? ob : (ob && ob.name ? ob.name : '') });
+                if (b && b.key && b.key !== 'other' && !branchMap.has(b.key)) {
+                    branchMap.set(b.key, b);
+                }
+            });
             const sortedBranches = Array.from(branchMap.values()).sort((a, b) => a.order - b.order);
 
 
@@ -48857,8 +48893,12 @@ function toggleNewsletterModal(show = true) {
                     bOpts += `<option value="${br.replace(/"/g, '&quot;')}" ${isSel ? 'selected' : ''}>${br}</option>`;
                 });
                 saBranchSelect.innerHTML = bOpts;
-                const badge = document.getElementById('saBranchBadge');
-                if (badge) badge.textContent = curBranch.toLowerCase().includes('tanauan') ? 'Tanauan' : (curBranch.toLowerCase().includes('san pablo') ? 'San Pablo' : curBranch.split(',')[0]);
+                if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.onSaBranchSelectChange === 'function') {
+                    FleetCalendar.onSaBranchSelectChange(curBranch);
+                } else {
+                    const badge = document.getElementById('saBranchBadge');
+                    if (badge) badge.textContent = curBranch.toLowerCase().includes('tanauan') ? 'Tanauan' : (curBranch.toLowerCase().includes('san pablo') ? 'San Pablo' : curBranch.split(',')[0]);
+                }
             }
 
             const destEl = document.getElementById('saEditDestination');
@@ -71626,10 +71666,13 @@ function toggleNewsletterModal(show = true) {
 
                 await this.loadBranches();
 
-                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.renderQuickBranchOptions) {
-
-                    FleetCalendar.renderQuickBranchOptions();
-
+                if (typeof Vehicles !== 'undefined' && typeof Vehicles.syncLocationDatalist === 'function') {
+                    Vehicles.syncLocationDatalist();
+                }
+                if (typeof FleetCalendar !== 'undefined') {
+                    FleetCalendar.officialBranches = this._branches;
+                    if (typeof FleetCalendar.renderQuickBranchOptions === 'function') FleetCalendar.renderQuickBranchOptions();
+                    if (typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
                 }
 
             } catch (err) {
@@ -71696,10 +71739,13 @@ function toggleNewsletterModal(show = true) {
 
                 await this.loadBranches();
 
-                if (typeof FleetCalendar !== 'undefined' && FleetCalendar.renderQuickBranchOptions) {
-
-                    FleetCalendar.renderQuickBranchOptions();
-
+                if (typeof Vehicles !== 'undefined' && typeof Vehicles.syncLocationDatalist === 'function') {
+                    Vehicles.syncLocationDatalist();
+                }
+                if (typeof FleetCalendar !== 'undefined') {
+                    FleetCalendar.officialBranches = this._branches;
+                    if (typeof FleetCalendar.renderQuickBranchOptions === 'function') FleetCalendar.renderQuickBranchOptions();
+                    if (typeof FleetCalendar.refresh === 'function') FleetCalendar.refresh();
                 }
 
             } catch (err) {
