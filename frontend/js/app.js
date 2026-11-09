@@ -3266,8 +3266,23 @@ function doRegister() {
 
   var emailCheck = (typeof validateEmailAddress === 'function') ? validateEmailAddress(email) : { valid: Boolean(email && email.indexOf('@') !== -1) };
   if (!emailCheck.valid) {
-    showInlineError(emailEl, emailCheck.error || 'Please enter a valid email address.');
+    var regEmailErr = document.getElementById('regEmailErr');
+    if (regEmailErr) {
+      regEmailErr.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right:5px;"></i>' + (emailCheck.error || 'Please enter a valid email address.');
+      regEmailErr.style.display = 'block';
+      regEmailErr.style.color = '#ef4444';
+    }
+    if (emailEl) {
+      emailEl.style.borderColor = '#ef4444';
+      emailEl.focus();
+    }
+    var regErr = document.getElementById('regErr');
+    if (regErr) regErr.textContent = '';
     hasErr = true;
+  } else {
+    var regEmailErr = document.getElementById('regEmailErr');
+    if (regEmailErr) { regEmailErr.textContent = ''; regEmailErr.style.display = 'none'; }
+    if (emailEl) emailEl.style.borderColor = '#00b14f';
   }
 
   if (isBlank(password) || (typeof validatePassword === 'function' && !validatePassword(password, 'regPasswordErr'))) {
@@ -3302,10 +3317,23 @@ function doRegister() {
       }, 300);
     })
     .catch(function(err) {
-      if (err.status === 409) {
-        showInlineError(document.getElementById('regEmail'), 'Email already registered.');
+      var errText = (err && err.message) ? err.message : 'Registration failed.';
+      if (err.status === 409 || errText.toLowerCase().includes('email') || errText.toLowerCase().includes('social media')) {
+        var regEmailErr = document.getElementById('regEmailErr');
+        if (regEmailErr) {
+          regEmailErr.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right:5px;"></i>' + errText;
+          regEmailErr.style.display = 'block';
+          regEmailErr.style.color = '#ef4444';
+        }
+        var emailEl = document.getElementById('regEmail');
+        if (emailEl) {
+          emailEl.style.borderColor = '#ef4444';
+          emailEl.focus();
+        }
+        var regErr = document.getElementById('regErr');
+        if (regErr) regErr.textContent = '';
       } else {
-        document.getElementById('regErr').textContent = err.message || 'Registration failed.';
+        document.getElementById('regErr').textContent = errText;
       }
     })
     .finally(function() { showLoading(false); restoreBtn(); });

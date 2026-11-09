@@ -80,18 +80,119 @@ function isValidEmailFormat(email) {
  * @param {string} email
  * @returns {{valid: boolean, error?: string, email?: string}}
  */
-function validateEmailAddress(email) {
+var SOCIAL_ROOTS = [
+  'youtube', 'youtu', 'facebook', 'tiktok', 'instagram', 'twitter', 'snapchat',
+  'pinterest', 'linkedin', 'reddit', 'twitch', 'discord', 'telegram', 'whatsapp',
+  'messenger', 'netflix', 'spotify'
+];
+
+var SOCIAL_NON_MAILBOX_DOMAINS = [
+  'facebook.com', 'fb.com', 'meta.com', 'youtube.com', 'youtu.be', 'tiktok.com',
+  'instagram.com', 'twitter.com', 'x.com', 'snapchat.com', 'pinterest.com',
+  'linkedin.com', 'reddit.com', 'twitch.tv', 'discord.com', 'discord.gg',
+  'telegram.org', 't.me', 'whatsapp.com', 'messenger.com', 'netflix.com', 'spotify.com'
+];
+
+var RECOGNIZED_EMAIL_DOMAINS = [
+  'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+  'yahoo.com', 'ymail.com', 'rocketmail.com', 'aol.com', 'icloud.com', 'me.com', 'mac.com',
+  'proton.me', 'protonmail.com', 'pm.me', 'tuta.com', 'tutanota.com', 'gmx.com', 'gmx.net',
+  'zoho.com', 'zohomail.com', 'mail.com', 'yandex.com', 'yandex.ru', 'fastmail.com', 'hushmail.com',
+  'yahoo.com.ph', 'qq.com', '163.com', '126.com', 'sina.com', 'naver.com', 'daum.net', 'hanmail.net',
+  'mail.ru', 'list.ru', 'bk.ru', 'inbox.ru', 'web.de', 't-online.de', 'orange.fr', 'free.fr',
+  'comcast.net', 'verizon.net', 'att.net', 'btinternet.com'
+];
+
+var ALLOWED_INSTITUTIONAL_SUFFIXES = [
+  '.edu.ph', '.edu', '.ac.uk', '.ac.jp', '.ac.kr', '.ac.nz', '.ac.za',
+  '.edu.au', '.edu.sg', '.edu.my', '.edu.in', '.edu.hk', '.edu.tw',
+  '.gov.ph', '.gov', '.gov.uk', '.gov.au', '.gov.sg', '.gov.my', '.go.jp', '.go.kr',
+  '.org.ph', '.org', '.ngo',
+  '.mil.ph', '.mil'
+];
+
+function isSocialMediaDomain(domain) {
+  if (!domain) return false;
+  domain = domain.toLowerCase();
+  for (var i = 0; i < SOCIAL_NON_MAILBOX_DOMAINS.length; i++) {
+    var s = SOCIAL_NON_MAILBOX_DOMAINS[i];
+    if (domain === s || domain.endsWith('.' + s)) return true;
+  }
+  return false;
+}
+
+function validateEmailAddress(email, options) {
   if (!email || typeof email !== 'string' || !email.trim()) {
     return { valid: false, error: 'Email address is required.' };
   }
   var clean = email.trim().toLowerCase();
+  var isTyping = Boolean(options && options.isTyping);
+
+  if (!clean.includes('@')) {
+    if (isTyping) return { valid: true, typing: true };
+    return { valid: false, error: 'Please enter a valid email address format.' };
+  }
+
+  var parts = clean.split('@');
+  if (parts.length !== 2) {
+    return { valid: false, error: 'Please enter a valid email address.' };
+  }
+  var domain = parts[1];
+  if (!domain) {
+    if (isTyping) return { valid: true, typing: true };
+    return { valid: false, error: 'Please enter a valid email address domain.' };
+  }
+
+  // 1. Early social platform check (even while typing)
+  for (var i = 0; i < SOCIAL_ROOTS.length; i++) {
+    var r = SOCIAL_ROOTS[i];
+    if (domain === r || domain.startsWith(r + '.')) {
+      return { valid: false, error: 'Social media websites (' + domain + ') cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).' };
+    }
+  }
+  if (domain === 'x' || domain === 'x.com' || domain === 'fb' || domain === 'fb.com') {
+    return { valid: false, error: 'Social media websites (' + domain + ') cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).' };
+  }
+
+  // 2. Early disposable keyword check
+  for (var k = 0; k < DISPOSABLE_EMAIL_KEYWORDS.length; k++) {
+    if (domain.indexOf(DISPOSABLE_EMAIL_KEYWORDS[k]) !== -1) {
+      return { valid: false, error: 'Temporary or disposable email addresses are not supported. Please use a permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud).' };
+    }
+  }
+
+  // If still typing and no dot yet, don't show error yet
+  if (!domain.includes('.')) {
+    if (isTyping) return { valid: true, typing: true };
+    return { valid: false, error: 'Please enter a complete domain with extension (e.g. @gmail.com).' };
+  }
+
+  // Full validation once dot is present
   if (!isValidEmailFormat(clean)) {
-    return { valid: false, error: 'Please enter a valid email address (e.g. name@outlook.com, name@gmail.com).' };
+    return { valid: false, error: 'Please enter a valid email address format.' };
   }
+
   if (isDisposableEmail(clean)) {
-    return { valid: false, error: 'Temporary/disposable email addresses are not supported. Please use a valid email (e.g. Gmail, Outlook, Yahoo, iCloud).' };
+    return { valid: false, error: 'Temporary or disposable email addresses are not supported. Please use a permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud).' };
   }
-  return { valid: true, email: clean };
+
+  if (isSocialMediaDomain(domain)) {
+    return { valid: false, error: 'Social media websites (' + domain + ') cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).' };
+  }
+
+  for (var j = 0; j < RECOGNIZED_EMAIL_DOMAINS.length; j++) {
+    if (domain === RECOGNIZED_EMAIL_DOMAINS[j]) {
+      return { valid: true, email: clean };
+    }
+  }
+
+  for (var m = 0; m < ALLOWED_INSTITUTIONAL_SUFFIXES.length; m++) {
+    if (domain.endsWith(ALLOWED_INSTITUTIONAL_SUFFIXES[m])) {
+      return { valid: true, email: clean };
+    }
+  }
+
+  return { valid: false, error: 'Unrecognized email provider. Please use a recognized email provider (e.g. Gmail, Yahoo, Outlook, iCloud) or a valid school/institutional email.' };
 }
 
 /**

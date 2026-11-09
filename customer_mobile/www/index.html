@@ -7826,16 +7826,30 @@ function validateRegistrationEmailField(inputEl) {
     var val = (inputEl.value || '').trim();
     if (!val) {
         if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+        inputEl.style.borderColor = '#d1d5db';
         return true;
     }
     if (typeof validateEmailAddress === 'function') {
-        var res = validateEmailAddress(val);
+        var res = validateEmailAddress(val, { isTyping: true });
         if (!res.valid) {
-            if (errEl) { errEl.textContent = res.error; errEl.style.display = 'block'; }
+            if (errEl) {
+                errEl.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right:5px;"></i>' + res.error;
+                errEl.style.display = 'block';
+                errEl.style.color = '#ef4444';
+            }
+            inputEl.style.borderColor = '#ef4444';
+            var regErr = document.getElementById('regErr');
+            if (regErr) regErr.textContent = '';
             return false;
+        } else if (!res.typing) {
+            // Valid recognized full email
+            if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+            inputEl.style.borderColor = '#00b14f';
+            return true;
         }
     }
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    inputEl.style.borderColor = '#d1d5db';
     return true;
 }
 
