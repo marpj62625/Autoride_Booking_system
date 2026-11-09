@@ -125,10 +125,11 @@
                         <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Email Address <span style="color:#ef4444;">*</span></label>
                         <input type="email" id="email" required placeholder="example@email.com"
                             style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
-                            onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
-                            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
-                        <div class="domain-warning" id="domainWarning">
-                            <i class="fas fa-exclamation-circle"></i> <span id="domainWarningText">Temporary or invalid emails are not allowed</span>
+                            onfocus="if(!this.dataset.hasError){this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';}"
+                            onblur="if(!this.dataset.hasError){this.style.borderColor='#d1d5db';this.style.boxShadow='none';}">
+                        <div id="emailFeedback" style="display:none;margin-top:6px;font-size:0.78rem;font-weight:500;line-height:1.4;align-items:flex-start;gap:6px;color:#ef4444;">
+                            <i class="fas fa-exclamation-circle" style="margin-top:2px;flex-shrink:0;"></i>
+                            <span id="emailFeedbackText"></span>
                         </div>
                     </div>
 
@@ -243,7 +244,30 @@
     const redirectParam = urlParams.get('redirect') ? '?redirect=' + encodeURIComponent(urlParams.get('redirect')) : '';
 
     const emailInput = document.getElementById('email');
-    const domainWarning = document.getElementById('domainWarning');
+    const emailFeedback = document.getElementById('emailFeedback');
+    const emailFeedbackText = document.getElementById('emailFeedbackText');
+
+    function showEmailError(msg) {
+        if (!emailFeedback || !emailFeedbackText || !emailInput) return;
+        emailFeedbackText.textContent = msg;
+        emailFeedback.style.display = 'flex';
+        emailInput.dataset.hasError = 'true';
+        emailInput.style.borderColor = '#ef4444';
+        emailInput.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.15)';
+    }
+
+    function clearEmailError(isValid) {
+        if (!emailFeedback || !emailInput) return;
+        emailFeedback.style.display = 'none';
+        emailInput.removeAttribute('data-has-error');
+        if (isValid) {
+            emailInput.style.borderColor = '#00b14f';
+            emailInput.style.boxShadow = '0 0 0 3px rgba(0, 177, 79, 0.12)';
+        } else {
+            emailInput.style.borderColor = '#d1d5db';
+            emailInput.style.boxShadow = 'none';
+        }
+    }
     const regForm = document.getElementById('registerForm');
     const messageEl = document.getElementById('message');
     const displayEmail = document.getElementById('displayEmail');
@@ -299,6 +323,12 @@
         'mail.ru', 'list.ru', 'bk.ru', 'inbox.ru', 'web.de', 't-online.de', 'orange.fr', 'free.fr',
         'comcast.net', 'verizon.net', 'att.net', 'btinternet.com'
     ]);
+
+    const SOCIAL_ROOTS = [
+        'youtube', 'youtu', 'facebook', 'tiktok', 'instagram', 'twitter', 'snapchat',
+        'pinterest', 'linkedin', 'reddit', 'twitch', 'discord', 'telegram', 'whatsapp',
+        'messenger', 'netflix', 'spotify'
+    ];
 
     const SOCIAL_NON_MAILBOX_DOMAINS = [
         'facebook.com', 'fb.com', 'meta.com', 'youtube.com', 'youtu.be', 'tiktok.com',
@@ -358,27 +388,76 @@
         return validateEmailDomain(email).valid;
     }
 
-    // Email validation
+    // Live email validation as user types
     emailInput.addEventListener('input', () => {
         const val = emailInput.value.trim().toLowerCase();
-        const warningSpan = document.getElementById('domainWarningText');
-        if (!val || !val.includes('@')) {
-            domainWarning.style.display = 'none';
+        if (!val) {
+            clearEmailError(false);
             return;
         }
+
+        if (!val.includes('@')) {
+            clearEmailError(false);
+            return;
+        }
+
         const parts = val.split('@');
         const domainPart = parts[1] || '';
-        if (!domainPart.includes('.')) {
-            domainWarning.style.display = 'none';
+
+        if (!domainPart) {
+            clearEmailError(false);
             return;
         }
-        const res = validateEmailDomain(val);
-        if (!res.valid) {
-            if (warningSpan) warningSpan.textContent = res.error;
-            domainWarning.style.display = 'flex';
-        } else {
-            domainWarning.style.display = 'none';
+
+        // 1. Instant early detection for social media platforms (even before typing .com)
+        for (let s of SOCIAL_ROOTS) {
+            if (domainPart === s || domainPart.startsWith(s + '.')) {
+                showEmailError(`Social media websites (${domainPart}) cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).`);
+                return;
+            }
         }
+        if (domainPart === 'x' || domainPart === 'x.com' || domainPart === 'fb' || domainPart === 'fb.com') {
+            showEmailError(`Social media websites (${domainPart}) cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).`);
+            return;
+        }
+
+        // 2. Instant check for disposable domain keywords
+        for (let kw of DISPOSABLE_EMAIL_KEYWORDS) {
+            if (domainPart.includes(kw)) {
+                showEmailError('Temporary or disposable email addresses are not supported. Please use a permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud).');
+                return;
+            }
+        }
+
+        // 3. If there is a dot in domain, validate against recognized domains & institutional suffixes
+        if (domainPart.includes('.')) {
+            const res = validateEmailDomain(val);
+            if (!res.valid) {
+                showEmailError(res.error);
+                return;
+            } else {
+                clearEmailError(true);
+                return;
+            }
+        }
+
+        // Still typing domain without dot and not social/disposable
+        clearEmailError(false);
+    });
+
+    emailInput.addEventListener('blur', () => {
+        const val = emailInput.value.trim();
+        if (val) {
+            const res = validateEmailDomain(val);
+            if (!res.valid) {
+                showEmailError(res.error);
+                return;
+            } else {
+                clearEmailError(true);
+                return;
+            }
+        }
+        clearEmailError(false);
     });
 
     // OTP auto-focus
@@ -407,14 +486,12 @@
 
         const emailCheck = validateEmailDomain(email);
         if (!emailCheck.valid) {
-            messageEl.textContent = emailCheck.error;
-            messageEl.style.color = '#ef4444';
-            const warningSpan = document.getElementById('domainWarningText');
-            if (warningSpan) warningSpan.textContent = emailCheck.error;
-            domainWarning.style.display = 'flex';
+            showEmailError(emailCheck.error);
+            messageEl.textContent = '';
             emailInput.focus();
             return;
         }
+        clearEmailError(true);
         if (!validatePassword(password, 'passwordErr')) {
             messageEl.textContent = 'Please ensure your password meets all requirements (including at least one special character).';
             messageEl.style.color = '#ef4444';
@@ -458,8 +535,15 @@
                 document.getElementById('stepVerification').style.display = 'block';
                 digits[0].focus();
             } else {
-                messageEl.textContent = 'Error: ' + (data.error || 'Failed to register');
-                messageEl.style.color = '#ef4444';
+                const errText = data.error || 'Failed to register';
+                if (errText.toLowerCase().includes('email') || errText.toLowerCase().includes('social media')) {
+                    showEmailError(errText);
+                    messageEl.textContent = '';
+                    emailInput.focus();
+                } else {
+                    messageEl.textContent = 'Error: ' + errText;
+                    messageEl.style.color = '#ef4444';
+                }
                 regBtn.disabled = false;
                 regBtn.innerHTML = '<i class="fas fa-user-plus" style="margin-right:7px;"></i>Create Account';
             }
