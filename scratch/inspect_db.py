@@ -1,24 +1,18 @@
 import sys
 import os
-
-# Add backend to path to import database config
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
+sys.path.insert(0, os.path.abspath('AutorideSystem/backend'))
 import psycopg
 from config import SUPABASE_DB_URL
 
-def inspect_bookings():
-    try:
-        print("Connecting to Supabase PostgreSQL...")
-        with psycopg.connect(SUPABASE_DB_URL) as conn:
-            with conn.cursor() as cur:
-                print("Inspecting 'bookings' table...")
-                cur.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'bookings'")
-                cols = cur.fetchall()
-                for c in cols:
-                    print(f"Column: {c[0]}, Type: {c[1]}")
-    except Exception as e:
-        print(f"Error: {e}")
+conn = psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
+cur = conn.cursor()
 
-if __name__ == "__main__":
-    inspect_bookings()
+cur.execute("""
+    SELECT column_name, column_default, is_nullable
+    FROM information_schema.columns 
+    WHERE table_name = 'locations'
+""")
+for r in cur.fetchall():
+    print(r)
+
+conn.close()
