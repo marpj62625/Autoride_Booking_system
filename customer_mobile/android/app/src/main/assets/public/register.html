@@ -290,27 +290,91 @@
         return false;
     }
 
-    function isValidEmailFormat(email) {
-        if (!email || typeof email !== 'string') return false;
-        const clean = email.trim();
-        if (clean.length < 5 || clean.length > 60) return false;
+    const RECOGNIZED_EMAIL_DOMAINS = new Set([
+        'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+        'yahoo.com', 'ymail.com', 'rocketmail.com', 'aol.com', 'icloud.com', 'me.com', 'mac.com',
+        'proton.me', 'protonmail.com', 'pm.me', 'tuta.com', 'tutanota.com', 'gmx.com', 'gmx.net',
+        'zoho.com', 'zohomail.com', 'mail.com', 'yandex.com', 'yandex.ru', 'fastmail.com', 'hushmail.com',
+        'yahoo.com.ph', 'qq.com', '163.com', '126.com', 'sina.com', 'naver.com', 'daum.net', 'hanmail.net',
+        'mail.ru', 'list.ru', 'bk.ru', 'inbox.ru', 'web.de', 't-online.de', 'orange.fr', 'free.fr',
+        'comcast.net', 'verizon.net', 'att.net', 'btinternet.com'
+    ]);
+
+    const SOCIAL_NON_MAILBOX_DOMAINS = [
+        'facebook.com', 'fb.com', 'meta.com', 'youtube.com', 'youtu.be', 'tiktok.com',
+        'instagram.com', 'twitter.com', 'x.com', 'snapchat.com', 'pinterest.com',
+        'linkedin.com', 'reddit.com', 'twitch.tv', 'discord.com', 'discord.gg',
+        'telegram.org', 't.me', 'whatsapp.com', 'messenger.com', 'netflix.com', 'spotify.com'
+    ];
+
+    const ALLOWED_INSTITUTIONAL_SUFFIXES = [
+        '.edu.ph', '.edu', '.ac.uk', '.ac.jp', '.ac.kr', '.ac.nz', '.ac.za',
+        '.edu.au', '.edu.sg', '.edu.my', '.edu.in', '.edu.hk', '.edu.tw',
+        '.gov.ph', '.gov', '.gov.uk', '.gov.au', '.gov.sg', '.gov.my', '.go.jp', '.go.kr',
+        '.org.ph', '.org', '.ngo',
+        '.mil.ph', '.mil'
+    ];
+
+    function validateEmailDomain(email) {
+        if (!email || typeof email !== 'string') return { valid: false, error: 'Please enter a valid email address.' };
+        const clean = email.trim().toLowerCase();
+        if (clean.length < 5 || clean.length > 60) {
+            return { valid: false, error: 'Please enter a valid email address (between 5 and 60 characters).' };
+        }
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        return emailRegex.test(clean);
+        if (!emailRegex.test(clean)) {
+            return { valid: false, error: 'Please enter a valid email address format.' };
+        }
+        const parts = clean.split('@');
+        if (parts.length !== 2) {
+            return { valid: false, error: 'Please enter a valid email address.' };
+        }
+        const domain = parts[1];
+
+        if (isDisposableEmail(clean)) {
+            return { valid: false, error: 'Temporary or disposable email addresses are not supported. Please use a permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud).' };
+        }
+
+        for (let s of SOCIAL_NON_MAILBOX_DOMAINS) {
+            if (domain === s || domain.endsWith('.' + s)) {
+                return { valid: false, error: `Social media websites (${domain}) cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com).` };
+            }
+        }
+
+        if (RECOGNIZED_EMAIL_DOMAINS.has(domain)) {
+            return { valid: true, error: null };
+        }
+
+        for (let suffix of ALLOWED_INSTITUTIONAL_SUFFIXES) {
+            if (domain.endsWith(suffix)) {
+                return { valid: true, error: null };
+            }
+        }
+
+        return { valid: false, error: 'Unrecognized email provider. Please use a recognized email provider (e.g. Gmail, Yahoo, Outlook, iCloud) or a valid school/institutional email.' };
+    }
+
+    function isValidEmailFormat(email) {
+        return validateEmailDomain(email).valid;
     }
 
     // Email validation
     emailInput.addEventListener('input', () => {
         const val = emailInput.value.trim().toLowerCase();
         const warningSpan = document.getElementById('domainWarningText');
-        if (!val) {
+        if (!val || !val.includes('@')) {
             domainWarning.style.display = 'none';
             return;
         }
-        if (isDisposableEmail(val)) {
-            if (warningSpan) warningSpan.textContent = 'Temporary / disposable emails are not supported.';
-            domainWarning.style.display = 'flex';
-        } else if (val.includes('@') && !isValidEmailFormat(val)) {
-            if (warningSpan) warningSpan.textContent = 'Please enter a valid email address.';
+        const parts = val.split('@');
+        const domainPart = parts[1] || '';
+        if (!domainPart.includes('.')) {
+            domainWarning.style.display = 'none';
+            return;
+        }
+        const res = validateEmailDomain(val);
+        if (!res.valid) {
+            if (warningSpan) warningSpan.textContent = res.error;
             domainWarning.style.display = 'flex';
         } else {
             domainWarning.style.display = 'none';
@@ -341,14 +405,14 @@
         const confirmPassword = document.getElementById('confirm_password').value;
         const licenseFile = document.getElementById('license').files[0];
 
-        if (!isValidEmailFormat(email)) {
-            messageEl.textContent = 'Please enter a valid email address.';
+        const emailCheck = validateEmailDomain(email);
+        if (!emailCheck.valid) {
+            messageEl.textContent = emailCheck.error;
             messageEl.style.color = '#ef4444';
-            return;
-        }
-        if (isDisposableEmail(email)) {
-            messageEl.textContent = 'Temporary or disposable email addresses are not supported. Please use a permanent email (e.g. Gmail, Outlook, Yahoo, iCloud).';
-            messageEl.style.color = '#ef4444';
+            const warningSpan = document.getElementById('domainWarningText');
+            if (warningSpan) warningSpan.textContent = emailCheck.error;
+            domainWarning.style.display = 'flex';
+            emailInput.focus();
             return;
         }
         if (!validatePassword(password, 'passwordErr')) {

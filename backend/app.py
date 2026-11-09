@@ -2167,6 +2167,65 @@ def is_disposable_email(email: str) -> bool:
             return True
     return False
 
+RECOGNIZED_EMAIL_DOMAINS = {
+    "gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "msn.com",
+    "yahoo.com", "ymail.com", "rocketmail.com", "aol.com", "icloud.com", "me.com", "mac.com",
+    "proton.me", "protonmail.com", "pm.me", "tuta.com", "tutanota.com", "gmx.com", "gmx.net",
+    "zoho.com", "zohomail.com", "mail.com", "yandex.com", "yandex.ru", "fastmail.com", "hushmail.com",
+    "yahoo.com.ph", "qq.com", "163.com", "126.com", "sina.com", "naver.com", "daum.net", "hanmail.net",
+    "mail.ru", "list.ru", "bk.ru", "inbox.ru", "web.de", "t-online.de", "orange.fr", "free.fr",
+    "comcast.net", "verizon.net", "att.net", "btinternet.com"
+}
+
+SOCIAL_NON_MAILBOX_DOMAINS = {
+    "facebook.com", "fb.com", "meta.com", "youtube.com", "youtu.be", "tiktok.com",
+    "instagram.com", "twitter.com", "x.com", "snapchat.com", "pinterest.com",
+    "linkedin.com", "reddit.com", "twitch.tv", "discord.com", "discord.gg",
+    "telegram.org", "t.me", "whatsapp.com", "messenger.com", "netflix.com", "spotify.com"
+}
+
+ALLOWED_INSTITUTIONAL_SUFFIXES = (
+    ".edu.ph", ".edu", ".ac.uk", ".ac.jp", ".ac.kr", ".ac.nz", ".ac.za",
+    ".edu.au", ".edu.sg", ".edu.my", ".edu.in", ".edu.hk", ".edu.tw",
+    ".gov.ph", ".gov", ".gov.uk", ".gov.au", ".gov.sg", ".gov.my", ".go.jp", ".go.kr",
+    ".org.ph", ".org", ".ngo",
+    ".mil.ph", ".mil"
+)
+
+def validate_registration_email(email: str):
+    """
+    Validates that an email is legitimate, from a recognized email provider or institutional domain,
+    and not a social media or disposable domain.
+    Returns (is_valid: bool, error_message: str or None)
+    """
+    if not email or len(str(email).strip()) < 5 or len(str(email).strip()) > 60:
+        return False, "Please enter a valid email address (between 5 and 60 characters)."
+    
+    clean = str(email).strip().lower()
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', clean):
+        return False, "Please enter a valid email address format."
+    
+    parts = clean.split('@')
+    if len(parts) != 2:
+        return False, "Please enter a valid email address."
+    domain = parts[1]
+    
+    if is_disposable_email(clean):
+        return False, "Temporary or disposable email addresses are not supported. Please use a valid permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud)."
+        
+    for s_domain in SOCIAL_NON_MAILBOX_DOMAINS:
+        if domain == s_domain or domain.endswith('.' + s_domain):
+            return False, f"Social media websites ({domain}) cannot be used as email addresses. Please enter your actual email address (e.g. @gmail.com, @yahoo.com)."
+            
+    if domain in RECOGNIZED_EMAIL_DOMAINS:
+        return True, None
+        
+    for suffix in ALLOWED_INSTITUTIONAL_SUFFIXES:
+        if domain.endswith(suffix):
+            return True, None
+            
+    return False, "Unrecognized email provider. Please use a recognized email provider (e.g. Gmail, Yahoo, Outlook, iCloud) or a valid school/institutional email."
+
 def is_valid_email(email: str) -> bool:
     """Validates email format and max length of 60 chars."""
     if not email or len(email) > 60:
@@ -3021,11 +3080,9 @@ def register():
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
 
-    if not email or not is_valid_email(email):
-        return jsonify({"error": "Please enter a valid email address."}), 400
-
-    if is_disposable_email(email):
-        return jsonify({"error": "Temporary or disposable email addresses are not supported. Please use a valid permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud)."}), 400
+    ok_em, err_em = validate_registration_email(email)
+    if not ok_em:
+        return jsonify({"error": err_em}), 400
 
     if confirm_password is not None and str(confirm_password).strip():
         if password != confirm_password:
@@ -7174,10 +7231,9 @@ def update_profile():
         # Update email if provided and not taken by another user
         new_email = request.form.get('email', '').strip().lower()
         if new_email:
-            if not is_valid_email(new_email):
-                return jsonify({"error": "Please enter a valid email address."}), 400
-            if is_disposable_email(new_email):
-                return jsonify({"error": "Temporary or disposable email addresses are not supported."}), 400
+            ok_em, err_em = validate_registration_email(new_email)
+            if not ok_em:
+                return jsonify({"error": err_em}), 400
             cur.execute("SELECT id FROM users WHERE email=%s AND id != %s", (new_email, user_id))
             existing = cur.fetchone()
             if existing:
