@@ -702,6 +702,7 @@ def verify_admin_access(super_admin_only=False):
     if not super_admin_only:
         if (
             'autoride-booking-system.vercel.app' in ref or 'autoride-booking-system.vercel.app' in orig or
+            'arcph.net' in ref or 'arcph.net' in orig or
             'capacitor://localhost' in orig or 'http://localhost' in orig
         ):
             return True, None
@@ -19277,6 +19278,61 @@ def get_fleet_bookings():
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/fleet-bookings/upcoming-summary', methods=['GET'])
+@app.route('/api/admin/fleet-bookings/upcoming-summary', methods=['GET'])
+def get_upcoming_fleet_bookings_summary():
+    """Lightweight booking span summary for future lookahead badges on the Fleet Calendar."""
+    from datetime import datetime, timedelta
+    start = request.args.get('start')
+    end = request.args.get('end')
+    try:
+        if not start or not end:
+            today_dt = datetime.utcnow().date()
+            start_month_total = (today_dt.year * 12 + (today_dt.month - 1)) + 2
+            s_year, s_month0 = divmod(start_month_total, 12)
+            end_month_total = (today_dt.year * 12 + (today_dt.month - 1)) + 13
+            e_year, e_month0 = divmod(end_month_total, 12)
+            if not start:
+                start = f"{s_year:04d}-{s_month0 + 1:02d}-01"
+            if not end:
+                # Next month start minus 1 day gives exact end of target month
+                next_y, next_m0 = divmod(e_year * 12 + e_month0 + 1, 12)
+                last_day_dt = datetime(next_y, next_m0 + 1, 1).date() - timedelta(days=1)
+                end = last_day_dt.strftime('%Y-%m-%d')
+
+        cur = get_cursor()
+        cur.execute("""
+            SELECT
+                b.id, b.vehicle_id, b.start_date, b.end_date, b.status,
+                COALESCE(b.balance_amount, 0.00) AS balance_amount,
+                COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), '') AS customer_name
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            WHERE b.start_date <= %s AND b.end_date >= %s
+              AND LOWER(COALESCE(b.status, '')) NOT IN ('cancelled', 'rejected', 'deleted')
+            ORDER BY b.start_date ASC
+        """, (end, start))
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            result.append({
+                'id': d.get('id'),
+                'vehicle_id': d.get('vehicle_id'),
+                'start_date': str(d.get('start_date') or ''),
+                'end_date': str(d.get('end_date') or ''),
+                'status': str(d.get('status') or ''),
+                'balance_amount': float(d.get('balance_amount') or 0),
+                'customer_name': str(d.get('customer_name') or '')
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 
 @app.route('/admin/fleet-calendar/activity-logs', methods=['GET'])
 @app.route('/api/admin/fleet-calendar/activity-logs', methods=['GET'])

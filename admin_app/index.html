@@ -24708,6 +24708,35 @@ input:checked + .ctrl-slider:before {
 
                 </div>
 
+                <!-- Vehicle Type Filter -->
+                <div id="fleetCalendarTypeWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
+                    <i class="fas fa-car" style="font-size: 0.72rem; color: #00B14F;"></i>
+                    <select id="fleetCalendarTypeSelect" onchange="FleetCalendar.onTypeFilterChange(this.value)" title="Filter by Vehicle Category"
+                            style="background: transparent; border: none; font-size: 0.74rem; font-weight: 700; color: var(--text-main); outline: none; cursor: pointer; padding: 2px 0;">
+                        <option value="all">All Vehicle Types</option>
+                        <option value="Van">Van</option>
+                        <option value="SUV">SUV</option>
+                        <option value="MPV">MPV</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="Pickup">Pickup</option>
+                        <option value="Hatchback">Hatchback</option>
+                    </select>
+                </div>
+
+                <!-- Booking Status / Payment Filter -->
+                <div id="fleetCalendarStatusWrap" style="display: inline-flex; align-items: center; background: var(--surface-solid); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--border); gap: 6px;">
+                    <i class="fas fa-filter" style="font-size: 0.72rem; color: #3b82f6;"></i>
+                    <select id="fleetCalendarStatusSelect" onchange="FleetCalendar.onStatusFilterChange(this.value)" title="Filter by Booking Status"
+                            style="background: transparent; border: none; font-size: 0.74rem; font-weight: 700; color: var(--text-main); outline: none; cursor: pointer; padding: 2px 0;">
+                        <option value="all_active">All Active Statuses</option>
+                        <option value="all_with_pending">All (Incl. Pending)</option>
+                        <option value="confirmed">Confirmed Only</option>
+                        <option value="ongoing">Ongoing Only</option>
+                        <option value="pending">Pending Only</option>
+                        <option value="balance_due">With Balance Due</option>
+                    </select>
+                </div>
+
 
 
                 <button type="button" onclick="FleetCalendar.openExportModal()" class="btn-primary" title="Export Fleet Schedule & Bookings to Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #00B14F; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
@@ -24726,6 +24755,24 @@ input:checked + .ctrl-slider:before {
 
                     <i class="fas fa-history"></i> <span class="fc-btn-text">Audit History</span>
 
+                </button>
+
+                <!-- Upcoming Months Bookings Indicator (3rd to 12th month out) -->
+                <div id="fcUpcomingMonthsWrap"
+                     style="display: none; align-items: center; gap: 6px; flex-wrap: wrap; background: var(--surface-solid); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.74rem;">
+                    <span style="font-weight: 800; color: var(--text-main); margin-right: 2px;">Bookings:</span>
+                    <div id="fcUpcomingMonthsList" style="display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap;"></div>
+                    <select id="fcUpcomingHorizonSelect" onchange="FleetCalendar.onHorizonChange(this.value)" title="Upcoming Lookahead Horizon (starts 3rd month)"
+                            style="background: transparent; border: 1px solid var(--border); border-radius: 6px; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 2px 5px; cursor: pointer; outline: none; margin-left: 2px;">
+                        <option value="12">12M out</option>
+                        <option value="8">8M out</option>
+                    </select>
+                </div>
+
+                <!-- Reset Active Filters Button -->
+                <button id="fcResetFiltersBtn" type="button" onclick="FleetCalendar.resetAllFilters()" title="Clear active filters"
+                        style="display: none; padding: 6px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 700; cursor: pointer; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); color: #dc2626; align-items: center; gap: 5px;">
+                    <i class="fas fa-times"></i> Reset Filters
                 </button>
 
             </div>
@@ -25433,6 +25480,10 @@ input:checked + .ctrl-slider:before {
 
 
         // 3. Web: Vercel or HTTPS
+
+        if (window.location.hostname.includes('arcph.net')) {
+            return 'https://autoride-booking-system.vercel.app';
+        }
 
         if (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:') {
 
@@ -37340,6 +37391,8 @@ input:checked + .ctrl-slider:before {
 
         bookings: [],
 
+        upcomingBookings: [],
+
         blackouts: [],
 
         vehicles: [],
@@ -37347,6 +37400,12 @@ input:checked + .ctrl-slider:before {
         searchQuery: '',
 
         branchFilter: 'all',
+
+        typeFilter: 'all',
+
+        statusFilter: 'all_active',
+
+        upcomingHorizonMonths: 12,
 
         activeBookingId: null,
 
@@ -37364,6 +37423,147 @@ input:checked + .ctrl-slider:before {
 
             this.render();
 
+        },
+
+        onTypeFilterChange(val) {
+            this.typeFilter = val || 'all';
+            this.render();
+        },
+
+        onStatusFilterChange(val) {
+            this.statusFilter = val || 'all_active';
+            this.render();
+        },
+
+        onHorizonChange(val) {
+            const parsed = parseInt(val, 10);
+            this.upcomingHorizonMonths = (parsed === 8) ? 8 : 12;
+            this.renderUpcomingMonthsSummary();
+        },
+
+        resetAllFilters() {
+            this.searchQuery = '';
+            this.branchFilter = 'all';
+            this.typeFilter = 'all';
+            this.statusFilter = 'all_active';
+            const searchEl = document.getElementById('fleetCalendarSearch');
+            if (searchEl) searchEl.value = '';
+            const branchEl = document.getElementById('fleetCalendarBranchSelect');
+            if (branchEl) branchEl.value = 'all';
+            const typeEl = document.getElementById('fleetCalendarTypeSelect');
+            if (typeEl) typeEl.value = 'all';
+            const statusEl = document.getElementById('fleetCalendarStatusSelect');
+            if (statusEl) statusEl.value = 'all_active';
+            this.render();
+        },
+
+        jumpToMonth(year, monthIndex) {
+            this.currentDate = new Date(year, monthIndex, 1);
+            this._shouldScrollToToday = false;
+            this.refresh();
+        },
+
+        bookingPassesStatusFilter(b, opts) {
+            const st = String((b && b.status) || '').trim().toLowerCase();
+            if (!st || st === 'cancelled' || st === 'rejected' || st === 'deleted') return false;
+            const sf = this.statusFilter || 'all_active';
+            const isUpcoming = Boolean(opts && opts.isUpcoming);
+            if (sf === 'all_active') {
+                if (isUpcoming) {
+                    return ['confirmed', 'approved', 'picked up', 'ongoing', 'completed'].includes(st);
+                }
+                return true;
+            }
+            if (sf === 'all_with_pending') return true;
+            if (sf === 'confirmed') return st === 'confirmed' || st === 'approved';
+            if (sf === 'ongoing') return st === 'picked up' || st === 'ongoing';
+            if (sf === 'pending') return st === 'pending';
+            if (sf === 'balance_due') return parseFloat(b.balance_amount || 0) > 0;
+            return true;
+        },
+
+        getUpcomingMonthBuckets(nowDate, bookingsList, vehiclesList) {
+            const now = nowDate instanceof Date ? nowDate : new Date();
+            const horizon = this.upcomingHorizonMonths === 8 ? 8 : 12;
+            const maxOffset = (horizon === 8) ? 9 : 13; // start at 3rd month (offset +2)
+            const vehicleMap = new Map();
+            (vehiclesList || []).forEach(v => vehicleMap.set(String(v.id), v));
+            const shortNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const fullNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const q = (this.searchQuery || '').toLowerCase().trim();
+            const buckets = [];
+
+            for (let offset = 2; offset <= maxOffset; offset++) {
+                const mDate = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+                const y = mDate.getFullYear();
+                const mIdx = mDate.getMonth();
+                const lastDay = new Date(y, mIdx + 1, 0).getDate();
+                const mStartKey = `${y}-${String(mIdx + 1).padStart(2, '0')}-01`;
+                const mEndKey = `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+                let count = 0;
+                (bookingsList || []).forEach(bk => {
+                    const sKey = String(bk.start_date || '').split('T')[0];
+                    const eKey = String(bk.end_date || '').split('T')[0];
+                    if (!sKey || !eKey) return;
+                    if (sKey > mEndKey || eKey < mStartKey) return;
+                    if (!this.bookingPassesStatusFilter(bk, { isUpcoming: true })) return;
+
+                    const veh = vehicleMap.get(String(bk.vehicle_id));
+                    if (this.branchFilter && this.branchFilter !== 'all') {
+                        if (!veh || this.getVehicleBranch(veh).key !== this.branchFilter) return;
+                    }
+                    if (this.typeFilter && this.typeFilter !== 'all') {
+                        if (!veh || this.getVehicleCategory(veh).toLowerCase() !== this.typeFilter.toLowerCase()) return;
+                    }
+                    if (q) {
+                        const vehStr = veh ? `${veh.brand || ''} ${veh.model || ''} ${veh.plate_number || ''}`.toLowerCase() : '';
+                        const custStr = `${bk.customer_name || ''} ${bk.id || ''}`.toLowerCase();
+                        if (!vehStr.includes(q) && !custStr.includes(q)) return;
+                    }
+                    count++;
+                });
+
+                if (count > 0) {
+                    buckets.push({
+                        year: y,
+                        monthIndex: mIdx,
+                        shortLabel: shortNames[mIdx],
+                        fullLabel: `${fullNames[mIdx]} ${y}`,
+                        count
+                    });
+                }
+            }
+            return buckets;
+        },
+
+        renderUpcomingMonthsSummary() {
+            const wrap = document.getElementById('fcUpcomingMonthsWrap');
+            const listEl = document.getElementById('fcUpcomingMonthsList');
+            if (!wrap || !listEl) return;
+
+            const buckets = this.getUpcomingMonthBuckets(new Date(), this.upcomingBookings || [], this.vehicles || []);
+            if (buckets.length === 0) {
+                listEl.innerHTML = '';
+                wrap.style.display = 'none';
+                return;
+            }
+
+            wrap.style.display = 'inline-flex';
+            const curY = this.currentDate.getFullYear();
+            const curM = this.currentDate.getMonth();
+
+            listEl.innerHTML = buckets.map(b => {
+                const isViewing = (b.year === curY && b.monthIndex === curM);
+                const bg = isViewing ? '#ea580c' : 'rgba(249, 115, 22, 0.12)';
+                const color = isViewing ? '#ffffff' : '#c2410c';
+                const border = isViewing ? '#ea580c' : '#fb923c';
+                return `<button type="button" onclick="FleetCalendar.jumpToMonth(${b.year}, ${b.monthIndex})" ` +
+                    `title="${b.fullLabel}: ${b.count} booking${b.count === 1 ? '' : 's'} — Click to view in Calendar" ` +
+                    `style="padding: 2px 8px; border-radius: 6px; border: 1px solid ${border}; background: ${bg}; color: ${color}; ` +
+                    `font-size: 0.72rem; font-weight: 800; cursor: pointer; line-height: 1.4; transition: all 0.15s ease;">` +
+                    `${b.shortLabel}: ${b.count}</button>`;
+            }).join('');
         },
 
 
@@ -38188,9 +38388,15 @@ input:checked + .ctrl-slider:before {
 
                 
 
-                // Fetch vehicles, fleet bookings and blackouts
+                const nowDt = new Date();
+                const upStartDt = new Date(nowDt.getFullYear(), nowDt.getMonth() + 2, 1);
+                const upEndDt = new Date(nowDt.getFullYear(), nowDt.getMonth() + 14, 0);
+                const upStartStr = `${upStartDt.getFullYear()}-${String(upStartDt.getMonth() + 1).padStart(2, '0')}-01`;
+                const upEndStr = `${upEndDt.getFullYear()}-${String(upEndDt.getMonth() + 1).padStart(2, '0')}-${String(upEndDt.getDate()).padStart(2, '0')}`;
 
-                const [vRes, cRes, bRes, lRes] = await Promise.all([
+                // Fetch vehicles, fleet bookings, blackouts, locations and upcoming months summary
+
+                const [vRes, cRes, bRes, lRes, upRes] = await Promise.all([
 
                     fetch(`${API_BASE}/api/vehicles`),
 
@@ -38198,7 +38404,9 @@ input:checked + .ctrl-slider:before {
 
                     fetch(`${API_BASE}/api/admin/blackout-dates`),
 
-                    fetch(`${API_BASE}/api/locations`).catch(() => null)
+                    fetch(`${API_BASE}/api/locations`).catch(() => null),
+
+                    fetch(`${API_BASE}/api/admin/fleet-bookings/upcoming-summary?start=${upStartStr}&end=${upEndStr}`).catch(() => null)
 
                 ]);
 
@@ -38209,6 +38417,12 @@ input:checked + .ctrl-slider:before {
                 if (!Array.isArray(fetchedBookings)) {
                     console.error("Fleet bookings fetch error:", fetchedBookings);
                     fetchedBookings = [];
+                }
+
+                let fetchedUpcoming = [];
+                if (upRes && upRes.ok) {
+                    const upJson = await upRes.json().catch(() => []);
+                    if (Array.isArray(upJson)) fetchedUpcoming = upJson;
                 }
 
                 if (typeof isConsignor === 'function' && isConsignor()) {
@@ -38223,11 +38437,15 @@ input:checked + .ctrl-slider:before {
 
                         fetchedBookings = (fetchedBookings || []).filter(b => assignedIds.includes(parseInt(b.vehicle_id, 10)));
 
+                        fetchedUpcoming = (fetchedUpcoming || []).filter(b => assignedIds.includes(parseInt(b.vehicle_id, 10)));
+
                     } else {
 
                         fetchedVehicles = [];
 
                         fetchedBookings = [];
+
+                        fetchedUpcoming = [];
 
                     }
 
@@ -38238,6 +38456,8 @@ input:checked + .ctrl-slider:before {
                 this.vehicles = fetchedVehicles;
 
                 this.bookings = fetchedBookings;
+
+                this.upcomingBookings = fetchedUpcoming;
 
                 let fetchedBlackouts = await bRes.json();
                 this.blackouts = Array.isArray(fetchedBlackouts) ? fetchedBlackouts : [];
@@ -38818,6 +39038,21 @@ input:checked + .ctrl-slider:before {
 
             }
 
+            if (this.typeFilter && this.typeFilter !== 'all') {
+                filteredVehicles = filteredVehicles.filter(v => this.getVehicleCategory(v).toLowerCase() === this.typeFilter.toLowerCase());
+            }
+
+            const resetFiltersBtnEl = document.getElementById('fcResetFiltersBtn');
+            if (resetFiltersBtnEl) {
+                const hasActiveFilter = Boolean(this.searchQuery) ||
+                    (this.branchFilter && this.branchFilter !== 'all') ||
+                    (this.typeFilter && this.typeFilter !== 'all') ||
+                    (this.statusFilter && this.statusFilter !== 'all_active');
+                resetFiltersBtnEl.style.display = hasActiveFilter ? 'inline-flex' : 'none';
+            }
+
+            this.renderUpcomingMonthsSummary();
+
 
 
             // Calculate active bookings count & utilization in this period
@@ -38828,7 +39063,7 @@ input:checked + .ctrl-slider:before {
 
                 const e = new Date(b.end_date);
 
-                return s <= calEnd && e >= calStart && b.status !== 'cancelled' && b.status !== 'rejected';
+                return s <= calEnd && e >= calStart && this.bookingPassesStatusFilter(b);
 
             });
 
@@ -39054,9 +39289,7 @@ input:checked + .ctrl-slider:before {
 
                     if (String(bk.vehicle_id) !== String(v.id)) return false;
 
-                    if (bk.status === 'cancelled' || bk.status === 'rejected') return false;
-
-                    return true;
+                    return this.bookingPassesStatusFilter(bk);
 
                 }).map(bk => {
 
