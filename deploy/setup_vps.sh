@@ -6,7 +6,7 @@ set -euo pipefail
 
 APP_DIR="/opt/autoride"
 REPO_URL="https://github.com/marpj62625/Autoride_Booking_system.git"
-CUSTOMER_DOMAIN="${CUSTOMER_DOMAIN:-book.arcph.net}"
+CUSTOMER_DOMAIN="${CUSTOMER_DOMAIN:-autoride.arcph.net}"
 ADMIN_DOMAIN="${ADMIN_DOMAIN:-app.arcph.net}"
 API_DOMAIN="${API_DOMAIN:-api.arcph.net}"
 
