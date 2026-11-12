@@ -81,6 +81,10 @@ var API_BASE = (function() {
   
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
+    if (h.indexOf('arcph.net') !== -1) {
+      console.log('Using custom domain API for arcph.net');
+      return 'https://api.arcph.net/api';
+    }
     if (h === 'localhost' || h === '127.0.0.1') {
       console.log('Using localhost API for web development');
       return 'http://localhost:5000/api';
