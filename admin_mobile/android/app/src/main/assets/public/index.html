@@ -58076,7 +58076,8 @@ function toggleNewsletterModal(show = true) {
 
             list.innerHTML = this.data.map(s => {
 
-                const isActive = Number(s.is_verified) === 2 || Number(s.is_verified) === 1;
+                const isSuper = (s.role || '').toLowerCase().includes('super');
+                const isActive = isSuper || Number(s.is_verified) === 2 || Number(s.is_verified) === 1;
 
                 return `
 

@@ -13801,6 +13801,7 @@ def admin_login():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('super_admin', 'superadmin') AND is_verified != 2")
             commit_db()
         except Exception:
             pass
@@ -13877,6 +13878,7 @@ def get_admin_me():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('super_admin', 'superadmin') AND is_verified != 2")
             commit_db()
         except Exception:
             pass
@@ -13916,6 +13918,7 @@ def list_admins():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('super_admin', 'superadmin') AND is_verified != 2")
             commit_db()
         except Exception:
             pass
@@ -14012,6 +14015,7 @@ def update_admin(user_id):
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('super_admin', 'superadmin') AND is_verified != 2")
             commit_db()
         except Exception:
             pass
@@ -14373,6 +14377,7 @@ def create_admin():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_id INT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_vehicle_ids TEXT")
             cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('admin', 'super_admin', 'superadmin', 'consignor') AND is_verified = 1")
+            cur.execute("UPDATE users SET is_verified = 2 WHERE role IN ('super_admin', 'superadmin') AND is_verified != 2")
             commit_db()
         except Exception:
             pass
