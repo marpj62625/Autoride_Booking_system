@@ -14216,6 +14216,7 @@ def toggle_admin_status(user_id):
     requester_id = data.get('requester_id')
 
     new_status = data.get('status')
+    target_status = 2 if int(new_status or 0) > 0 else 0
 
     try:
 
@@ -14238,7 +14239,7 @@ def toggle_admin_status(user_id):
             return jsonify({"error": "Super Admin status cannot be changed."}), 403
 
 
-        cur.execute("UPDATE users SET is_verified=%s WHERE id=%s AND id != %s", (new_status, user_id, requester_id))
+        cur.execute("UPDATE users SET is_verified=%s WHERE id=%s AND id != %s", (target_status, user_id, requester_id))
 
         commit_db()
 
@@ -14258,7 +14259,7 @@ def toggle_admin_status(user_id):
 
             target_id=str(user_id),
 
-            details=f"Set staff ID {user_id} status to {'Active' if new_status == 1 else 'Disabled'}"
+            details=f"Set staff ID {user_id} status to {'Active' if target_status > 0 else 'Disabled'}"
 
         )
 

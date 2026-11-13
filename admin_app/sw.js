@@ -4,18 +4,18 @@
    Android (Chrome) and iOS (Safari)
    ============================================================ */
 
-const CACHE_NAME = 'autoride-admin-v7';
+const CACHE_NAME = 'autoride-admin-v8';
 
 // Core shell files to cache during install
 const CORE_ASSETS = [
-    '/admin_app/',
-    '/admin_app/index.html',
-    '/admin_app/desktop.css',
-    '/admin_app/print-header.css',
-    '/admin_app/print-receipt.html',
-    '/admin_app/manifest.json',
-    '/admin_app/Autoride-logo.png',
-    '/admin_app/Autoride-logo-nobg.png',
+    './',
+    './index.html',
+    './desktop.css',
+    './print-header.css',
+    './print-receipt.html',
+    './manifest.json',
+    './Autoride-logo.png',
+    './Autoride-logo-nobg.png',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 ];
 
@@ -98,7 +98,7 @@ self.addEventListener('fetch', (event) => {
             }).catch(() => {
                 if (cachedResponse) return cachedResponse;
                 if (request.mode === 'navigate') {
-                    return caches.match('/admin_app/index.html') || caches.match('/admin_app/') || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+                    return caches.match('./index.html') || caches.match('./') || caches.match('/index.html') || caches.match('/') || caches.match('/admin_app/index.html') || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
                 }
                 return new Response('', { status: 503, statusText: 'Network Unavailable' });
             });

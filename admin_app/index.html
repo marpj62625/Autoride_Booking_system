@@ -39545,11 +39545,11 @@ input:checked + .ctrl-slider:before {
 
                                      title="${custNameA} (Return: ${bkA.end_time || half})"
 
-                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorA.bg}; color: ${colorA.text}; border-top: 1.5px solid ${colorA.border}; border-bottom: 1.5px solid ${colorA.border}; ${hasLeftOutgoingConnect ? 'border-left: none;' : `border-left: 1.5px solid ${colorA.border}; border-radius: 8px 0 0 8px;`} border-right: 1.5px dashed rgba(0,0,0,0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
+                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorA.bg}; color: ${colorA.text}; border-top: 1.5px solid ${colorA.border}; border-bottom: 1.5px solid ${colorA.border}; ${hasLeftOutgoingConnect ? 'border-left: none;' : `border-left: 1.5px solid ${colorA.border}; border-radius: 8px 0 0 8px;`} border-right: 1.5px dashed rgba(0,0,0,0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s, border-color 0.15s, box-shadow 0.15s;"
 
-                                     onmouseover="this.style.filter='brightness(0.95)'"
+                                     onmouseover="this.style.borderColor='#15803d'; this.style.boxShadow='inset 0 0 0 1.5px #15803d';"
 
-                                     onmouseout="this.style.filter='none'">
+                                     onmouseout="this.style.borderColor='${colorA.border}'; this.style.boxShadow='none'">
 
                                     <span style="width: 10px; height: 10px; background: currentColor; border-radius: 2px; display: inline-block; opacity: 0.92; flex-shrink: 0;"></span>
 
@@ -39563,11 +39563,11 @@ input:checked + .ctrl-slider:before {
 
                                      title="${custNameB} (Pickup: ${bkB.start_time || half})"
 
-                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorB.bg}; color: ${colorB.text}; border-top: 1.5px solid ${colorB.border}; border-bottom: 1.5px solid ${colorB.border}; ${hasRightIncomingConnect ? 'border-right: none;' : `border-right: 1.5px solid ${colorB.border}; border-radius: 0 8px 8px 0;`} border-left: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s;"
+                                     style="flex: 1; height: 100%; min-width: 0; background: ${colorB.bg}; color: ${colorB.text}; border-top: 1.5px solid ${colorB.border}; border-bottom: 1.5px solid ${colorB.border}; ${hasRightIncomingConnect ? 'border-right: none;' : `border-right: 1.5px solid ${colorB.border}; border-radius: 0 8px 8px 0;`} border-left: none; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: filter 0.15s, border-color 0.15s, box-shadow 0.15s;"
 
-                                     onmouseover="this.style.filter='brightness(0.95)'"
+                                     onmouseover="this.style.borderColor='#15803d'; this.style.boxShadow='inset 0 0 0 1.5px #15803d';"
 
-                                     onmouseout="this.style.filter='none'">
+                                     onmouseout="this.style.borderColor='${colorB.border}'; this.style.boxShadow='none'">
 
                                     <span style="font-size: 0.62rem; font-weight: 900; line-height: 1; opacity: 0.85;">▶</span>
 
@@ -39767,11 +39767,11 @@ input:checked + .ctrl-slider:before {
 
                                 style="${tdPadding} border: 1px solid var(--border); ${tdBorderLeft} ${tdBorderRight} ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px; width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; overflow: hidden;">
 
-                                <div style="background: ${color.bg}; color: ${color.text}; border: ${isOverdueReturn ? '2px solid #ef4444' : `1.5px solid ${color.border}`}; ${radiusStyle} padding: 3px 6px; font-weight: 800; line-height: 1.25; ${shadowStyle} height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                                <div style="background: ${color.bg}; color: ${color.text}; border: ${isOverdueReturn ? '2px solid #ef4444' : `1.5px solid ${color.border}`}; ${radiusStyle} padding: 3px 6px; font-weight: 800; line-height: 1.25; ${shadowStyle} height: calc(100% - 2px); width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: border-color 0.15s, box-shadow 0.15s;"
 
-                                     onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
+                                     onmouseover="this.style.borderColor='#15803d'; this.style.boxShadow='0 0 0 1.5px #15803d, 0 4px 10px rgba(0,0,0,0.18)';"
 
-                                     onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
+                                     onmouseout="this.style.borderColor='${isOverdueReturn ? '#ef4444' : color.border}'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
 
                                     <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.74rem'}; font-weight: 900; letter-spacing: 0.2px; min-width: 0; display: flex; align-items: center;">
 
@@ -58074,7 +58074,11 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            list.innerHTML = this.data.map(s => `
+            list.innerHTML = this.data.map(s => {
+
+                const isActive = Number(s.is_verified) === 2 || Number(s.is_verified) === 1;
+
+                return `
 
                 <div style="padding: 16px 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-solid); margin-bottom: 12px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-card);">
 
@@ -58114,11 +58118,11 @@ function toggleNewsletterModal(show = true) {
 
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px;">
 
-                        <span style="font-size: 0.8rem; color: ${s.is_verified === 1 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 0.8rem; color: ${isActive ? 'var(--success)' : 'var(--danger)'}; font-weight: 600; display: flex; align-items: center; gap: 6px;">
 
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${s.is_verified === 1 ? 'var(--success)' : 'var(--danger)'}; display: inline-block;"></span>
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${isActive ? 'var(--success)' : 'var(--danger)'}; display: inline-block;"></span>
 
-                            ${s.is_verified === 1 ? 'Enabled' : 'Disabled'}
+                            ${isActive ? 'Enabled' : 'Disabled'}
 
                         </span>
 
@@ -58140,9 +58144,9 @@ function toggleNewsletterModal(show = true) {
 
                             ${s.id !== currentUser.id && s.role !== 'super_admin' ? `
 
-                                <button onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})" style="padding: 6px 12px; background: ${s.is_verified === 1 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 177, 79, 0.1)'}; border: 1px solid ${s.is_verified === 1 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 177, 79, 0.2)'}; border-radius: 8px; color: ${s.is_verified === 1 ? 'var(--danger)' : 'var(--success)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                <button onclick="Staff.toggleStatus(${s.id}, ${isActive ? 1 : 0})" style="padding: 6px 12px; background: ${isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 177, 79, 0.1)'}; border: 1px solid ${isActive ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 177, 79, 0.2)'}; border-radius: 8px; color: ${isActive ? 'var(--danger)' : 'var(--success)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
 
-                                    <i class="fas ${s.is_verified === 1 ? 'fa-ban' : 'fa-check'}" style="font-size: 0.75rem;"></i> ${s.is_verified === 1 ? 'Disable' : 'Enable'}
+                                    <i class="fas ${isActive ? 'fa-ban' : 'fa-check'}" style="font-size: 0.75rem;"></i> ${isActive ? 'Disable' : 'Enable'}
 
                                 </button>
 
@@ -58160,7 +58164,9 @@ function toggleNewsletterModal(show = true) {
 
                 </div>
 
-            `).join('');
+                `;
+
+            }).join('');
 
 
 
@@ -58682,7 +58688,7 @@ function toggleNewsletterModal(show = true) {
 
                     headers: { 'Content-Type': 'application/json' },
 
-                    body: JSON.stringify({ requester_id: user.id, status: current === 1 ? 0 : 1 })
+                    body: JSON.stringify({ requester_id: user.id, status: current === 1 ? 0 : 2 })
 
                 });
 
