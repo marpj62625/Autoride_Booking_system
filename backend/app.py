@@ -14884,28 +14884,98 @@ def update_vehicle_rate(vehicle_id):
 @app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
 @app.route('/api/vehicles/<int:vehicle_id>/', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
-    # Require super_admin to delete vehicles
-    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    # Verify admin access
+    is_authorized, err_resp = verify_admin_access()
     if not is_authorized:
         return err_resp
 
     try:
         cur = get_cursor()
 
-        cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
+        # Check vehicle existence and status
+        cur.execute("SELECT id, brand, model, plate_number, status FROM vehicles WHERE id = %s", (vehicle_id,))
+        veh = cur.fetchone()
+        if not veh:
+            return jsonify({"error": f"Vehicle #{vehicle_id} not found"}), 404
 
+        status_str = (veh.get('status') or '').strip().lower()
+        if status_str != 'archived':
+            car_label = f"{veh.get('brand', '')} {veh.get('model', '')} ({veh.get('plate_number', '')})".strip()
+            return jsonify({"error": f"Only archived vehicles can be permanently deleted. Please archive '{car_label}' before deleting."}), 400
+
+        # Safety: Check if there are active or ongoing bookings for this vehicle
+        cur.execute("""
+            SELECT COUNT(*) AS active_cnt
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND LOWER(COALESCE(status, '')) IN ('pending', 'approved', 'confirmed', 'picked up', 'ongoing')
+        """, (vehicle_id,))
+        act_row = cur.fetchone()
+        active_cnt = (act_row.get('active_cnt') or 0) if act_row else 0
+        if active_cnt > 0:
+            return jsonify({"error": f"Cannot delete vehicle: It has {active_cnt} active or ongoing booking(s). Please complete or cancel them first."}), 400
+
+        # Safely detach completed/cancelled historical bookings so revenue/reports are preserved
+        try:
+            cur.execute("UPDATE bookings SET vehicle_id = NULL WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        # Detach any assigned drivers or users
+        try:
+            cur.execute("UPDATE users SET assigned_vehicle_id = NULL WHERE assigned_vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        # Cascade dependent auxiliary records
+        try:
+            cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        try:
+            cur.execute("DELETE FROM vehicle_expenses WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        try:
+            cur.execute("DELETE FROM vehicle_inspections WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        try:
+            cur.execute("DELETE FROM reviews WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        try:
+            cur.execute("DELETE FROM gps_tracking_logs WHERE vehicle_id = %s", (vehicle_id,))
+        except Exception:
+            pass
+
+        # Permanently delete the vehicle row
         cur.execute("DELETE FROM vehicles WHERE id = %s", (vehicle_id,))
-
         commit_db()
 
-        return jsonify({"message": "Vehicle deleted"}), 200
+        car_name = f"{veh.get('brand', '')} {veh.get('model', '')} ({veh.get('plate_number', '')})".strip()
+        try:
+            log_activity(
+                admin_id=0,
+                admin_name='Admin',
+                action='PERMANENT_DELETE_VEHICLE',
+                target_type='VEHICLE',
+                target_id=str(vehicle_id),
+                details=f"Permanently purged archived vehicle {car_name} (ID #{vehicle_id}) from database"
+            )
+        except Exception:
+            pass
+
+        return jsonify({"success": True, "message": f"Vehicle {car_name} permanently deleted"}), 200
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
 
     finally:
-
         if 'cur' in locals(): cur.close()
 
 

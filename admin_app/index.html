@@ -16438,9 +16438,9 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
             
 
-            <!-- Modal Header -->
+            <!-- Modal Header (Sticky Float) -->
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border, #e2e8f0);">
+            <div style="position: sticky; top: -24px; margin: -24px -24px 20px -24px; padding: 18px 24px 14px 24px; background: var(--surface-solid, #ffffff); z-index: 20; border-bottom: 1px solid var(--border, #e2e8f0); border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: flex-start;">
 
                 <div style="display: flex; align-items: center; gap: 12px;">
 
@@ -16805,11 +16805,9 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                 <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a);">Return / End <span style="color:#ef4444;">*</span></label>
                                 <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span id="walkinDurationDisplay" style="font-size: 0.72rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.25); padding: 2px 8px; border-radius: 6px; user-select: none;" title="Total rental duration (Days & Hours)">1 Day</span>
+                                    <input type="hidden" id="walkinBillableDays" value="1">
                                     <span id="walkinExcessBadge" style="display: none; font-size: 0.65rem; font-weight: 800; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px;" title="Rental duration exceeded 24-hr period. Admin decides whether to increase billable days or add fee."></span>
-                                    <select id="walkinBillableDays" onchange="WalkinBooking.onDaysManualChange(this.value)"
-                                            style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.25); padding: 2px 6px; border-radius: 5px; cursor: pointer; outline: none;"
-                                            title="Billable rental days (Admin can adjust if time is exceeded)">
-                                    </select>
                                     <span id="walkinDurationDaysBadge" style="display: none;"></span>
                                 </div>
                             </div>
@@ -16838,13 +16836,15 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <span style="font-size: 0.7rem; color: var(--text-muted, #64748b); font-weight: 600;">Quick add:</span>
 
-                        <button type="button" onclick="WalkinBooking.addDays(1)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+1 Day</button>
+                        <button type="button" onclick="WalkinBooking.addDays(7)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">1 week</button>
 
-                        <button type="button" onclick="WalkinBooking.addDays(2)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+2 Days</button>
+                        <button type="button" onclick="WalkinBooking.addDays(14)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">2 weeks</button>
 
-                        <button type="button" onclick="WalkinBooking.addDays(3)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+3 Days</button>
+                        <button type="button" onclick="WalkinBooking.addDays(21)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">3 weeks</button>
 
-                        <button type="button" onclick="WalkinBooking.addDays(7)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+1 Week</button>
+                        <button type="button" onclick="WalkinBooking.addMonths(1)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">1 month</button>
+
+                        <button type="button" onclick="WalkinBooking.addMonths(2)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">2 months</button>
 
                     </div>
 
@@ -16921,26 +16921,10 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                             </label>
                             <span id="walkinPurposeCharCount" style="font-size: 0.68rem; color: var(--text-muted, #64748b); font-weight: 700;">0/100</span>
                         </div>
-                        <div class="walkin-sub-grid-2" style="gap: 10px;">
-                            <div>
-                                <select id="walkinPurposePreset" onchange="WalkinBooking.onPurposeSelect(this.value)"
-                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
-                                    <option value="">Select preset purpose...</option>
-                                    <option value="Personal / Leisure">Personal / Leisure</option>
-                                    <option value="Family Vacation / Travel">Family Vacation / Travel</option>
-                                    <option value="Business / Corporate Trip">Business / Corporate Trip</option>
-                                    <option value="Event / Wedding / Party">Event / Wedding / Party</option>
-                                    <option value="Airport Transfer">Airport Transfer</option>
-                                    <option value="City Tour / Sightseeing">City Tour / Sightseeing</option>
-                                    <option value="Emergency / Vehicle Breakdown">Emergency / Vehicle Breakdown</option>
-                                    <option value="Other">Other (Custom)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <input type="text" id="walkinRentalPurpose" maxlength="100" placeholder="Type or select purpose (e.g. Vacation, Wedding)"
-                                       oninput="WalkinBooking.updatePurposeCharCount()"
-                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
-                            </div>
+                        <div>
+                            <input type="text" id="walkinRentalPurpose" maxlength="100" placeholder="Type purpose of rental (e.g. Vacation, Wedding, Business Trip)"
+                                   oninput="WalkinBooking.updatePurposeCharCount()"
+                                   style="width: 100%; padding: 8px 12px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
 
@@ -17048,11 +17032,11 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                                      style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
-                                <option value="Paid" selected>Paid (Full)</option>
+                                <option value="Partial">Down Payment (Reservation Fee)</option>
 
-                                <option value="Partial">Downpayment (Partial)</option>
+                                <option value="Paid" selected>Fully Paid</option>
 
-                                <option value="Unpaid">Unpaid / Collect Later</option>
+                                <option value="Unpaid">Pending (For Collection)</option>
 
                             </select>
 
@@ -35519,9 +35503,18 @@ input:checked + .ctrl-slider:before {
 
             const isArchived = (v.status || '').toLowerCase() === 'archived';
 
+            const deleteBtnHtml = isArchived ? `
+                <button onclick="Vehicles.deleteVehicle(${v.id})" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:12px;border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'" title="Permanently delete this archived vehicle">
+                    <i class="fas fa-trash-can"></i>
+                    <span>Delete Vehicle</span>
+                </button>
+            ` : '';
+
             const actionButtonsHtml = `
 
-                <div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--surface-solid,var(--surface));display:flex;gap:12px;justify-content:flex-end;align-items:center;border-radius:0 0 24px 24px;">
+                <div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--surface-solid,var(--surface));display:flex;gap:12px;justify-content:flex-end;align-items:center;border-radius:0 0 24px 24px;flex-wrap:wrap;">
+
+                    ${deleteBtnHtml}
 
                     <button onclick="Vehicles.archiveVehicle(${v.id}, ${isArchived ? "'Available'" : "'Archived'"})" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:12px;border:1px solid ${isArchived ? '#00B14F' : 'rgba(239,68,68,0.35)'};background:${isArchived ? 'rgba(0,177,79,0.08)' : 'rgba(239,68,68,0.08)'};color:${isArchived ? '#00B14F' : '#ef4444'};font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
 
@@ -35653,7 +35646,39 @@ input:checked + .ctrl-slider:before {
 
         },
 
+        async deleteVehicle(id) {
+            const v = this.data.find(x => x.id == id);
+            const carName = v ? `${v.brand} ${v.model} (${v.plate_number || ''})`.trim() : `Vehicle #${id}`;
+            const msg = `Are you sure you want to PERMANENTLY DELETE "${carName}"?\n\n⚠️ WARNING: This vehicle and its images/inspections will be permanently removed from the system. Past completed booking financial histories will be safely preserved, but this vehicle will no longer exist in the fleet database. This action CANNOT be undone!`;
 
+            if (!confirm(msg)) return;
+
+            try {
+                const res = await fetch(`${API_URL}/vehicles/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res.ok) {
+                    if (typeof showNotification === 'function') {
+                        showNotification(`${carName} has been permanently deleted`, 'success');
+                    }
+                    const modal = document.getElementById('vehicleDetailModal');
+                    if (modal) modal.style.display = 'none';
+                    await this.refresh();
+                } else {
+                    let errMsg = 'Failed to delete vehicle';
+                    try {
+                        const d = await res.json();
+                        if (d && d.error) errMsg = d.error;
+                    } catch (e) {}
+                    if (typeof showNotification === 'function') showNotification(errMsg, 'error');
+                }
+            } catch (err) {
+                console.error('deleteVehicle error:', err);
+                if (typeof showNotification === 'function') showNotification('Network error while deleting vehicle', 'error');
+            }
+        },
 
         async edit(id) { this.openModal(id); },
 
@@ -38170,6 +38195,23 @@ input:checked + .ctrl-slider:before {
 
             return list;
 
+        },
+
+        getVisualCalendarVehicles() {
+            const orderedVehicles = this.getOrderedVehicles();
+            const branchGroups = [];
+            const groupMap = new Map();
+            orderedVehicles.forEach(v => {
+                const bInfo = this.getVehicleBranch(v);
+                if (!groupMap.has(bInfo.key)) {
+                    const g = { branch: bInfo, vehicles: [] };
+                    groupMap.set(bInfo.key, g);
+                    branchGroups.push(g);
+                }
+                groupMap.get(bInfo.key).vehicles.push(v);
+            });
+            branchGroups.sort((a, b) => a.branch.order - b.branch.order);
+            return branchGroups.flatMap(g => g.vehicles);
         },
 
 
@@ -79698,13 +79740,62 @@ function toggleNewsletterModal(show = true) {
 
             const startD = document.getElementById('walkinStartDate');
 
-            const startVal = startD && startD.value ? new Date(startD.value) : new Date();
+            let startVal;
+
+            if (startD && startD.value) {
+
+                const parts = startD.value.split('-');
+
+                startVal = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+            } else {
+
+                startVal = new Date();
+
+            }
+
+            const target = new Date(startVal);
+
+            target.setDate(target.getDate() + num);
 
             const endD = document.getElementById('walkinEndDate');
 
             if (endD) {
 
-                const target = new Date(startVal.getTime() + (num * 86400000));
+                endD.value = this.formatDate(target);
+
+            }
+
+            this.manualDaysOverride = null;
+            this.recalculate();
+
+        },
+
+        addMonths(num) {
+
+            const startD = document.getElementById('walkinStartDate');
+
+            let startVal;
+
+            if (startD && startD.value) {
+
+                const parts = startD.value.split('-');
+
+                startVal = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+            } else {
+
+                startVal = new Date();
+
+            }
+
+            const target = new Date(startVal);
+
+            target.setMonth(target.getMonth() + num);
+
+            const endD = document.getElementById('walkinEndDate');
+
+            if (endD) {
 
                 endD.value = this.formatDate(target);
 
@@ -79771,7 +79862,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                // Align vehicle ordering with Fleet Calendar order
+                // Align vehicle ordering with visual Fleet Calendar order (grouped by branch)
 
                 if (window.FleetCalendar) {
 
@@ -79781,9 +79872,13 @@ function toggleNewsletterModal(show = true) {
 
                     }
 
-                    if (typeof window.FleetCalendar.getOrderedVehicles === 'function') {
+                    const getOrderFn = (typeof window.FleetCalendar.getVisualCalendarVehicles === 'function')
+                        ? window.FleetCalendar.getVisualCalendarVehicles.bind(window.FleetCalendar)
+                        : (typeof window.FleetCalendar.getOrderedVehicles === 'function' ? window.FleetCalendar.getOrderedVehicles.bind(window.FleetCalendar) : null);
 
-                        const calendarOrder = window.FleetCalendar.getOrderedVehicles();
+                    if (getOrderFn) {
+
+                        const calendarOrder = getOrderFn();
 
                         if (Array.isArray(calendarOrder) && calendarOrder.length > 0) {
 
@@ -79897,11 +79992,11 @@ function toggleNewsletterModal(show = true) {
 
                 if (window.FleetCalendar && Array.isArray(window.FleetCalendar.vehicles) && window.FleetCalendar.vehicles.length > 0) {
 
-                    const fallbackVehicles = (typeof window.FleetCalendar.getOrderedVehicles === 'function')
+                    const fallbackVehicles = (typeof window.FleetCalendar.getVisualCalendarVehicles === 'function')
 
-                        ? window.FleetCalendar.getOrderedVehicles()
+                        ? window.FleetCalendar.getVisualCalendarVehicles()
 
-                        : window.FleetCalendar.vehicles;
+                        : (typeof window.FleetCalendar.getOrderedVehicles === 'function' ? window.FleetCalendar.getOrderedVehicles() : window.FleetCalendar.vehicles);
 
                     this.vehicles = [...fallbackVehicles];
 
@@ -80470,14 +80565,32 @@ function toggleNewsletterModal(show = true) {
             const duration = this.getDuration();
             const currentDays = this.getDays();
 
+            // Compute display text for unclickable duration badge (days & hours)
+            let durStr = '';
+            if (duration.diffHours < 24.0) {
+                const roundedH = Math.round(duration.diffHours * 10) / 10;
+                durStr = `${roundedH} Hour${roundedH === 1 ? '' : 's'}`;
+            } else if (duration.excessHours > 0) {
+                durStr = `${duration.baseDays} Day${duration.baseDays > 1 ? 's' : ''}, ${duration.excessHours} Hour${duration.excessHours > 1 ? 's' : ''}`;
+            } else {
+                durStr = `${duration.baseDays} Day${duration.baseDays > 1 ? 's' : ''}`;
+            }
+
+            const durDisplay = document.getElementById('walkinDurationDisplay');
+            if (durDisplay) {
+                durDisplay.textContent = durStr;
+            }
+
             const daysSelect = document.getElementById('walkinBillableDays');
             if (daysSelect) {
-                if (daysSelect.options.length === 0) {
-                    let optsHtml = '';
-                    for (let d = 1; d <= 30; d++) {
-                        optsHtml += `<option value="${d}">${d} Day${d > 1 ? 's' : ''}</option>`;
+                if (daysSelect.tagName === 'SELECT') {
+                    if (daysSelect.options.length === 0) {
+                        let optsHtml = '';
+                        for (let d = 1; d <= 30; d++) {
+                            optsHtml += `<option value="${d}">${d} Day${d > 1 ? 's' : ''}</option>`;
+                        }
+                        daysSelect.innerHTML = optsHtml;
                     }
-                    daysSelect.innerHTML = optsHtml;
                 }
                 daysSelect.value = String(currentDays);
             }
