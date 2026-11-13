@@ -17032,9 +17032,9 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                                      style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
 
-                                <option value="Partial">Down Payment (Reservation Fee)</option>
+                                <option value="Partial" selected>Down Payment (Reservation Fee)</option>
 
-                                <option value="Paid" selected>Fully Paid</option>
+                                <option value="Paid">Fully Paid</option>
 
                                 <option value="Unpaid">Pending (For Collection)</option>
 
@@ -79568,6 +79568,9 @@ function toggleNewsletterModal(show = true) {
             if (purposeInput) purposeInput.value = '';
             this.updatePurposeCharCount();
 
+            const payStatusEl = document.getElementById('walkinPaymentStatus');
+            if (payStatusEl) payStatusEl.value = 'Partial';
+
 
 
             modal.style.display = 'flex';
@@ -80744,7 +80747,7 @@ function toggleNewsletterModal(show = true) {
 
             // Sync amount paid based on status
 
-            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Partial';
 
             const amountInput = document.getElementById('walkinAmountPaid');
 
@@ -80770,7 +80773,7 @@ function toggleNewsletterModal(show = true) {
 
         onPaymentStatusChange() {
 
-            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Partial';
 
             const days = this.getDays();
 
@@ -81180,7 +81183,7 @@ function toggleNewsletterModal(show = true) {
 
                 const paymentMethod = document.getElementById('walkinPaymentMethod')?.value || 'Cash';
 
-                const paymentStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+                const paymentStatus = document.getElementById('walkinPaymentStatus')?.value || 'Partial';
 
                 const bookingStatus = document.getElementById('walkinBookingStatus')?.value || 'Confirmed';
 
