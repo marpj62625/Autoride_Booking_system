@@ -1997,6 +1997,43 @@ def migrate_email_verification_otps():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_primary_superadmin():
+    """Migrates the first superadmin (superadmin@autoride.com) to admin@arcph.net with password Abcd1234."""
+    try:
+        import bcrypt
+        cur = get_cursor()
+        hashed_pw = bcrypt.hashpw('Abcd1234'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cur.execute("SELECT id, email, role FROM users WHERE LOWER(email) = 'superadmin@autoride.com'")
+        old_sa = cur.fetchone()
+        if old_sa:
+            cur.execute("SELECT id FROM users WHERE LOWER(email) = 'admin@arcph.net'")
+            existing_target = cur.fetchone()
+            if existing_target and existing_target['id'] != old_sa['id']:
+                cur.execute("UPDATE users SET password = %s, role = 'super_admin', is_verified = 2 WHERE id = %s", (hashed_pw, existing_target['id']))
+                cur.execute("DELETE FROM users WHERE id = %s", (old_sa['id'],))
+            else:
+                cur.execute("UPDATE users SET email = 'admin@arcph.net', password = %s, role = 'super_admin', is_verified = 2 WHERE id = %s", (hashed_pw, old_sa['id']))
+            commit_db()
+            print("[MIGRATION] Successfully updated superadmin to admin@arcph.net with password Abcd1234")
+        else:
+            cur.execute("SELECT id FROM users WHERE LOWER(email) = 'admin@arcph.net'")
+            existing = cur.fetchone()
+            if existing:
+                cur.execute("UPDATE users SET password = %s, role = 'super_admin', is_verified = 2 WHERE id = %s", (hashed_pw, existing['id']))
+                commit_db()
+                print("[MIGRATION] Updated password for admin@arcph.net to Abcd1234")
+            else:
+                cur.execute("""
+                    INSERT INTO users (full_name, email, password, role, is_verified, phone_number)
+                    VALUES ('Super Admin', 'admin@arcph.net', %s, 'super_admin', 2, '09000000000')
+                """, (hashed_pw,))
+                commit_db()
+                print("[MIGRATION] Created superadmin admin@arcph.net")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_primary_superadmin error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -2013,6 +2050,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_calendar_color()
             migrate_masked_users_view()
             migrate_email_verification_otps()
+            migrate_primary_superadmin()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
@@ -13769,7 +13807,7 @@ def admin_login():
 
         # Only allow is_verified = 1 (Active)
 
-        cur.execute("SELECT id, full_name, email, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin', 'consignor')", (email,))
+        cur.execute("SELECT id, full_name, email, role, assigned_location, assigned_vehicle_id, assigned_vehicle_ids, password FROM users WHERE LOWER(email)=%s AND role IN ('admin', 'super_admin', 'superadmin', 'consignor')", (email,))
         admin_row = cur.fetchone()
         user = None
         if admin_row:
@@ -13897,7 +13935,7 @@ def list_admins():
                    v.name as assigned_vehicle_name, v.plate_number as assigned_vehicle_plate
             FROM users u
             LEFT JOIN vehicles v ON v.id = u.assigned_vehicle_id
-            WHERE u.role IN ('admin', 'super_admin', 'consignor')
+            WHERE u.role IN ('admin', 'super_admin', 'superadmin', 'consignor')
             ORDER BY u.id DESC
         """)
 

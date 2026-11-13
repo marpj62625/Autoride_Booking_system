@@ -11736,7 +11736,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                         <i class="far fa-envelope" style="color: var(--text-muted); font-size: 0.8rem;"></i>
 
-                        <span id="settingsEmail" class="settings-user-email">admin@autoride.com</span>
+                        <span id="settingsEmail" class="settings-user-email">admin@arcph.net</span>
 
                     </div>
 
@@ -23110,7 +23110,7 @@ input:checked + .ctrl-slider:before {
 
                 <div style="position: relative;">
 
-                    <input id="superAdminEditEmail" type="email" maxlength="60" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <input id="superAdminEditEmail" type="email" maxlength="60" placeholder="admin@arcph.net" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
 
                     <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
 
@@ -28140,7 +28140,7 @@ input:checked + .ctrl-slider:before {
 
             const email = (user.email || '').toLowerCase().trim();
 
-            if (email === 'admin@autoride.com' || email === 'superadmin@autoride.com') return true;
+            if (email === 'admin@autoride.com' || email === 'superadmin@autoride.com' || email === 'admin@arcph.net') return true;
 
             return false;
 
@@ -47600,7 +47600,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
+                    if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@arcph.net';
 
 
 
