@@ -10314,6 +10314,42 @@ window.formatPhoneInput = formatPhoneInput;
 
     </div>
 
+    <!-- Custom Hand Over Key Confirmation Modal -->
+    <div id="handoverConfirmModal" onclick="if (event.target === this && typeof Bookings !== 'undefined' && Bookings.resolveHandoverChoice) Bookings.resolveHandoverChoice('cancel')" style="position: fixed; inset: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 100000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 20px; box-sizing: border-box;">
+        <div style="background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); width: 100%; max-width: 440px; padding: 28px 24px 24px; border-radius: 22px; border: 1px solid var(--border, rgba(148,163,184,0.25)); box-shadow: 0 25px 60px rgba(15,23,42,0.35); margin: auto; animation: modalPopIn 0.18s ease-out;">
+            <div style="text-align: center; margin-bottom: 18px;">
+                <div id="handoverConfirmIconWrap" style="width: 56px; height: 56px; background: rgba(245,158,11,0.14); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; border: 1px solid rgba(245,158,11,0.35);">
+                    <i id="handoverConfirmIcon" class="fas fa-exclamation-triangle" style="color: #d97706; font-size: 1.4rem;"></i>
+                </div>
+                <h3 id="handoverConfirmTitle" style="font-size: 1.2rem; font-weight: 800; color: var(--text-main, #0f172a); margin: 0 0 6px;">Unsettled Balance Detected</h3>
+                <p id="handoverConfirmSubtitle" style="font-size: 0.88rem; color: var(--text-muted, #64748b); font-weight: 500; margin: 0; line-height: 1.45;">Booking #0 has an unsettled balance.</p>
+            </div>
+
+            <div id="handoverConfirmBalanceBox" style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.28); border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.04em;">Remaining Balance</span>
+                <span id="handoverConfirmBalanceValue" style="font-size: 1.15rem; font-weight: 800; color: #d97706;">₱0.00</span>
+            </div>
+
+            <div id="handoverConfirmActions" style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="handoverCollectCashBtn" type="button" onclick="Bookings.resolveHandoverChoice('collect_cash')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span id="handoverCollectCashBtnText">Collect Cash &amp; Hand Over</span>
+                </button>
+                <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.38); border-radius: 12px; color: #b45309; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fas fa-key"></i>
+                    <span>Hand Over (Collect on Return)</span>
+                </button>
+                <button id="handoverConfirmOkBtn" type="button" onclick="Bookings.resolveHandoverChoice('confirm')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
+                    <i class="fas fa-key"></i>
+                    <span>Confirm Hand Over</span>
+                </button>
+                <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: transparent; border: 1px solid var(--border, rgba(148,163,184,0.35)); border-radius: 12px; color: var(--text-muted, #64748b); font-weight: 700; font-size: 0.9rem; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
 
 
 
@@ -26786,11 +26822,21 @@ input:checked + .ctrl-slider:before {
 
             'addonsConfigModal', 'insuranceConfigModal', 'locationsConfigModal', 'smtpConfigModal', 'gpsConfigModal',
 
-            'gpsTripHistoryModal', 'staffRequestPermModal', 'fleetExportModal', 'fleetImportModal'
+            'gpsTripHistoryModal', 'staffRequestPermModal', 'fleetExportModal', 'fleetImportModal', 'handoverConfirmModal'
 
         ];
 
         if (e.target && modalBackdropIds.includes(e.target.id)) {
+
+            if (e.target.id === 'handoverConfirmModal') {
+
+                if (typeof Bookings !== 'undefined' && Bookings.resolveHandoverChoice) Bookings.resolveHandoverChoice('cancel');
+
+                else e.target.style.display = 'none';
+
+                return;
+
+            }
 
             if (e.target.id === 'umModal') {
 
@@ -53771,6 +53817,96 @@ function toggleNewsletterModal(show = true) {
 
 
 
+        resolveHandoverChoice(choice) {
+            const modal = document.getElementById('handoverConfirmModal');
+            if (modal) modal.style.display = 'none';
+            if (this._handoverEscHandler) {
+                document.removeEventListener('keydown', this._handoverEscHandler);
+                this._handoverEscHandler = null;
+            }
+            const resolver = this._handoverChoiceResolver;
+            this._handoverChoiceResolver = null;
+            if (typeof resolver === 'function') resolver(choice || 'cancel');
+        },
+
+        promptHandoverChoice({ bookingId, balance = 0, mode = 'confirm' }) {
+            const modal = document.getElementById('handoverConfirmModal');
+            if (!modal) {
+                if (mode === 'unsettled') {
+                    const fmt = balance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                    if (confirm(`⚠️ UNSETTLED BALANCE DETECTED\n\nBooking #${bookingId} has an unsettled balance of PHP ${fmt}.\n\n• OK = Collect CASH now\n• Cancel = Other options`)) {
+                        return Promise.resolve('collect_cash');
+                    }
+                    return Promise.resolve(confirm(`Release vehicle and keep PHP ${fmt} due upon return?`) ? 'override_unpaid' : 'cancel');
+                }
+                return Promise.resolve(confirm('Confirm vehicle handover (Mark as Picked Up)?') ? 'confirm' : 'cancel');
+            }
+
+            if (this._handoverChoiceResolver) {
+                this.resolveHandoverChoice('cancel');
+            }
+
+            const iconWrap = document.getElementById('handoverConfirmIconWrap');
+            const icon = document.getElementById('handoverConfirmIcon');
+            const titleEl = document.getElementById('handoverConfirmTitle');
+            const subEl = document.getElementById('handoverConfirmSubtitle');
+            const balBox = document.getElementById('handoverConfirmBalanceBox');
+            const balVal = document.getElementById('handoverConfirmBalanceValue');
+            const cashBtn = document.getElementById('handoverCollectCashBtn');
+            const cashBtnText = document.getElementById('handoverCollectCashBtnText');
+            const overrideBtn = document.getElementById('handoverOverrideBtn');
+            const okBtn = document.getElementById('handoverConfirmOkBtn');
+
+            const formattedBal = Number(balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            if (mode === 'unsettled') {
+                if (iconWrap) {
+                    iconWrap.style.background = 'rgba(245,158,11,0.14)';
+                    iconWrap.style.borderColor = 'rgba(245,158,11,0.35)';
+                }
+                if (icon) {
+                    icon.className = 'fas fa-exclamation-triangle';
+                    icon.style.color = '#d97706';
+                }
+                if (titleEl) titleEl.textContent = 'Unsettled Balance Detected';
+                if (subEl) subEl.textContent = `Booking #${bookingId} still has an unpaid balance. Choose how to proceed with vehicle handover.`;
+                if (balBox) balBox.style.display = 'flex';
+                if (balVal) balVal.textContent = `₱${formattedBal}`;
+                if (cashBtn) cashBtn.style.display = 'flex';
+                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} Cash & Hand Over`;
+                if (overrideBtn) overrideBtn.style.display = 'flex';
+                if (okBtn) okBtn.style.display = 'none';
+            } else {
+                if (iconWrap) {
+                    iconWrap.style.background = 'rgba(16,185,129,0.14)';
+                    iconWrap.style.borderColor = 'rgba(16,185,129,0.35)';
+                }
+                if (icon) {
+                    icon.className = 'fas fa-key';
+                    icon.style.color = '#10b981';
+                }
+                if (titleEl) titleEl.textContent = 'Confirm Vehicle Hand Over';
+                if (subEl) subEl.textContent = `Mark Booking #${bookingId} as Picked Up and hand over the vehicle key?`;
+                if (balBox) balBox.style.display = 'none';
+                if (cashBtn) cashBtn.style.display = 'none';
+                if (overrideBtn) overrideBtn.style.display = 'none';
+                if (okBtn) okBtn.style.display = 'flex';
+            }
+
+            modal.style.display = 'flex';
+
+            return new Promise((resolve) => {
+                this._handoverChoiceResolver = resolve;
+                this._handoverEscHandler = (evt) => {
+                    if (evt.key === 'Escape') {
+                        evt.preventDefault();
+                        this.resolveHandoverChoice('cancel');
+                    }
+                };
+                document.addEventListener('keydown', this._handoverEscHandler);
+            });
+        },
+
         async pickup(id, bookingOverride = null) {
 
             let b = bookingOverride || (this.data && this.data.find(x => x.id == id)) || (this.currentBooking);
@@ -53801,47 +53937,27 @@ function toggleNewsletterModal(show = true) {
 
             if (b && !['paid', 'fully paid'].includes(bPayStat) && bBal > 0) {
 
-                const bal = bBal;
+                const choice = await this.promptHandoverChoice({ bookingId: id, balance: bBal, mode: 'unsettled' });
 
-                const payNow = confirm(
-
-                    `⚠️ UNSETTLED BALANCE DETECTED\n\n` +
-
-                    `Booking #${id} has an unsettled balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n` +
-
-                    `• Click "OK" if collecting the remaining balance in CASH now.\n` +
-
-                    `• Click "Cancel" if releasing without collecting cash balance now (balance to be collected on return).`
-
-                );
-
-                if (payNow) {
+                if (choice === 'collect_cash') {
 
                     collectCash = true;
 
-                } else {
-
-                    const releaseWithoutPayment = confirm(
-
-                        `Release vehicle and keep balance due upon return?\n\n` +
-
-                        `Remaining balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })} will remain unpaid until return.\n\n` +
-
-                        `• Click "OK" to confirm handover (Balance due at return).\n` +
-
-                        `• Click "Cancel" to abort handover.`
-
-                    );
-
-                    if (!releaseWithoutPayment) return;
+                } else if (choice === 'override_unpaid') {
 
                     overrideUnpaid = true;
+
+                } else {
+
+                    return;
 
                 }
 
             } else {
 
-                if (!confirm('Confirm vehicle handover (Mark as Picked Up)?')) return;
+                const choice = await this.promptHandoverChoice({ bookingId: id, balance: 0, mode: 'confirm' });
+
+                if (choice !== 'confirm') return;
 
             }
 
@@ -53881,11 +53997,19 @@ function toggleNewsletterModal(show = true) {
 
                 if (!res.ok && resData && resData.requires_payment && !collectCash && !overrideUnpaid) {
 
+                    if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
+
                     const unsettledBal = parseFloat(resData.balance_amount || 0);
 
-                    const payCash = confirm(`⚠️ UNSETTLED BALANCE DETECTED\n\nBooking #${id} has an unsettled balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n• Click "OK" to collect balance in CASH now and mark vehicle as Picked Up.\n• Click "Cancel" for other release options.`);
+                    const choice = await this.promptHandoverChoice({ bookingId: id, balance: unsettledBal, mode: 'unsettled' });
 
-                    if (payCash) {
+                    if (choice === 'collect_cash' || choice === 'override_unpaid') {
+
+                        const retryCollectCash = choice === 'collect_cash';
+
+                        const retryOverrideUnpaid = choice === 'override_unpaid';
+
+                        if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(true);
 
                         res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
 
@@ -53897,9 +54021,9 @@ function toggleNewsletterModal(show = true) {
 
                                 admin_id: adminId,
 
-                                collect_balance_cash: true,
+                                collect_balance_cash: retryCollectCash,
 
-                                override_unpaid: false
+                                override_unpaid: retryOverrideUnpaid
 
                             })
 
@@ -53907,37 +54031,17 @@ function toggleNewsletterModal(show = true) {
 
                         resData = await res.json().catch(() => ({}));
 
-                        if (res.ok) collectCash = true;
+                        if (res.ok) {
+
+                            collectCash = retryCollectCash;
+
+                            overrideUnpaid = retryOverrideUnpaid;
+
+                        }
 
                     } else {
 
-                        const override = confirm(`Release vehicle and collect remaining balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })} upon return?`);
-
-                        if (override) {
-
-                            res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
-
-                                method: 'PUT',
-
-                                headers: { 'Content-Type': 'application/json' },
-
-                                body: JSON.stringify({
-
-                                    admin_id: adminId,
-
-                                    collect_balance_cash: false,
-
-                                    override_unpaid: true
-
-                                })
-
-                            });
-
-                            resData = await res.json().catch(() => ({}));
-
-                            if (res.ok) overrideUnpaid = true;
-
-                        }
+                        return;
 
                     }
 
