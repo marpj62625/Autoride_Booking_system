@@ -10632,7 +10632,7 @@ window.formatPhoneInput = formatPhoneInput;
 
 
 
-            <span class="admin-badge">ADMIN</span>
+            <span class="admin-badge" id="topNavAdminBadge">ADMIN</span>
 
 
 
@@ -28312,6 +28312,17 @@ input:checked + .ctrl-slider:before {
 
             document.body && document.body.classList.add('role-staff');
 
+        }
+
+        const topBadge = document.getElementById('topNavAdminBadge') || document.querySelector('.logo-wrap .admin-badge');
+        if (topBadge) {
+            if (isSuper) {
+                topBadge.textContent = 'SUPER ADMIN';
+            } else if (consignor) {
+                topBadge.textContent = 'CONSIGNOR';
+            } else {
+                topBadge.textContent = 'ADMIN';
+            }
         }
 
 
@@ -53792,27 +53803,45 @@ function toggleNewsletterModal(show = true) {
 
                 const bal = bBal;
 
-                const ans = confirm(
+                const payNow = confirm(
 
-                    `⚠️ PAYMENT REQUIRED BEFORE PICKUP\n\n` +
+                    `⚠️ UNSETTLED BALANCE DETECTED\n\n` +
 
                     `Booking #${id} has an unsettled balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n` +
 
-                    `Vehicles cannot be released without full payment.\n\n` +
+                    `• Click "OK" if collecting the remaining balance in CASH now.\n` +
 
-                    `• Click "OK" if the customer is paying the remaining balance in CASH right now.\n` +
-
-                    `• Click "Cancel" if payment is NOT yet collected.`
+                    `• Click "Cancel" if releasing without collecting cash balance now (balance to be collected on return).`
 
                 );
 
-                if (!ans) return;
+                if (payNow) {
 
-                collectCash = true;
+                    collectCash = true;
+
+                } else {
+
+                    const releaseWithoutPayment = confirm(
+
+                        `Release vehicle and keep balance due upon return?\n\n` +
+
+                        `Remaining balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })} will remain unpaid until return.\n\n` +
+
+                        `• Click "OK" to confirm handover (Balance due at return).\n` +
+
+                        `• Click "Cancel" to abort handover.`
+
+                    );
+
+                    if (!releaseWithoutPayment) return;
+
+                    overrideUnpaid = true;
+
+                }
 
             } else {
 
-                if (!confirm('Confirm vehicle has been picked up?')) return;
+                if (!confirm('Confirm vehicle handover (Mark as Picked Up)?')) return;
 
             }
 
@@ -53850,11 +53879,13 @@ function toggleNewsletterModal(show = true) {
 
                 // If backend requires cash settlement for balance, offer immediate settlement in-place
 
-                if (!res.ok && resData && resData.requires_payment && !collectCash) {
+                if (!res.ok && resData && resData.requires_payment && !collectCash && !overrideUnpaid) {
 
                     const unsettledBal = parseFloat(resData.balance_amount || 0);
 
-                    if (confirm(`⚠️ UNSETTLED BALANCE DETECTED\n\nBooking #${id} has an unsettled balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\nCollect balance in CASH and mark vehicle as Picked Up now?`)) {
+                    const payCash = confirm(`⚠️ UNSETTLED BALANCE DETECTED\n\nBooking #${id} has an unsettled balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n• Click "OK" to collect balance in CASH now and mark vehicle as Picked Up.\n• Click "Cancel" for other release options.`);
+
+                    if (payCash) {
 
                         res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
 
@@ -53878,6 +53909,36 @@ function toggleNewsletterModal(show = true) {
 
                         if (res.ok) collectCash = true;
 
+                    } else {
+
+                        const override = confirm(`Release vehicle and collect remaining balance of PHP ${unsettledBal.toLocaleString('en-US', { minimumFractionDigits: 2 })} upon return?`);
+
+                        if (override) {
+
+                            res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
+
+                                method: 'PUT',
+
+                                headers: { 'Content-Type': 'application/json' },
+
+                                body: JSON.stringify({
+
+                                    admin_id: adminId,
+
+                                    collect_balance_cash: false,
+
+                                    override_unpaid: true
+
+                                })
+
+                            });
+
+                            resData = await res.json().catch(() => ({}));
+
+                            if (res.ok) overrideUnpaid = true;
+
+                        }
+
                     }
 
                 }
@@ -53890,7 +53951,13 @@ function toggleNewsletterModal(show = true) {
 
                 if (res.ok) {
 
-                    showNotification(collectCash ? 'Balance collected in cash & vehicle marked as Picked Up!' : 'Marked as Picked Up!', 'success');
+                    const msg = collectCash 
+
+                        ? 'Balance collected in cash & vehicle marked as Picked Up!' 
+
+                        : (overrideUnpaid ? 'Vehicle marked as Picked Up (Balance due at return)!' : 'Marked as Picked Up!');
+
+                    showNotification(msg, 'success');
 
                     const bdm = document.getElementById('bookingDetailsModal');
 
@@ -55416,63 +55483,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        async pickup(id) {
 
-
-
-
-
-
-
-            if (!confirm('Mark this vehicle as picked up?')) return;
-
-
-
-
-
-
-
-            try {
-
-
-
-
-
-
-
-                const res = await apiFetch(`bookings/${id}/pickup`, { method: 'PUT' });
-
-
-
-
-
-
-
-                if (res.ok) { showNotification('Vehicle picked up!', 'success'); this.refresh(); }
-
-
-
-
-
-
-
-                else { showNotification('Failed: ' + res.status, 'error'); }
-
-
-
-
-
-
-
-            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
-
-
-
-
-
-
-
-        },
 
 
 
