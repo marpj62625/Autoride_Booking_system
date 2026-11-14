@@ -4,7 +4,7 @@
    Android (Chrome) and iOS (Safari)
    ============================================================ */
 
-const CACHE_NAME = 'autoride-admin-v13';
+const CACHE_NAME = 'autoride-admin-v14';
 
 // Core shell files to cache during install
 const CORE_ASSETS = [
