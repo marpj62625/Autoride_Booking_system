@@ -10333,15 +10333,15 @@ window.formatPhoneInput = formatPhoneInput;
             <div id="handoverConfirmActions" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="handoverCollectCashBtn" type="button" onclick="Bookings.resolveHandoverChoice('collect_cash')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
                     <i class="fas fa-money-bill-wave"></i>
-                    <span id="handoverCollectCashBtnText">Collect Cash &amp; Hand Over</span>
+                    <span id="handoverCollectCashBtnText">Collect Cash &amp; Rent Start</span>
                 </button>
                 <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.38); border-radius: 12px; color: #b45309; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fas fa-key"></i>
-                    <span>Hand Over (Collect on Return)</span>
+                    <span>Rent Start (Collect on Return)</span>
                 </button>
                 <button id="handoverConfirmOkBtn" type="button" onclick="Bookings.resolveHandoverChoice('confirm')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
                     <i class="fas fa-key"></i>
-                    <span>Confirm Hand Over</span>
+                    <span>Confirm Rent Start</span>
                 </button>
                 <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: transparent; border: 1px solid var(--border, rgba(148,163,184,0.35)); border-radius: 12px; color: var(--text-muted, #64748b); font-weight: 700; font-size: 0.9rem; cursor: pointer;">
                     Cancel
@@ -41791,7 +41791,7 @@ input:checked + .ctrl-slider:before {
 
                         <button type="button" onclick="FleetCalendar.quickHandOverKey(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
 
-                            <i class="fas fa-key"></i> Hand Over Key
+                            <i class="fas fa-key"></i> Rent Start
 
                         </button>
 
@@ -41845,7 +41845,7 @@ input:checked + .ctrl-slider:before {
 
                         <button type="button" onclick="FleetCalendar.quickCompleteBooking(${b.id})" style="flex: 1.2; min-width: 120px; padding: 10px 12px; background: #00B14F; color: white; border: none; border-radius: 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
 
-                            <i class="fas fa-undo-alt"></i> Return Key
+                            <i class="fas fa-undo-alt"></i> Rent End
 
                         </button>
 
@@ -48519,7 +48519,7 @@ function toggleNewsletterModal(show = true) {
 
                     <button onclick="Bookings.pickup(${b.id})" class="booking-action-btn" style="background: #00B14F; color: white; font-weight: 800;">
 
-                        <i class="fas fa-key"></i> Hand Over Key
+                        <i class="fas fa-key"></i> Rent Start
 
                     </button>
 
@@ -51527,7 +51527,7 @@ function toggleNewsletterModal(show = true) {
 
             if (st === 'confirmed' || st === 'approved') {
 
-                actionBtns += `<button type="button" onclick="Bookings.pickup(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,177,79,0.35);"><i class="fas fa-key"></i>Hand Over Key</button>`;
+                actionBtns += `<button type="button" onclick="Bookings.pickup(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,177,79,0.35);"><i class="fas fa-key"></i>Rent Start</button>`;
 
                 const act = Bookings.getPickupInspectAction(b);
 
@@ -53869,11 +53869,11 @@ function toggleNewsletterModal(show = true) {
                     icon.style.color = '#d97706';
                 }
                 if (titleEl) titleEl.textContent = 'Unsettled Balance Detected';
-                if (subEl) subEl.textContent = `Booking #${bookingId} still has an unpaid balance. Choose how to proceed with vehicle handover.`;
+                if (subEl) subEl.textContent = `Booking #${bookingId} still has an unpaid balance. Choose how to proceed with Rent Start.`;
                 if (balBox) balBox.style.display = 'flex';
                 if (balVal) balVal.textContent = `₱${formattedBal}`;
                 if (cashBtn) cashBtn.style.display = 'flex';
-                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} Cash & Hand Over`;
+                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} Cash & Rent Start`;
                 if (overrideBtn) overrideBtn.style.display = 'flex';
                 if (okBtn) okBtn.style.display = 'none';
             } else {
@@ -53885,8 +53885,8 @@ function toggleNewsletterModal(show = true) {
                     icon.className = 'fas fa-key';
                     icon.style.color = '#10b981';
                 }
-                if (titleEl) titleEl.textContent = 'Confirm Vehicle Hand Over';
-                if (subEl) subEl.textContent = `Mark Booking #${bookingId} as Picked Up and hand over the vehicle key?`;
+                if (titleEl) titleEl.textContent = 'Confirm Rent Start';
+                if (subEl) subEl.textContent = `Mark Booking #${bookingId} as Picked Up / Ongoing (Rent Start)?`;
                 if (balBox) balBox.style.display = 'none';
                 if (cashBtn) cashBtn.style.display = 'none';
                 if (overrideBtn) overrideBtn.style.display = 'none';
@@ -63658,7 +63658,7 @@ function toggleNewsletterModal(show = true) {
 
                     <button onclick="Bookings.pickup(${b.id})" style="width:100%;margin-top:8px;padding:10px 12px;background:#00B14F;border:none;border-radius:10px;font-size:0.78rem;font-weight:800;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(0,177,79,0.35);">
 
-                        <i class="fas fa-key"></i> Hand Over Key (Mark Ongoing)
+                        <i class="fas fa-key"></i> Rent Start (Mark Ongoing)
 
                     </button>
 
