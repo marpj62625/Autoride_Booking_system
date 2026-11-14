@@ -10333,9 +10333,9 @@ window.formatPhoneInput = formatPhoneInput;
             <div id="handoverConfirmActions" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="handoverCollectCashBtn" type="button" onclick="Bookings.resolveHandoverChoice('collect_cash')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
                     <i class="fas fa-money-bill-wave"></i>
-                    <span id="handoverCollectCashBtnText">Collect Cash &amp; Rent Start</span>
+                    <span id="handoverCollectCashBtnText">Collect &amp; Rent Start</span>
                 </button>
-                <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.38); border-radius: 12px; color: #b45309; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316, #ea580c); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(249,115,22,0.28);">
                     <i class="fas fa-key"></i>
                     <span>Rent Start (Collect on Return)</span>
                 </button>
@@ -10343,7 +10343,7 @@ window.formatPhoneInput = formatPhoneInput;
                     <i class="fas fa-key"></i>
                     <span>Confirm Rent Start</span>
                 </button>
-                <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: transparent; border: 1px solid var(--border, rgba(148,163,184,0.35)); border-radius: 12px; color: var(--text-muted, #64748b); font-weight: 700; font-size: 0.9rem; cursor: pointer;">
+                <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 6px 16px rgba(239,68,68,0.25);">
                     Cancel
                 </button>
             </div>
@@ -53873,7 +53873,7 @@ function toggleNewsletterModal(show = true) {
                 if (balBox) balBox.style.display = 'flex';
                 if (balVal) balVal.textContent = `₱${formattedBal}`;
                 if (cashBtn) cashBtn.style.display = 'flex';
-                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} Cash & Rent Start`;
+                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} & Rent Start`;
                 if (overrideBtn) overrideBtn.style.display = 'flex';
                 if (okBtn) okBtn.style.display = 'none';
             } else {
