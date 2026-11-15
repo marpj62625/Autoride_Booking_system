@@ -16909,7 +16909,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <div>
 
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
-                                <i class="fas fa-warehouse" style="color: #3b82f6; margin-right: 4px;"></i> Dispatch Location
+                                <i class="fas fa-warehouse" style="color: #3b82f6; margin-right: 4px;"></i> Branch Location
                             </label>
 
                             <select id="walkinDispatchLocation" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
@@ -38447,11 +38447,35 @@ input:checked + .ctrl-slider:before {
 
         
 
-        async refresh() {
+        _autoRefreshTimer: null,
+        _isRefreshing: false,
 
+        startAutoRefresh() {
+            if (this._autoRefreshTimer) return;
+            this._autoRefreshTimer = setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                const gridEl = document.getElementById('fcCalendarBody') || document.getElementById('fcGridContainer');
+                if (!gridEl || gridEl.offsetParent === null) return;
+                const blockingModals = ['fleetBookingModal', 'bookingDetailsModal', 'handoverConfirmModal', 'inspectionModal', 'walkinBookingModal', 'editBookingDetailsSuperAdminModal'];
+                const hasOpenModal = blockingModals.some(id => {
+                    const el = document.getElementById(id);
+                    return el && el.offsetParent !== null;
+                });
+                if (hasOpenModal) return;
+                this.refresh({ silent: true });
+            }, 20000);
+        },
+
+        async refresh(opts = {}) {
+
+            if (this._isRefreshing) return;
+            this._isRefreshing = true;
+            this.startAutoRefresh();
+
+            const silent = !!(opts && opts.silent);
             const refreshIcon = document.getElementById('fcRefreshIcon');
 
-            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+            if (!silent && refreshIcon) refreshIcon.classList.add('fa-spin');
 
             try {
 
@@ -38577,6 +38601,8 @@ input:checked + .ctrl-slider:before {
                 showNotification("Failed to load calendar data", "error");
 
             } finally {
+
+                this._isRefreshing = false;
 
                 const refreshIcon = document.getElementById('fcRefreshIcon');
 
@@ -48139,6 +48165,12 @@ function toggleNewsletterModal(show = true) {
 
                 if (typeof Extensions !== 'undefined') Extensions.load();
 
+                if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+
+                    FleetCalendar.refresh({ silent: true });
+
+                }
+
             } catch (err) {
 
                 console.error('Bookings Error:', err);
@@ -53359,9 +53391,9 @@ function toggleNewsletterModal(show = true) {
 
                     this.load();
 
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
 
-                        FleetCalendar.loadBookings();
+                        FleetCalendar.refresh();
 
                     }
 
@@ -54217,9 +54249,9 @@ function toggleNewsletterModal(show = true) {
 
                     this.refresh();
 
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
 
-                        FleetCalendar.loadBookings();
+                        FleetCalendar.refresh();
 
                     }
 
@@ -55508,6 +55540,12 @@ function toggleNewsletterModal(show = true) {
 
 
                     this.fetchInspections(bookingId);
+
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+
+                        FleetCalendar.refresh();
+
+                    }
 
 
 

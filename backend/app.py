@@ -489,13 +489,13 @@ def check_approaching_return_deadlines():
                 cur.execute("SELECT key, value FROM settings WHERE key LIKE 'late_return_%'")
                 s_rows = cur.fetchall() or []
                 s_map = {r['key']: r['value'] for r in s_rows}
-                auto_penalty = s_map.get('late_return_auto_apply_enabled', 'true').lower() in ('true', '1', 'yes')
+                auto_penalty = s_map.get('late_return_auto_apply_enabled', 'false').lower() in ('true', '1', 'yes')
                 grace_mins = int(s_map.get('late_return_grace_period_mins', 15) or 15)
                 hourly_rate = float(s_map.get('late_return_hourly_rate', 300) or 300)
                 fixed_base_fee = float(s_map.get('late_return_fixed_base_fee', 200) or 200)
                 max_cap = float(s_map.get('late_return_max_penalty_cap', 5000) or 5000)
             except Exception as _se:
-                auto_penalty, grace_mins, hourly_rate, fixed_base_fee, max_cap = True, 15, 300.0, 200.0, 5000.0
+                auto_penalty, grace_mins, hourly_rate, fixed_base_fee, max_cap = False, 15, 300.0, 200.0, 5000.0
 
             grace_seconds = grace_mins * 60
             if diff_seconds < -grace_seconds and diff_seconds >= -86400 * 3:
@@ -1364,7 +1364,7 @@ def migrate_penalty_settings():
     try:
         cur = get_cursor()
         penalty_defaults = [
-            ('late_return_auto_apply_enabled', 'true', 'Auto-apply penalty when return deadline passes'),
+            ('late_return_auto_apply_enabled', 'false', 'Auto-apply penalty when return deadline passes'),
             ('late_return_grace_period_mins', '15', 'Minutes of grace period before late penalty starts'),
             ('late_return_hourly_rate', '300', 'Hourly rate charged for late return (PHP)'),
             ('late_return_fixed_base_fee', '200', 'Base fee charged upon late return (PHP)'),
