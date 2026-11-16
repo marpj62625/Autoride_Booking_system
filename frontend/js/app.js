@@ -60,7 +60,7 @@ var API_BASE = (function() {
     window.Capacitor.isNative
   )) {
     console.log('Using production API for Capacitor native app');
-    return 'https://autoride-booking-system.vercel.app/api';
+    return 'https://api.arcph.net/api';
   }
   
   // Force production for mobile apps (fallback detection)
@@ -69,14 +69,14 @@ var API_BASE = (function() {
     window.location.protocol === 'https:' && window.location.hostname === 'localhost'
   )) {
     console.log('Using production API for mobile protocol detection');
-    return 'https://autoride-booking-system.vercel.app/api';
+    return 'https://api.arcph.net/api';
   }
   
   // FORCE PRODUCTION - temporary fix
   // Remove this after debugging
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     console.log('FORCED: Using production API instead of localhost');
-    return 'https://autoride-booking-system.vercel.app/api';
+    return 'https://api.arcph.net/api';
   }
   
   if (typeof window !== 'undefined') {
@@ -96,7 +96,7 @@ var API_BASE = (function() {
   }
   
   console.log('Using fallback production API');
-  return 'https://autoride-booking-system.vercel.app/api';
+  return 'https://api.arcph.net/api';
 }());
 
 // STATE

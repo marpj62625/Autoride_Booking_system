@@ -21,12 +21,6 @@
       "use": "@vercel/static"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/tick",
-      "schedule": "0 0 * * *"
-    }
-  ],
   "routes": [
     {
       "src": "/cron/(.*)",
