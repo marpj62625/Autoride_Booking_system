@@ -1,4 +1,5 @@
 import logging
+import time
 from contextlib import contextmanager
 import psycopg
 from config import SUPABASE_DB_URL
@@ -8,8 +9,24 @@ from psycopg.rows import dict_row
 logger = logging.getLogger(__name__)
 
 def get_connection():
-    """Direct connection for serverless with autocommit to prevent connection pool exhaustion in pgBouncer transaction mode"""
-    return psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
+    """Direct connection for serverless with autocommit and transient pooler retry."""
+    last_err = None
+    for attempt in range(3):
+        try:
+            return psycopg.connect(
+                conninfo=SUPABASE_DB_URL,
+                autocommit=True,
+                prepare_threshold=None,
+                connect_timeout=10,
+            )
+        except Exception as e:
+            last_err = e
+            msg = str(e).lower()
+            is_transient = any(k in msg for k in ('echeckouttimeout', 'timeout', 'ssl connection', 'connection refused', 'temporarily unavailable'))
+            if not is_transient or attempt == 2:
+                raise
+            time.sleep(0.3 * (attempt + 1))
+    raise last_err
 
 def release_connection(conn):
     if conn:

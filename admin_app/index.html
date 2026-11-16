@@ -38461,7 +38461,7 @@ input:checked + .ctrl-slider:before {
                 });
                 if (hasOpenModal) return;
                 this.refresh({ silent: true });
-            }, 20000);
+            }, 60000);
         },
 
         async refresh(opts = {}) {
@@ -38515,7 +38515,8 @@ input:checked + .ctrl-slider:before {
                 const upStartStr = `${upStartDt.getFullYear()}-${String(upStartDt.getMonth() + 1).padStart(2, '0')}-01`;
                 const upEndStr = `${upEndDt.getFullYear()}-${String(upEndDt.getMonth() + 1).padStart(2, '0')}-${String(upEndDt.getDate()).padStart(2, '0')}`;
 
-                // Fetch vehicles, fleet bookings, blackouts, locations and upcoming months summary
+                // Fetch vehicles, fleet bookings, blackouts, locations (cached) and upcoming months summary
+                const needLocations = !(Array.isArray(this.officialBranches) && this.officialBranches.length > 0);
 
                 const [vRes, cRes, bRes, lRes, upRes] = await Promise.all([
 
@@ -38525,19 +38526,26 @@ input:checked + .ctrl-slider:before {
 
                     fetch(`${API_BASE}/api/admin/blackout-dates`),
 
-                    fetch(`${API_BASE}/api/locations`).catch(() => null),
+                    needLocations ? fetch(`${API_BASE}/api/locations`).catch(() => null) : Promise.resolve(null),
 
                     fetch(`${API_BASE}/api/admin/fleet-bookings/upcoming-summary?start=${upStartStr}&end=${upEndStr}`).catch(() => null)
 
                 ]);
 
-                let fetchedVehicles = await vRes.json();
-                if (!Array.isArray(fetchedVehicles)) fetchedVehicles = [];
+                let fetchedVehicles = Array.isArray(this.vehicles) ? this.vehicles : [];
+                if (vRes && vRes.ok) {
+                    const vJson = await vRes.json().catch(() => null);
+                    if (Array.isArray(vJson)) fetchedVehicles = vJson;
+                } else if (!silent && (!this.vehicles || !this.vehicles.length)) {
+                    showNotification('Server busy loading vehicles. Please retry in a moment.', 'error');
+                }
 
-                let fetchedBookings = await cRes.json();
-                if (!Array.isArray(fetchedBookings)) {
-                    console.error("Fleet bookings fetch error:", fetchedBookings);
-                    fetchedBookings = [];
+                let fetchedBookings = Array.isArray(this.bookings) ? this.bookings : [];
+                if (cRes && cRes.ok) {
+                    const cJson = await cRes.json().catch(() => null);
+                    if (Array.isArray(cJson)) fetchedBookings = cJson;
+                } else {
+                    console.error("Fleet bookings fetch error:", cRes ? cRes.status : 'no response');
                 }
 
                 let fetchedUpcoming = [];
@@ -38580,8 +38588,12 @@ input:checked + .ctrl-slider:before {
 
                 this.upcomingBookings = fetchedUpcoming;
 
-                let fetchedBlackouts = await bRes.json();
-                this.blackouts = Array.isArray(fetchedBlackouts) ? fetchedBlackouts : [];
+                let fetchedBlackouts = Array.isArray(this.blackouts) ? this.blackouts : [];
+                if (bRes && bRes.ok) {
+                    const bJson = await bRes.json().catch(() => null);
+                    if (Array.isArray(bJson)) fetchedBlackouts = bJson;
+                }
+                this.blackouts = fetchedBlackouts;
                 if (lRes && lRes.ok) {
                     const fetchedLocs = await lRes.json().catch(() => []);
                     if (Array.isArray(fetchedLocs)) {
@@ -48165,7 +48177,13 @@ function toggleNewsletterModal(show = true) {
 
                 if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
 
-                    FleetCalendar.refresh({ silent: true });
+                    const gridEl = document.getElementById('fcCalendarBody') || document.getElementById('fcGridContainer');
+
+                    if (gridEl && gridEl.offsetParent !== null) {
+
+                        FleetCalendar.refresh({ silent: true });
+
+                    }
 
                 }
 

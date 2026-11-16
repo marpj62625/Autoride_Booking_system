@@ -14463,21 +14463,26 @@ def get_vehicles():
 
         data = cur.fetchall()
 
+        # Batch-fetch all vehicle gallery images in 1 query (eliminates N+1 pool contention)
+        images_by_vehicle = {}
+        try:
+            cur.execute("SELECT id, vehicle_id, image_path FROM vehicle_images ORDER BY order_index ASC, id ASC")
+        except Exception:
+            cur.execute("SELECT id, vehicle_id, image_path FROM vehicle_images ORDER BY id ASC")
+
+        for img in (cur.fetchall() or []):
+            img_dict = dict(img)
+            vid = img_dict.pop('vehicle_id', None)
+            if vid is not None:
+                images_by_vehicle.setdefault(vid, []).append(img_dict)
+
         vehicles = []
 
         for v in data:
 
             v_dict = {k: (float(val) if hasattr(val, '__float__') and not isinstance(val, (int, bool, float)) else (str(val) if hasattr(val, 'isoformat') else val)) for k, val in dict(v).items()}
 
-            try:
-
-                cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY order_index ASC, id ASC", (v['id'],))
-
-            except Exception:
-
-                cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY id ASC", (v['id'],))
-
-            v_dict['gallery_details'] = [dict(r) for r in cur.fetchall()]
+            v_dict['gallery_details'] = images_by_vehicle.get(v_dict.get('id'), [])
 
             vehicles.append(v_dict)
 
