@@ -19758,7 +19758,7 @@ def update_booking_quick_pricing(booking_id):
         return jsonify({"error": "Consignors have read-only monitoring access. Editing bookings is not permitted.", "code": "FORBIDDEN"}), 403
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, user_id, vehicle_id, start_date, end_date, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT id, user_id, vehicle_id, start_date, end_date, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, COALESCE(NULLIF(TRIM(dispatch_note), ''), 'N/A') AS dispatch_note FROM bookings WHERE id = %s", (booking_id,))
         b = cur.fetchone()
         if not b:
             return jsonify({"error": "Booking not found"}), 404
@@ -19768,6 +19768,7 @@ def update_booking_quick_pricing(booking_id):
         reassigned_vehicle = False
         old_vehicle_id = b.get('vehicle_id')
         target_veh_info = ""
+        old_veh_info = ""
         if target_vehicle_id is not None and str(target_vehicle_id).strip():
             try:
                 t_vid = int(target_vehicle_id)
@@ -19806,6 +19807,11 @@ def update_booking_quick_pricing(booking_id):
                     cur.execute("UPDATE bookings SET vehicle_id = %s WHERE id = %s", (t_vid, booking_id))
                     reassigned_vehicle = True
                     target_veh_info = f"{target_veh.get('brand','')} {target_veh.get('model','')} ({target_veh.get('plate_number','')})".strip()
+                    if old_vehicle_id:
+                        cur.execute("SELECT brand, model, plate_number FROM vehicles WHERE id = %s", (old_vehicle_id,))
+                        old_veh = cur.fetchone()
+                        if old_veh:
+                            old_veh_info = f"{old_veh.get('brand','')} {old_veh.get('model','')} ({old_veh.get('plate_number','')})".strip()
 
                     # Update vehicle statuses
                     if (target_veh.get('status') or '').lower() not in ('maintenance', 'repair', 'sold'):
@@ -19867,9 +19873,15 @@ def update_booking_quick_pricing(booking_id):
             WHERE id = %s
         """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
 
+        existing_note = str(b.get('dispatch_note') or 'N/A').strip() or 'N/A'
         if 'dispatch_note' in data:
             new_note = str(data.get('dispatch_note') or '').strip()[:300] or 'N/A'
+            if reassigned_vehicle and (new_note == 'N/A' or new_note == existing_note) and target_veh_info:
+                new_note = (f"Dispatched {target_veh_info} instead of booked {old_veh_info}" if old_veh_info else f"Dispatched {target_veh_info}")[:300]
             cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (new_note, booking_id))
+        elif reassigned_vehicle and existing_note == 'N/A' and target_veh_info:
+            auto_note = (f"Dispatched {target_veh_info} instead of booked {old_veh_info}" if old_veh_info else f"Dispatched {target_veh_info}")[:300]
+            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (auto_note, booking_id))
 
         # Update Dispatch Branch / Pickup Location if provided
         new_dispatch = (data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()[:100]

@@ -16017,6 +16017,16 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                 <div id="quickTransferAlertCard" style="display: none; margin-top: 10px; border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.45;"></div>
 
+                <!-- Dispatch Note (Visible right under Assigned Vehicle / Unit) -->
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                    <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">
+                        <i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: #64748b;">(Default: N/A — auto-filled on unit transfer)</span>
+                    </label>
+                    <input type="text" id="quickDispatchNote" maxlength="300" placeholder="N/A"
+                           oninput="if(typeof FleetCalendar !== 'undefined' && FleetCalendar.syncQuickSummaryNote) FleetCalendar.syncQuickSummaryNote(this.value)"
+                           style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
+                </div>
+
             <!-- Merge Adjacent Booking Suggestion Banner -->
 
             <div id="quickModalMergeBanner" style="display: none; background: #eef2ff; border: 1.5px dashed #6366f1; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; align-items: center; justify-content: space-between; gap: 10px;">
@@ -16252,12 +16262,6 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                     </select>
 
-                </div>
-
-                <div style="margin-top: 10px;">
-                    <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Note <span style="font-weight: 500; color: #64748b;">(Default: N/A)</span></label>
-                    <input type="text" id="quickDispatchNote" maxlength="300" placeholder="N/A"
-                           style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
                 </div>
 
             </div>
@@ -41816,6 +41820,7 @@ input:checked + .ctrl-slider:before {
 
                         <div><strong style="color:#475569;">Purpose of Rental:</strong> ${b.rental_purpose || b.purpose || 'N/A'}</div>
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
+                        <div><strong style="color:#475569;">Note:</strong> <span id="quickModalSummaryNote" style="font-weight:700; color:${(b.dispatch_note && String(b.dispatch_note).trim() && String(b.dispatch_note).trim().toUpperCase() !== 'N/A') ? '#b45309' : '#0f172a'};">${String((b.dispatch_note && String(b.dispatch_note).trim()) ? b.dispatch_note : 'N/A').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span></div>
 
                     </div>
 
@@ -42252,6 +42257,7 @@ input:checked + .ctrl-slider:before {
             const currentBookingBranch = this.getBookingBranchDisplay(b);
             this.renderQuickBranchOptions(currentBookingBranch);
 
+            this._lastAutoTransferNote = '';
             const noteVal = (b.dispatch_note && String(b.dispatch_note).trim()) ? String(b.dispatch_note).trim() : 'N/A';
             const noteInp = document.getElementById('quickDispatchNote');
             if (noteInp) noteInp.value = noteVal;
@@ -43417,6 +43423,14 @@ input:checked + .ctrl-slider:before {
 
 
 
+        syncQuickSummaryNote(val) {
+            const el = document.getElementById('quickModalSummaryNote');
+            if (!el) return;
+            const clean = String(val || '').trim() || 'N/A';
+            el.textContent = clean;
+            el.style.color = clean.toUpperCase() !== 'N/A' ? '#b45309' : '#0f172a';
+        },
+
         onQuickVehicleSelectChange() {
 
             const b = (this.bookings || []).find(x => x.id == this.activeBookingId);
@@ -43437,9 +43451,15 @@ input:checked + .ctrl-slider:before {
 
             const saveBtn = document.getElementById('btnSaveQuickPricing');
 
-
+            const noteInp = document.getElementById('quickDispatchNote');
 
             if (String(targetVid) === String(b.vehicle_id)) {
+
+                if (noteInp && this._lastAutoTransferNote && noteInp.value.trim() === this._lastAutoTransferNote) {
+                    noteInp.value = this.quickInitialState?.dispatch_note || 'N/A';
+                    this._lastAutoTransferNote = '';
+                    this.syncQuickSummaryNote(noteInp.value);
+                }
 
                 if (alertCard) {
 
@@ -43453,6 +43473,18 @@ input:checked + .ctrl-slider:before {
 
                 return;
 
+            }
+
+            if (noteInp) {
+                const curNote = (noteInp.value || '').trim();
+                if (!curNote || curNote === 'N/A' || curNote === this._lastAutoTransferNote) {
+                    const origName = this.quickInitialState?.vehicle_name || `${b.brand || ''} ${b.model || ''} (${b.plate_number || ''})`.trim() || 'Original Unit';
+                    const newName = opt ? (opt.text.split('—')[0] || opt.text.split('-')[0] || opt.text).trim() : 'New Unit';
+                    const autoTxt = `Dispatched ${newName} instead of booked ${origName}`.slice(0, 300);
+                    this._lastAutoTransferNote = autoTxt;
+                    noteInp.value = autoTxt;
+                    this.syncQuickSummaryNote(autoTxt);
+                }
             }
 
 
