@@ -42644,7 +42644,10 @@ input:checked + .ctrl-slider:before {
 
                 }
 
-
+                const savedNote = (data && data.booking && data.booking.dispatch_note) || (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A';
+                const cachedB = (this.bookings || []).find(x => x.id == this.activeBookingId);
+                if (cachedB) cachedB.dispatch_note = savedNote;
+                if (this.quickBookingData && this.quickBookingData.id == this.activeBookingId) this.quickBookingData.dispatch_note = savedNote;
 
                 showNotification('Booking schedule & pricing updated successfully!', 'success');
 

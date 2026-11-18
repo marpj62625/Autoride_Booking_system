@@ -19874,14 +19874,16 @@ def update_booking_quick_pricing(booking_id):
         """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
 
         existing_note = str(b.get('dispatch_note') or 'N/A').strip() or 'N/A'
+        final_note = existing_note
         if 'dispatch_note' in data:
             new_note = str(data.get('dispatch_note') or '').strip()[:300] or 'N/A'
             if reassigned_vehicle and (new_note == 'N/A' or new_note == existing_note) and target_veh_info:
                 new_note = (f"Dispatched {target_veh_info} instead of booked {old_veh_info}" if old_veh_info else f"Dispatched {target_veh_info}")[:300]
-            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (new_note, booking_id))
+            final_note = new_note
+            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (final_note, booking_id))
         elif reassigned_vehicle and existing_note == 'N/A' and target_veh_info:
-            auto_note = (f"Dispatched {target_veh_info} instead of booked {old_veh_info}" if old_veh_info else f"Dispatched {target_veh_info}")[:300]
-            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (auto_note, booking_id))
+            final_note = (f"Dispatched {target_veh_info} instead of booked {old_veh_info}" if old_veh_info else f"Dispatched {target_veh_info}")[:300]
+            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (final_note, booking_id))
 
         # Update Dispatch Branch / Pickup Location if provided
         new_dispatch = (data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()[:100]
@@ -19929,7 +19931,8 @@ def update_booking_quick_pricing(booking_id):
                 "balance_amount": balance_amount,
                 "payment_status": payment_status,
                 "payment_method": payment_method,
-                "calendar_color": calendar_color
+                "calendar_color": calendar_color,
+                "dispatch_note": final_note
             }
         }), 200
     except Exception as e:
