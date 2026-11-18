@@ -16027,11 +16027,12 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                 <!-- Dispatch Note (Visible right under Assigned Vehicle / Unit) -->
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
-                    <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">
-                        <i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: #64748b;">(Default: N/A — auto-filled on unit transfer)</span>
+                    <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">
+                        <span><i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: #64748b;">(Default: N/A — auto-filled on unit transfer)</span></span>
+                        <span id="quickDispatchNoteCount" style="font-weight: 600; color: #64748b;">0/200</span>
                     </label>
-                    <input type="text" id="quickDispatchNote" maxlength="300" placeholder="N/A"
-                           oninput="if(typeof FleetCalendar !== 'undefined' && FleetCalendar.syncQuickSummaryNote) FleetCalendar.syncQuickSummaryNote(this.value)"
+                    <input type="text" id="quickDispatchNote" maxlength="200" placeholder="N/A"
+                           oninput="const c=document.getElementById('quickDispatchNoteCount'); if(c) c.textContent=this.value.length+'/200'; if(typeof FleetCalendar !== 'undefined' && FleetCalendar.syncQuickSummaryNote) FleetCalendar.syncQuickSummaryNote(this.value)"
                            style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
                 </div>
 
@@ -16983,10 +16984,12 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                     </div>
 
                     <div style="margin-top: 10px;">
-                        <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
-                            <i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: var(--text-muted, #64748b);">(Default: N/A)</span>
+                        <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
+                            <span><i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: var(--text-muted, #64748b);">(Default: N/A)</span></span>
+                            <span id="walkinDispatchNoteCount" style="font-weight: 600; color: var(--text-muted, #64748b);">3/200</span>
                         </label>
-                        <input type="text" id="walkinDispatchNote" maxlength="300" value="N/A" placeholder="N/A"
+                        <input type="text" id="walkinDispatchNote" maxlength="200" value="N/A" placeholder="N/A"
+                               oninput="const c=document.getElementById('walkinDispatchNoteCount'); if(c) c.textContent=this.value.length+'/200';"
                                style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                     </div>
 
@@ -42330,9 +42333,11 @@ input:checked + .ctrl-slider:before {
             this.renderQuickBranchOptions(currentBookingBranch);
 
             this._lastAutoTransferNote = '';
-            const noteVal = (b.dispatch_note && String(b.dispatch_note).trim()) ? String(b.dispatch_note).trim() : 'N/A';
+            const noteVal = (b.dispatch_note && String(b.dispatch_note).trim()) ? String(b.dispatch_note).trim().slice(0, 200) : 'N/A';
             const noteInp = document.getElementById('quickDispatchNote');
             if (noteInp) noteInp.value = noteVal;
+            const noteCount = document.getElementById('quickDispatchNoteCount');
+            if (noteCount) noteCount.textContent = `${noteVal.length}/200`;
 
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
@@ -42696,7 +42701,7 @@ input:checked + .ctrl-slider:before {
 
                         pickup_location: (document.getElementById('quickDispatchBranchSelect')?.value === '__add_new__' ? '' : document.getElementById('quickDispatchBranchSelect')?.value || ''),
 
-                        dispatch_note: (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A',
+                        dispatch_note: (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 200) || 'N/A',
 
                         requester_id: currentAdminId,
 
@@ -81583,7 +81588,7 @@ function toggleNewsletterModal(show = true) {
 
                     rental_purpose: (document.getElementById('walkinRentalPurpose')?.value || '').trim().slice(0, 100) || 'Walk-in Counter Rental',
 
-                    dispatch_note: (document.getElementById('walkinDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A',
+                    dispatch_note: (document.getElementById('walkinDispatchNote')?.value || '').trim().slice(0, 200) || 'N/A',
 
                     admin_id: adminId
 
