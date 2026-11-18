@@ -24877,9 +24877,9 @@ input:checked + .ctrl-slider:before {
 
         <div id="fleetCalendarScrollContainer" class="fleet-calendar-scroll-container">
 
-            <table style="table-layout: fixed; border-collapse: collapse; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
+            <table style="table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
 
-                <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
+                <thead style="position: sticky; top: 0; z-index: 45; background: var(--surface-solid, #ffffff);">
 
                     <tr id="fleetCalendarMonthRow" style="height: 28px; background: var(--surface-solid);">
 
@@ -39419,13 +39419,14 @@ input:checked + .ctrl-slider:before {
 
                     if (isFirstInBranch) {
 
-                        const letters = bInfo.shortName.split('').map(ch => `<span style="display:block; transform: scale(1); line-height: 1.15;">${ch}</span>`).join('');
+                        const isLongBranch = bInfo.shortName.length > 6;
+                        const letters = bInfo.shortName.split('').map(ch => `<span style="display:block; transform: scale(1); line-height: ${isLongBranch ? '1.05' : '1.15'};">${ch}</span>`).join('');
 
                         rowHtml += `<td rowspan="${gCount}" class="fc-branch-cell"
 
-                            style="padding: 10px 2px; text-align: center; background: ${bInfo.bgColor}; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 12; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: top; overflow: hidden; box-shadow: 2px 0 5px rgba(0,0,0,0.04);">
+                            style="padding: 8px 2px; text-align: center; background: linear-gradient(0deg, ${bInfo.bgColor}, ${bInfo.bgColor}), var(--surface-solid, #ffffff); background-clip: padding-box; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 20; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: top; overflow: hidden;">
 
-                            <div style="position: sticky; top: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-weight: 900; font-size: 0.72rem; color: ${bInfo.textColor}; letter-spacing: 0.5px; user-select: none;">
+                            <div style="position: sticky; top: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: ${isLongBranch ? '1px' : '3px'}; font-weight: 900; font-size: ${isLongBranch ? '0.62rem' : '0.72rem'}; color: ${bInfo.textColor}; letter-spacing: 0.4px; user-select: none;">
 
                                 ${letters}
 
@@ -39441,7 +39442,7 @@ input:checked + .ctrl-slider:before {
 
                     rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
 
-                        style="padding: 6px 8px; border: 1px solid var(--border); ${topBorder} ${bottomBorder} background: var(--surface-solid); position: sticky; left: ${branchColWidth}px; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
+                        style="padding: 6px 8px; border: 1px solid var(--border); ${topBorder} ${bottomBorder} background: var(--surface-solid, #ffffff); background-clip: padding-box; position: sticky; left: ${branchColWidth}px; z-index: 18; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
 
                         <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
 
