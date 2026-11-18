@@ -3426,6 +3426,14 @@
 }
 .fc-bhead, .fc-vhead {
     border-bottom: 2px solid var(--border) !important;
+    background: var(--surface-solid, #ffffff) !important;
+    background-clip: padding-box;
+}
+#fleetCalendarTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    background: var(--surface-solid, #ffffff);
 }
 
 /* Fleet calendar: compact sticky vehicle column on phones */
@@ -22716,11 +22724,21 @@ input:checked + .ctrl-slider:before {
 
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Model <span style="color:#ef4444;">*</span></label>
 
-                            <select id="vModel" required onchange="Vehicles.applySpecs(this.value)" list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <select id="vModel" required onchange="Vehicles.onModelChange(this.value)" list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
 
                                 <option value="">Select Model</option>
 
                             </select>
+
+                            <div id="vModelOtherWrap" style="display:none;margin-top:8px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                    <label for="vModelOther" style="font-size:0.74rem;font-weight:600;color:var(--text-muted);">Specify Model <span style="color:#ef4444;">*</span></label>
+                                    <span id="vModelOtherCount" style="font-size:0.7rem;font-weight:700;color:var(--text-muted);">0/40</span>
+                                </div>
+                                <input type="text" id="vModelOther" maxlength="40" placeholder="Enter custom model (max 40 chars)"
+                                       oninput="Vehicles.updateModelOtherCount(this.value)"
+                                       style="width:100%;padding:10px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            </div>
 
                             <datalist id="vModelList"></datalist>
 
@@ -33039,6 +33057,11 @@ input:checked + .ctrl-slider:before {
 
 
 
+                const otherOpt = document.createElement('option');
+                otherOpt.value = '__other__';
+                otherOpt.textContent = 'Other (Specify)';
+                modelSelect.appendChild(otherOpt);
+
                 if (selectedModel) {
 
                     modelSelect.value = selectedModel;
@@ -33047,8 +33070,39 @@ input:checked + .ctrl-slider:before {
 
                 }
 
+                this.onModelChange(modelSelect.value);
+
             }
 
+        },
+
+        updateModelOtherCount(val) {
+            const countEl = document.getElementById('vModelOtherCount');
+            if (countEl) {
+                const len = String(val || '').length;
+                countEl.textContent = `${Math.min(40, len)}/40`;
+            }
+        },
+
+        onModelChange(val) {
+            const wrap = document.getElementById('vModelOtherWrap');
+            const inp = document.getElementById('vModelOther');
+            if (val === '__other__') {
+                if (wrap) wrap.style.display = 'block';
+                if (inp) {
+                    inp.required = true;
+                    this.updateModelOtherCount(inp.value);
+                    setTimeout(() => inp.focus(), 30);
+                }
+            } else {
+                if (wrap) wrap.style.display = 'none';
+                if (inp) {
+                    inp.required = false;
+                    inp.value = '';
+                    this.updateModelOtherCount('');
+                }
+                if (val) this.applySpecs(val);
+            }
         },
 
 
@@ -34408,8 +34462,21 @@ input:checked + .ctrl-slider:before {
 
 
             const modelEl = document.getElementById('vModel');
+            const modelOtherEl = document.getElementById('vModelOther');
 
-            if (!modelEl.value.trim()) { showInlineError(modelEl, 'Model is required'); hasError = true; }
+            if (!modelEl.value.trim()) {
+                showInlineError(modelEl, 'Model is required');
+                hasError = true;
+            } else if (modelEl.value === '__other__') {
+                const customModel = (modelOtherEl ? modelOtherEl.value : '').trim();
+                if (!customModel) {
+                    showInlineError(modelOtherEl || modelEl, 'Please specify the vehicle model');
+                    hasError = true;
+                } else if (customModel.length > 40) {
+                    showInlineError(modelOtherEl || modelEl, 'Model must not exceed 40 characters');
+                    hasError = true;
+                }
+            }
 
 
 
@@ -34519,7 +34586,9 @@ input:checked + .ctrl-slider:before {
 
             const brand = brandEl.value.trim();
 
-            const model = modelEl.value.trim();
+            const model = modelEl.value === '__other__'
+                ? (document.getElementById('vModelOther')?.value || '').trim().slice(0, 40)
+                : modelEl.value.trim();
 
 
 
@@ -38956,13 +39025,13 @@ input:checked + .ctrl-slider:before {
 
 
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid, #ffffff) !important; background-clip: padding-box; font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 52; color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
 
                 <span style="display: block; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap; text-align: center; text-transform: uppercase; line-height: 1;">AREA</span>
 
             </th>
 
-            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 8px 4px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; vertical-align: middle; box-sizing: border-box;">
+            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 8px 4px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid, #ffffff) !important; background-clip: padding-box; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 50; vertical-align: middle; box-sizing: border-box;">
 
                 <div style="display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size: 0.70rem; font-weight: 800; letter-spacing: 0.6px; color: var(--text-muted); text-transform: uppercase;">
 
@@ -39354,9 +39423,9 @@ input:checked + .ctrl-slider:before {
 
                         rowHtml += `<td rowspan="${gCount}" class="fc-branch-cell"
 
-                            style="padding: 6px 2px; text-align: center; background: ${bInfo.bgColor}; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 12; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: middle; box-shadow: 2px 0 5px rgba(0,0,0,0.04);">
+                            style="padding: 10px 2px; text-align: center; background: ${bInfo.bgColor}; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 12; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: top; overflow: hidden; box-shadow: 2px 0 5px rgba(0,0,0,0.04);">
 
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-weight: 900; font-size: 0.74rem; color: ${bInfo.textColor}; letter-spacing: 0.5px; user-select: none;">
+                            <div style="position: sticky; top: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-weight: 900; font-size: 0.72rem; color: ${bInfo.textColor}; letter-spacing: 0.5px; user-select: none;">
 
                                 ${letters}
 
