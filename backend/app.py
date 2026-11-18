@@ -8564,6 +8564,7 @@ def create_walkin_booking():
 
         destination = str(data.get('destination') or '').strip()[:100]
         rental_purpose = str(data.get('rental_purpose') or 'Walk-in Counter Rental').strip()[:100]
+        dispatch_note = str(data.get('dispatch_note') or '').strip()[:300] or 'N/A'
         raw_addons = data.get('addons', '')
         addons = ",".join(raw_addons) if isinstance(raw_addons, list) else str(raw_addons)
 
@@ -8576,7 +8577,7 @@ def create_walkin_booking():
                 base_price, addon_price, driver_fee, delivery_fee, discount_amount,
                 total_price, amount_paid, balance_amount,
                 status, payment_status, payment_type, payment_method,
-                destination, rental_purpose, addons, created_at
+                destination, rental_purpose, dispatch_note, addons, created_at
             ) VALUES (
                 %s, %s, %s, %s, %s, %s,
                 %s, %s, %s, 'pickup',
@@ -8585,7 +8586,7 @@ def create_walkin_booking():
                 %s, %s, %s, %s, %s,
                 %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, %s, %s, NOW()
+                %s, %s, %s, %s, NOW()
             ) RETURNING id, booking_id
         """, (
             user_id, vehicle_id, start_date, end_date, start_time, end_time,
@@ -8595,7 +8596,7 @@ def create_walkin_booking():
             base_price, addon_price, driver_fee, delivery_fee, discount_amount,
             total_price, amount_paid, balance_amount,
             status, payment_status, payment_type, payment_method,
-            destination, rental_purpose, addons
+            destination, rental_purpose, dispatch_note, addons
         ))
         created_row = cur.fetchone()
         new_booking_id = (created_row.get('booking_id') or created_row.get('id')) if created_row else None
@@ -19296,6 +19297,7 @@ def get_fleet_bookings():
         try:
             cur.execute("""
                 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
+                ALTER TABLE bookings ADD COLUMN IF NOT EXISTS dispatch_note TEXT DEFAULT 'N/A';
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS social_media_link VARCHAR(500) DEFAULT '';
             """)
             commit_db()
@@ -19314,6 +19316,7 @@ def get_fleet_bookings():
                 COALESCE(b.driver_fee, 0.00) AS driver_fee,
                 COALESCE(b.calendar_color, '') AS calendar_color,
                 COALESCE(b.destination, '') AS destination,
+                COALESCE(NULLIF(TRIM(b.dispatch_note), ''), 'N/A') AS dispatch_note,
         COALESCE(NULLIF(TRIM(b.social_media_platform), ''), NULLIF(TRIM(u.social_media_platform), ''), '') AS social_media_platform,
         COALESCE(NULLIF(TRIM(b.social_media_account), ''), NULLIF(TRIM(u.social_media_account), ''), '') AS social_media_account,
         COALESCE(NULLIF(TRIM(b.social_media_link), ''), NULLIF(TRIM(u.social_media_link), ''), '') AS social_media_link,
@@ -19863,6 +19866,10 @@ def update_booking_quick_pricing(booking_id):
                 calendar_color = %s
             WHERE id = %s
         """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
+
+        if 'dispatch_note' in data:
+            new_note = str(data.get('dispatch_note') or '').strip()[:300] or 'N/A'
+            cur.execute("UPDATE bookings SET dispatch_note = %s WHERE id = %s", (new_note, booking_id))
 
         # Update Dispatch Branch / Pickup Location if provided
         new_dispatch = (data.get('dispatch_location') or data.get('dispatch_branch') or '').strip()[:100]

@@ -16254,6 +16254,12 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                 </div>
 
+                <div style="margin-top: 10px;">
+                    <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Note <span style="font-weight: 500; color: #64748b;">(Default: N/A)</span></label>
+                    <input type="text" id="quickDispatchNote" maxlength="300" placeholder="N/A"
+                           style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
+                </div>
+
             </div>
 
 
@@ -16962,6 +16968,14 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                                    oninput="WalkinBooking.updatePurposeCharCount()"
                                    style="width: 100%; padding: 8px 12px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
+                            <i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: var(--text-muted, #64748b);">(Default: N/A)</span>
+                        </label>
+                        <input type="text" id="walkinDispatchNote" maxlength="300" value="N/A" placeholder="N/A"
+                               style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                     </div>
 
                 </div>
@@ -40284,7 +40298,9 @@ input:checked + .ctrl-slider:before {
 
                         Balance: ${bal.toLocaleString()}<br>
 
-                        Dispatch Branch: ${dispatchBranch}
+                        Dispatch Branch: ${dispatchBranch}<br>
+
+                        Note: ${String((b.dispatch_note && String(b.dispatch_note).trim()) ? b.dispatch_note : 'N/A').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
 
                     </div>
 
@@ -42025,7 +42041,7 @@ input:checked + .ctrl-slider:before {
 
             if (isConsignorUser) {
 
-                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod', 'quickDispatchNote'].forEach(id => {
 
                     const el = document.getElementById(id);
 
@@ -42085,7 +42101,7 @@ input:checked + .ctrl-slider:before {
 
             } else {
 
-                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod', 'quickDispatchNote'].forEach(id => {
 
                     const el = document.getElementById(id);
 
@@ -42236,6 +42252,10 @@ input:checked + .ctrl-slider:before {
             const currentBookingBranch = this.getBookingBranchDisplay(b);
             this.renderQuickBranchOptions(currentBookingBranch);
 
+            const noteVal = (b.dispatch_note && String(b.dispatch_note).trim()) ? String(b.dispatch_note).trim() : 'N/A';
+            const noteInp = document.getElementById('quickDispatchNote');
+            if (noteInp) noteInp.value = noteVal;
+
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
                 vehicle_name: initVehicleName,
@@ -42244,7 +42264,8 @@ input:checked + .ctrl-slider:before {
                 payment_status: statusSelect ? statusSelect.value : '',
                 payment_method: methodSelect ? methodSelect.value : 'Cash',
                 color: (this.selectedColor || '').toLowerCase(),
-                dispatch_branch: currentBookingBranch
+                dispatch_branch: currentBookingBranch,
+                dispatch_note: noteVal
             };
 
 
@@ -42597,6 +42618,8 @@ input:checked + .ctrl-slider:before {
 
                         pickup_location: (document.getElementById('quickDispatchBranchSelect')?.value === '__add_new__' ? '' : document.getElementById('quickDispatchBranchSelect')?.value || ''),
 
+                        dispatch_note: (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A',
+
                         requester_id: currentAdminId,
 
                         admin_id: currentAdminId
@@ -42760,6 +42783,16 @@ input:checked + .ctrl-slider:before {
             }
 
 
+
+            // Dispatch Note
+            const currentNote = (document.getElementById('quickDispatchNote')?.value || '').trim() || 'N/A';
+            if (currentNote !== (this.quickInitialState.dispatch_note || 'N/A')) {
+                diff.push({
+                    label: 'Note',
+                    oldVal: this.quickInitialState.dispatch_note || 'N/A',
+                    newVal: currentNote
+                });
+            }
 
             // Dispatching Branch
             const branchSelect = document.getElementById('quickDispatchBranchSelect');
@@ -79737,6 +79770,9 @@ function toggleNewsletterModal(show = true) {
             if (purposeInput) purposeInput.value = '';
             this.updatePurposeCharCount();
 
+            const noteInput = document.getElementById('walkinDispatchNote');
+            if (noteInput) noteInput.value = 'N/A';
+
             const payStatusEl = document.getElementById('walkinPaymentStatus');
             if (payStatusEl) payStatusEl.value = 'Partial';
 
@@ -81439,6 +81475,8 @@ function toggleNewsletterModal(show = true) {
                     destination: (document.getElementById('walkinDestination')?.value || '').trim().slice(0, 40),
 
                     rental_purpose: (document.getElementById('walkinRentalPurpose')?.value || '').trim().slice(0, 100) || 'Walk-in Counter Rental',
+
+                    dispatch_note: (document.getElementById('walkinDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A',
 
                     admin_id: adminId
 
