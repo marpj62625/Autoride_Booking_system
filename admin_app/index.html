@@ -24816,6 +24816,12 @@ input:checked + .ctrl-slider:before {
 
                 </button>
 
+                <button id="fcBlackoutDatesBtn" type="button" onclick="toggleBlackoutsModal(true)" class="btn-primary" title="Manage Blackout Dates (Block rentals during holidays or maintenance)" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #ea580c; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(234,88,12,0.3);">
+
+                    <i class="fas fa-calendar-times"></i> <span class="fc-btn-text">Blackout Dates</span>
+
+                </button>
+
                 <!-- Upcoming Months Bookings Indicator (3rd to 12th month out) -->
                 <div id="fcUpcomingMonthsWrap"
                      style="display: none; align-items: center; gap: 6px; flex-wrap: wrap; background: var(--surface-solid); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.74rem;">
@@ -28478,9 +28484,9 @@ input:checked + .ctrl-slider:before {
 
             });
 
-            // Hide Walk-in Booking and Audit History buttons for Consignors
+            // Hide Walk-in Booking, Audit History, and Blackout Dates buttons for Consignors
 
-            document.querySelectorAll('button[onclick*="WalkinBooking.openModal"], button[onclick*="FleetCalendar.openHistoryModal"]').forEach(el => {
+            document.querySelectorAll('button[onclick*="WalkinBooking.openModal"], button[onclick*="FleetCalendar.openHistoryModal"], button[onclick*="toggleBlackoutsModal"]').forEach(el => {
 
                 el.style.setProperty('display', 'none', 'important');
 
@@ -28541,6 +28547,10 @@ input:checked + .ctrl-slider:before {
         const blackoutsCard = document.getElementById('mobileBlackoutsConfig');
 
         if (blackoutsCard) blackoutsCard.style.display = hasBlackouts ? 'block' : 'none';
+
+        const fcBlackoutBtn = document.getElementById('fcBlackoutDatesBtn');
+
+        if (fcBlackoutBtn && !isConsignor) fcBlackoutBtn.style.display = hasBlackouts ? 'flex' : 'none';
 
         const blackoutsLock = document.getElementById('lockPerm_blackout_dates');
 

@@ -44,7 +44,7 @@
 
 
 
-    <title>Autoride Admin Premium</title>
+    <title>ARC APP</title>
 
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 
@@ -3426,6 +3426,14 @@
 }
 .fc-bhead, .fc-vhead {
     border-bottom: 2px solid var(--border) !important;
+    background: var(--surface-solid, #ffffff) !important;
+    background-clip: padding-box;
+}
+#fleetCalendarTable thead {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    background: var(--surface-solid, #ffffff);
 }
 
 /* Fleet calendar: compact sticky vehicle column on phones */
@@ -10333,9 +10341,9 @@ window.formatPhoneInput = formatPhoneInput;
             <div id="handoverConfirmActions" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="handoverCollectCashBtn" type="button" onclick="Bookings.resolveHandoverChoice('collect_cash')" style="width: 100%; padding: 13px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.94rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(16,185,129,0.28);">
                     <i class="fas fa-money-bill-wave"></i>
-                    <span id="handoverCollectCashBtnText">Collect Cash &amp; Rent Start</span>
+                    <span id="handoverCollectCashBtnText">Collect &amp; Rent Start</span>
                 </button>
-                <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.38); border-radius: 12px; color: #b45309; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button id="handoverOverrideBtn" type="button" onclick="Bookings.resolveHandoverChoice('override_unpaid')" style="width: 100%; padding: 12px 16px; background: linear-gradient(135deg, #f97316, #ea580c); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(249,115,22,0.28);">
                     <i class="fas fa-key"></i>
                     <span>Rent Start (Collect on Return)</span>
                 </button>
@@ -10343,8 +10351,8 @@ window.formatPhoneInput = formatPhoneInput;
                     <i class="fas fa-key"></i>
                     <span>Confirm Rent Start</span>
                 </button>
-                <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: transparent; border: 1px solid var(--border, rgba(148,163,184,0.35)); border-radius: 12px; color: var(--text-muted, #64748b); font-weight: 700; font-size: 0.9rem; cursor: pointer;">
-                    Cancel
+                <button type="button" onclick="Bookings.resolveHandoverChoice('cancel')" style="width: 100%; padding: 11px 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 12px; color: #ffffff; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 6px 16px rgba(239,68,68,0.25);">
+                    Close
                 </button>
             </div>
         </div>
@@ -16017,6 +16025,17 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
 
                 <div id="quickTransferAlertCard" style="display: none; margin-top: 10px; border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.45;"></div>
 
+                <!-- Dispatch Note (Visible right under Assigned Vehicle / Unit) -->
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                    <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">
+                        <span><i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: #64748b;">(Default: N/A — auto-filled on unit transfer)</span></span>
+                        <span id="quickDispatchNoteCount" style="font-weight: 600; color: #64748b;">0/200</span>
+                    </label>
+                    <input type="text" id="quickDispatchNote" maxlength="200" placeholder="N/A"
+                           oninput="const c=document.getElementById('quickDispatchNoteCount'); if(c) c.textContent=this.value.length+'/200'; if(typeof FleetCalendar !== 'undefined' && FleetCalendar.syncQuickSummaryNote) FleetCalendar.syncQuickSummaryNote(this.value)"
+                           style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
+                </div>
+
             <!-- Merge Adjacent Booking Suggestion Banner -->
 
             <div id="quickModalMergeBanner" style="display: none; background: #eef2ff; border: 1.5px dashed #6366f1; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; align-items: center; justify-content: space-between; gap: 10px;">
@@ -16909,7 +16928,7 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                         <div>
 
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
-                                <i class="fas fa-warehouse" style="color: #3b82f6; margin-right: 4px;"></i> Dispatch Location
+                                <i class="fas fa-warehouse" style="color: #3b82f6; margin-right: 4px;"></i> Branch Location
                             </label>
 
                             <select id="walkinDispatchLocation" style="width: 100%; padding: 8px 10px; font-size: 0.8rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box; cursor: pointer;">
@@ -16962,6 +16981,16 @@ body.dark-mode #adminNotifPanel.anp,[data-theme="dark"] #adminNotifPanel.anp{bac
                                    oninput="WalkinBooking.updatePurposeCharCount()"
                                    style="width: 100%; padding: 8px 12px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">
+                            <span><i class="fas fa-sticky-note" style="color: #f59e0b; margin-right: 4px;"></i> Note <span style="font-weight: 500; color: var(--text-muted, #64748b);">(Default: N/A)</span></span>
+                            <span id="walkinDispatchNoteCount" style="font-weight: 600; color: var(--text-muted, #64748b);">3/200</span>
+                        </label>
+                        <input type="text" id="walkinDispatchNote" maxlength="200" value="N/A" placeholder="N/A"
+                               oninput="const c=document.getElementById('walkinDispatchNoteCount'); if(c) c.textContent=this.value.length+'/200';"
+                               style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                     </div>
 
                 </div>
@@ -22698,11 +22727,21 @@ input:checked + .ctrl-slider:before {
 
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Model <span style="color:#ef4444;">*</span></label>
 
-                            <select id="vModel" required onchange="Vehicles.applySpecs(this.value)" list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <select id="vModel" required onchange="Vehicles.onModelChange(this.value)" list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
 
                                 <option value="">Select Model</option>
 
                             </select>
+
+                            <div id="vModelOtherWrap" style="display:none;margin-top:8px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                    <label for="vModelOther" style="font-size:0.74rem;font-weight:600;color:var(--text-muted);">Specify Model <span style="color:#ef4444;">*</span></label>
+                                    <span id="vModelOtherCount" style="font-size:0.7rem;font-weight:700;color:var(--text-muted);">0/40</span>
+                                </div>
+                                <input type="text" id="vModelOther" maxlength="40" placeholder="Enter custom model (max 40 chars)"
+                                       oninput="Vehicles.updateModelOtherCount(this.value)"
+                                       style="width:100%;padding:10px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            </div>
 
                             <datalist id="vModelList"></datalist>
 
@@ -24777,6 +24816,12 @@ input:checked + .ctrl-slider:before {
 
                 </button>
 
+                <button id="fcBlackoutDatesBtn" type="button" onclick="toggleBlackoutsModal(true)" class="btn-primary" title="Manage Blackout Dates (Block rentals during holidays or maintenance)" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #ea580c; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(234,88,12,0.3);">
+
+                    <i class="fas fa-calendar-times"></i> <span class="fc-btn-text">Blackout Dates</span>
+
+                </button>
+
                 <!-- Upcoming Months Bookings Indicator (3rd to 12th month out) -->
                 <div id="fcUpcomingMonthsWrap"
                      style="display: none; align-items: center; gap: 6px; flex-wrap: wrap; background: var(--surface-solid); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.74rem;">
@@ -24841,9 +24886,9 @@ input:checked + .ctrl-slider:before {
 
         <div id="fleetCalendarScrollContainer" class="fleet-calendar-scroll-container">
 
-            <table style="table-layout: fixed; border-collapse: collapse; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
+            <table style="table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
 
-                <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
+                <thead style="position: sticky; top: 0; z-index: 45; background: var(--surface-solid, #ffffff);">
 
                     <tr id="fleetCalendarMonthRow" style="height: 28px; background: var(--surface-solid);">
 
@@ -25251,19 +25296,17 @@ input:checked + .ctrl-slider:before {
 
         
 
-        <!-- Brand Name -->
+        <!-- Welcome & Brand Header -->
 
-        <div style="font-size:2.4rem;font-weight:900;color:white;letter-spacing:-0.03em;margin-bottom:2px;">Autoride</div>
+        <div style="font-size:1.05rem;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:0.04em;margin:0 0 6px;text-align:center;">Welcome to</div>
+
+        <h1 style="font-size:1.75rem;font-weight:900;color:white;letter-spacing:0.02em;margin:0 0 4px;text-align:center;line-height:1.15;">AUTORIDE COMPANY</h1>
 
         <!-- Tagline -->
 
-        <div style="font-size:0.7rem;font-weight:700;color:rgba(0,177,79,0.95);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;">Admin Portal</div>
+        <div style="font-size:0.75rem;font-weight:700;color:rgba(0,177,79,0.95);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px;text-align:center;">SYSTEM PORTAL</div>
 
-        
-
-        <h1 style="font-size:1.4rem;font-weight:800;color:white;letter-spacing:-0.02em;margin:0 0 6px;text-align:center;">Welcome back</h1>
-
-        <p style="font-size:0.82rem;color:rgba(255,255,255,0.4);margin:0 0 28px;text-align:center;">Sign in to access your dashboard</p>
+        <p style="font-size:0.82rem;color:rgba(255,255,255,0.45);margin:0 0 28px;text-align:center;">Sign in to access your dashboard</p>
 
 
 
@@ -25477,7 +25520,7 @@ input:checked + .ctrl-slider:before {
 
         if (isMobileOrCap) {
 
-            return 'https://autoride-booking-system.vercel.app';
+            return 'https://api.arcph.net';
 
         }
 
@@ -25493,13 +25536,13 @@ input:checked + .ctrl-slider:before {
 
             }
 
-            return 'https://autoride-booking-system.vercel.app';
+            return 'https://api.arcph.net';
 
         }
 
 
 
-        // 3. Web: Vercel or HTTPS
+        // 3. Web: Hostinger or HTTPS
 
         if (window.location.hostname.includes('arcph.net')) {
             return 'https://api.arcph.net';
@@ -25515,7 +25558,7 @@ input:checked + .ctrl-slider:before {
 
         // 4. Default Fallback
 
-        return 'https://autoride-booking-system.vercel.app';
+        return 'https://api.arcph.net';
 
     })();
 
@@ -28441,9 +28484,9 @@ input:checked + .ctrl-slider:before {
 
             });
 
-            // Hide Walk-in Booking and Audit History buttons for Consignors
+            // Hide Walk-in Booking, Audit History, and Blackout Dates buttons for Consignors
 
-            document.querySelectorAll('button[onclick*="WalkinBooking.openModal"], button[onclick*="FleetCalendar.openHistoryModal"]').forEach(el => {
+            document.querySelectorAll('button[onclick*="WalkinBooking.openModal"], button[onclick*="FleetCalendar.openHistoryModal"], button[onclick*="toggleBlackoutsModal"]').forEach(el => {
 
                 el.style.setProperty('display', 'none', 'important');
 
@@ -28504,6 +28547,10 @@ input:checked + .ctrl-slider:before {
         const blackoutsCard = document.getElementById('mobileBlackoutsConfig');
 
         if (blackoutsCard) blackoutsCard.style.display = hasBlackouts ? 'block' : 'none';
+
+        const fcBlackoutBtn = document.getElementById('fcBlackoutDatesBtn');
+
+        if (fcBlackoutBtn && !isConsignor) fcBlackoutBtn.style.display = hasBlackouts ? 'flex' : 'none';
 
         const blackoutsLock = document.getElementById('lockPerm_blackout_dates');
 
@@ -33023,6 +33070,11 @@ input:checked + .ctrl-slider:before {
 
 
 
+                const otherOpt = document.createElement('option');
+                otherOpt.value = '__other__';
+                otherOpt.textContent = 'Other (Specify)';
+                modelSelect.appendChild(otherOpt);
+
                 if (selectedModel) {
 
                     modelSelect.value = selectedModel;
@@ -33031,8 +33083,39 @@ input:checked + .ctrl-slider:before {
 
                 }
 
+                this.onModelChange(modelSelect.value);
+
             }
 
+        },
+
+        updateModelOtherCount(val) {
+            const countEl = document.getElementById('vModelOtherCount');
+            if (countEl) {
+                const len = String(val || '').length;
+                countEl.textContent = `${Math.min(40, len)}/40`;
+            }
+        },
+
+        onModelChange(val) {
+            const wrap = document.getElementById('vModelOtherWrap');
+            const inp = document.getElementById('vModelOther');
+            if (val === '__other__') {
+                if (wrap) wrap.style.display = 'block';
+                if (inp) {
+                    inp.required = true;
+                    this.updateModelOtherCount(inp.value);
+                    setTimeout(() => inp.focus(), 30);
+                }
+            } else {
+                if (wrap) wrap.style.display = 'none';
+                if (inp) {
+                    inp.required = false;
+                    inp.value = '';
+                    this.updateModelOtherCount('');
+                }
+                if (val) this.applySpecs(val);
+            }
         },
 
 
@@ -34392,8 +34475,21 @@ input:checked + .ctrl-slider:before {
 
 
             const modelEl = document.getElementById('vModel');
+            const modelOtherEl = document.getElementById('vModelOther');
 
-            if (!modelEl.value.trim()) { showInlineError(modelEl, 'Model is required'); hasError = true; }
+            if (!modelEl.value.trim()) {
+                showInlineError(modelEl, 'Model is required');
+                hasError = true;
+            } else if (modelEl.value === '__other__') {
+                const customModel = (modelOtherEl ? modelOtherEl.value : '').trim();
+                if (!customModel) {
+                    showInlineError(modelOtherEl || modelEl, 'Please specify the vehicle model');
+                    hasError = true;
+                } else if (customModel.length > 40) {
+                    showInlineError(modelOtherEl || modelEl, 'Model must not exceed 40 characters');
+                    hasError = true;
+                }
+            }
 
 
 
@@ -34503,7 +34599,9 @@ input:checked + .ctrl-slider:before {
 
             const brand = brandEl.value.trim();
 
-            const model = modelEl.value.trim();
+            const model = modelEl.value === '__other__'
+                ? (document.getElementById('vModelOther')?.value || '').trim().slice(0, 40)
+                : modelEl.value.trim();
 
 
 
@@ -38447,11 +38545,35 @@ input:checked + .ctrl-slider:before {
 
         
 
-        async refresh() {
+        _autoRefreshTimer: null,
+        _isRefreshing: false,
 
+        startAutoRefresh() {
+            if (this._autoRefreshTimer) return;
+            this._autoRefreshTimer = setInterval(() => {
+                if (document.visibilityState !== 'visible') return;
+                const gridEl = document.getElementById('fcCalendarBody') || document.getElementById('fcGridContainer');
+                if (!gridEl || gridEl.offsetParent === null) return;
+                const blockingModals = ['fleetBookingModal', 'bookingDetailsModal', 'handoverConfirmModal', 'inspectionModal', 'walkinBookingModal', 'editBookingDetailsSuperAdminModal'];
+                const hasOpenModal = blockingModals.some(id => {
+                    const el = document.getElementById(id);
+                    return el && el.offsetParent !== null;
+                });
+                if (hasOpenModal) return;
+                this.refresh({ silent: true });
+            }, 60000);
+        },
+
+        async refresh(opts = {}) {
+
+            if (this._isRefreshing) return;
+            this._isRefreshing = true;
+            this.startAutoRefresh();
+
+            const silent = !!(opts && opts.silent);
             const refreshIcon = document.getElementById('fcRefreshIcon');
 
-            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+            if (!silent && refreshIcon) refreshIcon.classList.add('fa-spin');
 
             try {
 
@@ -38493,7 +38615,8 @@ input:checked + .ctrl-slider:before {
                 const upStartStr = `${upStartDt.getFullYear()}-${String(upStartDt.getMonth() + 1).padStart(2, '0')}-01`;
                 const upEndStr = `${upEndDt.getFullYear()}-${String(upEndDt.getMonth() + 1).padStart(2, '0')}-${String(upEndDt.getDate()).padStart(2, '0')}`;
 
-                // Fetch vehicles, fleet bookings, blackouts, locations and upcoming months summary
+                // Fetch vehicles, fleet bookings, blackouts, locations (cached) and upcoming months summary
+                const needLocations = !(Array.isArray(this.officialBranches) && this.officialBranches.length > 0);
 
                 const [vRes, cRes, bRes, lRes, upRes] = await Promise.all([
 
@@ -38503,19 +38626,26 @@ input:checked + .ctrl-slider:before {
 
                     fetch(`${API_BASE}/api/admin/blackout-dates`),
 
-                    fetch(`${API_BASE}/api/locations`).catch(() => null),
+                    needLocations ? fetch(`${API_BASE}/api/locations`).catch(() => null) : Promise.resolve(null),
 
                     fetch(`${API_BASE}/api/admin/fleet-bookings/upcoming-summary?start=${upStartStr}&end=${upEndStr}`).catch(() => null)
 
                 ]);
 
-                let fetchedVehicles = await vRes.json();
-                if (!Array.isArray(fetchedVehicles)) fetchedVehicles = [];
+                let fetchedVehicles = Array.isArray(this.vehicles) ? this.vehicles : [];
+                if (vRes && vRes.ok) {
+                    const vJson = await vRes.json().catch(() => null);
+                    if (Array.isArray(vJson)) fetchedVehicles = vJson;
+                } else if (!silent && (!this.vehicles || !this.vehicles.length)) {
+                    showNotification('Server busy loading vehicles. Please retry in a moment.', 'error');
+                }
 
-                let fetchedBookings = await cRes.json();
-                if (!Array.isArray(fetchedBookings)) {
-                    console.error("Fleet bookings fetch error:", fetchedBookings);
-                    fetchedBookings = [];
+                let fetchedBookings = Array.isArray(this.bookings) ? this.bookings : [];
+                if (cRes && cRes.ok) {
+                    const cJson = await cRes.json().catch(() => null);
+                    if (Array.isArray(cJson)) fetchedBookings = cJson;
+                } else {
+                    console.error("Fleet bookings fetch error:", cRes ? cRes.status : 'no response');
                 }
 
                 let fetchedUpcoming = [];
@@ -38558,8 +38688,12 @@ input:checked + .ctrl-slider:before {
 
                 this.upcomingBookings = fetchedUpcoming;
 
-                let fetchedBlackouts = await bRes.json();
-                this.blackouts = Array.isArray(fetchedBlackouts) ? fetchedBlackouts : [];
+                let fetchedBlackouts = Array.isArray(this.blackouts) ? this.blackouts : [];
+                if (bRes && bRes.ok) {
+                    const bJson = await bRes.json().catch(() => null);
+                    if (Array.isArray(bJson)) fetchedBlackouts = bJson;
+                }
+                this.blackouts = fetchedBlackouts;
                 if (lRes && lRes.ok) {
                     const fetchedLocs = await lRes.json().catch(() => []);
                     if (Array.isArray(fetchedLocs)) {
@@ -38577,6 +38711,8 @@ input:checked + .ctrl-slider:before {
                 showNotification("Failed to load calendar data", "error");
 
             } finally {
+
+                this._isRefreshing = false;
 
                 const refreshIcon = document.getElementById('fcRefreshIcon');
 
@@ -38850,7 +38986,9 @@ input:checked + .ctrl-slider:before {
 
                 calTable.style.tableLayout = 'fixed';
 
-                calTable.style.borderCollapse = 'collapse';
+                calTable.style.borderCollapse = 'separate';
+
+                calTable.style.borderSpacing = '0';
 
 
 
@@ -38902,13 +39040,13 @@ input:checked + .ctrl-slider:before {
 
 
 
-            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid); font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 42; color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-bcol fc-bhead" style="padding: 4px 1px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid, #ffffff) !important; background-clip: padding-box; font-weight: 900; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; position: sticky; left: 0; top: 0; z-index: 52; color: var(--text-muted); vertical-align: middle; box-sizing: border-box; overflow: hidden;">
 
                 <span style="display: block; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap; text-align: center; text-transform: uppercase; line-height: 1;">AREA</span>
 
             </th>
 
-            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 8px 4px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 40; vertical-align: middle; box-sizing: border-box;">
+            <th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 8px 4px; border: 1px solid var(--border) !important; border-right: 2px solid var(--border) !important; border-bottom: 2px solid var(--border) !important; text-align: center; background: var(--surface-solid, #ffffff) !important; background-clip: padding-box; width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; position: sticky; left: ${branchColWidth}px; top: 0; z-index: 50; vertical-align: middle; box-sizing: border-box;">
 
                 <div style="display:inline-flex; align-items:center; justify-content:center; gap:5px; font-size: 0.70rem; font-weight: 800; letter-spacing: 0.6px; color: var(--text-muted); text-transform: uppercase;">
 
@@ -39296,13 +39434,14 @@ input:checked + .ctrl-slider:before {
 
                     if (isFirstInBranch) {
 
-                        const letters = bInfo.shortName.split('').map(ch => `<span style="display:block; transform: scale(1); line-height: 1.15;">${ch}</span>`).join('');
+                        const isLongBranch = bInfo.shortName.length > 6;
+                        const letters = bInfo.shortName.split('').map(ch => `<span style="display:block; transform: scale(1); line-height: ${isLongBranch ? '1.05' : '1.15'};">${ch}</span>`).join('');
 
                         rowHtml += `<td rowspan="${gCount}" class="fc-branch-cell"
 
-                            style="padding: 6px 2px; text-align: center; background: ${bInfo.bgColor}; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 12; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: middle; box-shadow: 2px 0 5px rgba(0,0,0,0.04);">
+                            style="padding: 8px 2px; text-align: center; background: linear-gradient(0deg, ${bInfo.bgColor}, ${bInfo.bgColor}), var(--surface-solid, #ffffff); background-clip: padding-box; border-left: 3px solid ${bInfo.borderColor}; border-right: 2px solid ${bInfo.borderColor}; border-top: 2.5px solid ${bInfo.borderColor}; border-bottom: 2.5px solid ${bInfo.borderColor}; position: sticky; left: 0; z-index: 20; width: ${branchColWidth}px; min-width: ${branchColWidth}px; max-width: ${branchColWidth}px; box-sizing: border-box; vertical-align: top; overflow: hidden;">
 
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-weight: 900; font-size: 0.74rem; color: ${bInfo.textColor}; letter-spacing: 0.5px; user-select: none;">
+                            <div style="position: sticky; top: 108px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: ${isLongBranch ? '1px' : '3px'}; font-weight: 900; font-size: ${isLongBranch ? '0.62rem' : '0.72rem'}; color: ${bInfo.textColor}; letter-spacing: 0.4px; user-select: none;">
 
                                 ${letters}
 
@@ -39318,7 +39457,7 @@ input:checked + .ctrl-slider:before {
 
                     rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
 
-                        style="padding: 6px 8px; border: 1px solid var(--border); ${topBorder} ${bottomBorder} background: var(--surface-solid); position: sticky; left: ${branchColWidth}px; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
+                        style="padding: 6px 8px; border: 1px solid var(--border); ${topBorder} ${bottomBorder} background: var(--surface-solid, #ffffff); background-clip: padding-box; position: sticky; left: ${branchColWidth}px; z-index: 18; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); width: ${vehColWidth}px; min-width: ${vehColWidth}px; max-width: ${vehColWidth}px; box-sizing: border-box; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
 
                         <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
 
@@ -40248,7 +40387,9 @@ input:checked + .ctrl-slider:before {
 
                         Balance: ${bal.toLocaleString()}<br>
 
-                        Dispatch Branch: ${dispatchBranch}
+                        Dispatch Branch: ${dispatchBranch}<br>
+
+                        Note: ${String((b.dispatch_note && String(b.dispatch_note).trim()) ? b.dispatch_note : 'N/A').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
 
                     </div>
 
@@ -41764,6 +41905,7 @@ input:checked + .ctrl-slider:before {
 
                         <div><strong style="color:#475569;">Purpose of Rental:</strong> ${b.rental_purpose || b.purpose || 'N/A'}</div>
                         <div><strong style="color:#475569;">Contact:</strong> ${b.customer_phone || 'N/A'}</div>
+                        <div><strong style="color:#475569;">Note:</strong> <span id="quickModalSummaryNote" style="font-weight:700; color:${(b.dispatch_note && String(b.dispatch_note).trim() && String(b.dispatch_note).trim().toUpperCase() !== 'N/A') ? '#b45309' : '#0f172a'};">${String((b.dispatch_note && String(b.dispatch_note).trim()) ? b.dispatch_note : 'N/A').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span></div>
 
                     </div>
 
@@ -41989,7 +42131,7 @@ input:checked + .ctrl-slider:before {
 
             if (isConsignorUser) {
 
-                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod', 'quickDispatchNote'].forEach(id => {
 
                     const el = document.getElementById(id);
 
@@ -42049,7 +42191,7 @@ input:checked + .ctrl-slider:before {
 
             } else {
 
-                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod'].forEach(id => {
+                ['quickTotalPrice', 'quickAmountPaid', 'quickPaymentStatus', 'quickPaymentMethod', 'quickDispatchNote'].forEach(id => {
 
                     const el = document.getElementById(id);
 
@@ -42200,6 +42342,13 @@ input:checked + .ctrl-slider:before {
             const currentBookingBranch = this.getBookingBranchDisplay(b);
             this.renderQuickBranchOptions(currentBookingBranch);
 
+            this._lastAutoTransferNote = '';
+            const noteVal = (b.dispatch_note && String(b.dispatch_note).trim()) ? String(b.dispatch_note).trim().slice(0, 200) : 'N/A';
+            const noteInp = document.getElementById('quickDispatchNote');
+            if (noteInp) noteInp.value = noteVal;
+            const noteCount = document.getElementById('quickDispatchNoteCount');
+            if (noteCount) noteCount.textContent = `${noteVal.length}/200`;
+
             this.quickInitialState = {
                 vehicle_id: String(b.vehicle_id || ''),
                 vehicle_name: initVehicleName,
@@ -42208,7 +42357,8 @@ input:checked + .ctrl-slider:before {
                 payment_status: statusSelect ? statusSelect.value : '',
                 payment_method: methodSelect ? methodSelect.value : 'Cash',
                 color: (this.selectedColor || '').toLowerCase(),
-                dispatch_branch: currentBookingBranch
+                dispatch_branch: currentBookingBranch,
+                dispatch_note: noteVal
             };
 
 
@@ -42561,6 +42711,8 @@ input:checked + .ctrl-slider:before {
 
                         pickup_location: (document.getElementById('quickDispatchBranchSelect')?.value === '__add_new__' ? '' : document.getElementById('quickDispatchBranchSelect')?.value || ''),
 
+                        dispatch_note: (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 200) || 'N/A',
+
                         requester_id: currentAdminId,
 
                         admin_id: currentAdminId
@@ -42579,7 +42731,10 @@ input:checked + .ctrl-slider:before {
 
                 }
 
-
+                const savedNote = (data && data.booking && data.booking.dispatch_note) || (document.getElementById('quickDispatchNote')?.value || '').trim().slice(0, 300) || 'N/A';
+                const cachedB = (this.bookings || []).find(x => x.id == this.activeBookingId);
+                if (cachedB) cachedB.dispatch_note = savedNote;
+                if (this.quickBookingData && this.quickBookingData.id == this.activeBookingId) this.quickBookingData.dispatch_note = savedNote;
 
                 showNotification('Booking schedule & pricing updated successfully!', 'success');
 
@@ -42724,6 +42879,16 @@ input:checked + .ctrl-slider:before {
             }
 
 
+
+            // Dispatch Note
+            const currentNote = (document.getElementById('quickDispatchNote')?.value || '').trim() || 'N/A';
+            if (currentNote !== (this.quickInitialState.dispatch_note || 'N/A')) {
+                diff.push({
+                    label: 'Note',
+                    oldVal: this.quickInitialState.dispatch_note || 'N/A',
+                    newVal: currentNote
+                });
+            }
 
             // Dispatching Branch
             const branchSelect = document.getElementById('quickDispatchBranchSelect');
@@ -43348,6 +43513,14 @@ input:checked + .ctrl-slider:before {
 
 
 
+        syncQuickSummaryNote(val) {
+            const el = document.getElementById('quickModalSummaryNote');
+            if (!el) return;
+            const clean = String(val || '').trim() || 'N/A';
+            el.textContent = clean;
+            el.style.color = clean.toUpperCase() !== 'N/A' ? '#b45309' : '#0f172a';
+        },
+
         onQuickVehicleSelectChange() {
 
             const b = (this.bookings || []).find(x => x.id == this.activeBookingId);
@@ -43368,9 +43541,15 @@ input:checked + .ctrl-slider:before {
 
             const saveBtn = document.getElementById('btnSaveQuickPricing');
 
-
+            const noteInp = document.getElementById('quickDispatchNote');
 
             if (String(targetVid) === String(b.vehicle_id)) {
+
+                if (noteInp && this._lastAutoTransferNote && noteInp.value.trim() === this._lastAutoTransferNote) {
+                    noteInp.value = this.quickInitialState?.dispatch_note || 'N/A';
+                    this._lastAutoTransferNote = '';
+                    this.syncQuickSummaryNote(noteInp.value);
+                }
 
                 if (alertCard) {
 
@@ -43384,6 +43563,18 @@ input:checked + .ctrl-slider:before {
 
                 return;
 
+            }
+
+            if (noteInp) {
+                const curNote = (noteInp.value || '').trim();
+                if (!curNote || curNote === 'N/A' || curNote === this._lastAutoTransferNote) {
+                    const origName = this.quickInitialState?.vehicle_name || `${b.brand || ''} ${b.model || ''} (${b.plate_number || ''})`.trim() || 'Original Unit';
+                    const newName = opt ? (opt.text.split('—')[0] || opt.text.split('-')[0] || opt.text).trim() : 'New Unit';
+                    const autoTxt = `Dispatched ${newName} instead of booked ${origName}`.slice(0, 300);
+                    this._lastAutoTransferNote = autoTxt;
+                    noteInp.value = autoTxt;
+                    this.syncQuickSummaryNote(autoTxt);
+                }
             }
 
 
@@ -48138,6 +48329,18 @@ function toggleNewsletterModal(show = true) {
 
 
                 if (typeof Extensions !== 'undefined') Extensions.load();
+
+                if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+
+                    const gridEl = document.getElementById('fcCalendarBody') || document.getElementById('fcGridContainer');
+
+                    if (gridEl && gridEl.offsetParent !== null) {
+
+                        FleetCalendar.refresh({ silent: true });
+
+                    }
+
+                }
 
             } catch (err) {
 
@@ -53359,9 +53562,9 @@ function toggleNewsletterModal(show = true) {
 
                     this.load();
 
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
 
-                        FleetCalendar.loadBookings();
+                        FleetCalendar.refresh();
 
                     }
 
@@ -53873,7 +54076,7 @@ function toggleNewsletterModal(show = true) {
                 if (balBox) balBox.style.display = 'flex';
                 if (balVal) balVal.textContent = `₱${formattedBal}`;
                 if (cashBtn) cashBtn.style.display = 'flex';
-                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} Cash & Rent Start`;
+                if (cashBtnText) cashBtnText.textContent = `Collect ₱${formattedBal} & Rent Start`;
                 if (overrideBtn) overrideBtn.style.display = 'flex';
                 if (okBtn) okBtn.style.display = 'none';
             } else {
@@ -54217,9 +54420,9 @@ function toggleNewsletterModal(show = true) {
 
                     this.refresh();
 
-                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.loadBookings === 'function') {
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
 
-                        FleetCalendar.loadBookings();
+                        FleetCalendar.refresh();
 
                     }
 
@@ -55508,6 +55711,12 @@ function toggleNewsletterModal(show = true) {
 
 
                     this.fetchInspections(bookingId);
+
+                    if (typeof FleetCalendar !== 'undefined' && typeof FleetCalendar.refresh === 'function') {
+
+                        FleetCalendar.refresh();
+
+                    }
 
 
 
@@ -79683,6 +79892,9 @@ function toggleNewsletterModal(show = true) {
             if (purposeInput) purposeInput.value = '';
             this.updatePurposeCharCount();
 
+            const noteInput = document.getElementById('walkinDispatchNote');
+            if (noteInput) noteInput.value = 'N/A';
+
             const payStatusEl = document.getElementById('walkinPaymentStatus');
             if (payStatusEl) payStatusEl.value = 'Partial';
 
@@ -81385,6 +81597,8 @@ function toggleNewsletterModal(show = true) {
                     destination: (document.getElementById('walkinDestination')?.value || '').trim().slice(0, 40),
 
                     rental_purpose: (document.getElementById('walkinRentalPurpose')?.value || '').trim().slice(0, 100) || 'Walk-in Counter Rental',
+
+                    dispatch_note: (document.getElementById('walkinDispatchNote')?.value || '').trim().slice(0, 200) || 'N/A',
 
                     admin_id: adminId
 
