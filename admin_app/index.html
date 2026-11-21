@@ -40029,7 +40029,9 @@ input:checked + .ctrl-slider:before {
 
                         const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
 
-                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; height: 54px; overflow: hidden;" title="Blackout Blocked">
+                        const boId = boItem.blackout && boItem.blackout.id !== undefined ? boItem.blackout.id : '';
+
+                        rowHtml += `<td colspan="${spanSlots}" onmouseenter="FleetCalendar.showBlackoutTooltip(event, '${boId}', '${v.id}')" onmouseleave="FleetCalendar.hideTooltip()" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); width: ${spanWidth}px; min-width: ${spanWidth}px; max-width: ${spanWidth}px; box-sizing: border-box; height: 54px; overflow: hidden; cursor: default;">
 
                             <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.58rem; font-weight: 800; padding: 1px 3px; border-radius: 4px;">OFF</span>
 
@@ -40262,6 +40264,80 @@ input:checked + .ctrl-slider:before {
                 this.positionTooltip({ clientX, clientY }, tip);
 
             }, 250);
+
+        },
+
+
+
+        showBlackoutTooltip(e, boId, vId) {
+
+            if (window.innerWidth <= 768) return;
+
+            const bo = (this.blackouts || []).find(x => String(x.id) === String(boId));
+
+            if (!bo) return;
+
+            const tip = document.getElementById('fleetTooltip');
+
+            if (!tip) return;
+
+            const v = (this.vehicles || []).find(x => String(x.id) === String(vId));
+
+            const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            const fmtDate = (dStr) => {
+
+                const d = new Date(String(dStr || '').split('T')[0] + 'T00:00:00');
+
+                return isNaN(d.getTime()) ? String(dStr || 'N/A') : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            };
+
+            const sDate = new Date(String(bo.start_date || '').split('T')[0] + 'T00:00:00');
+
+            const eDate = new Date(String(bo.end_date || '').split('T')[0] + 'T00:00:00');
+
+            const days = (!isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) ? Math.max(1, Math.round((eDate - sDate) / 86400000) + 1) : 1;
+
+            const isAll = !bo.affected_vehicles || bo.affected_vehicles === 'all';
+
+            const affCount = isAll ? 0 : String(bo.affected_vehicles).split(',').map(x => x.trim()).filter(Boolean).length;
+
+            const scopeText = isAll
+
+                ? 'All Vehicles (System-wide)'
+
+                : (v ? `${v.brand} ${v.model} (${v.plate_number || 'No Plate'})${affCount > 1 ? ` + ${affCount - 1} more` : ''}` : `${affCount} Vehicle(s)`);
+
+            const reasonText = (bo.reason && String(bo.reason).trim()) ? esc(bo.reason.trim()) : 'No reason specified';
+
+            tip.innerHTML = `
+
+                <div style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,0.45);border:1px solid #334155;font-size:0.75rem;line-height:1.45;min-width:230px;max-width:300px;">
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+
+                        <span style="background:rgba(239,68,68,0.22);color:#fca5a5;border:1px solid rgba(239,68,68,0.45);padding:2px 8px;border-radius:5px;font-weight:900;font-size:0.65rem;letter-spacing:0.4px;">BLACKOUT BLOCKED</span>
+
+                        <span style="color:#94a3b8;font-size:0.68rem;font-weight:700;">${days} day${days > 1 ? 's' : ''}</span>
+
+                    </div>
+
+                    <div style="font-size:0.86rem;font-weight:800;color:#ffffff;margin-bottom:6px;">${reasonText}</div>
+
+                    <div style="border-top:1px solid #334155;padding-top:6px;display:flex;flex-direction:column;gap:4px;color:#cbd5e1;">
+
+                        <div><span style="color:#94a3b8;font-size:0.65rem;">Dates:</span> <b style="color:#ffffff;">${fmtDate(bo.start_date)} &rarr; ${fmtDate(bo.end_date)}</b></div>
+
+                        <div><span style="color:#94a3b8;font-size:0.65rem;">Scope:</span> <b style="color:#fca5a5;">${esc(scopeText)}</b></div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+            this.positionTooltip(e, tip);
 
         },
 
